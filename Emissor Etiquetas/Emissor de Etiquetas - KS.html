@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="icon" type="image/png" href="favicon.png">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Klarke Labels Pro | Premium Edition</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #003366;
+            --accent: #00a8ff;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --border: #e2e8f0;
+        }
+
+        /* Estilo Dark Mode (Opcional, ativado via classe no body se quiser) */
+        body.dark-mode {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f8fafc;
+            --border: #334155;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            padding: 20px;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 35px;
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        .brand-logo {
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 3px;
+            color: var(--accent);
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        h1 { margin: 0 0 25px 0; font-size: 24px; font-weight: 800; }
+
+        /* Estilo do Preview */
+        .preview-box {
+            background: #fff;
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100px;
+        }
+        .preview-label { font-size: 10px; color: #94a3b8; margin-bottom: 5px; text-transform: uppercase; }
+        #preview-barcode { max-width: 100%; height: auto !important; }
+
+        .input-row { display: flex; gap: 15px; margin-bottom: 20px; }
+        .group { flex: 1; text-align: left; }
+        label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 6px; opacity: 0.8; }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: 2px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            font-size: 16px;
+            outline: none;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+        input:focus { border-color: var(--accent); }
+
+        .btn {
+            width: 100%;
+            padding: 18px;
+            border: none;
+            border-radius: 15px;
+            background: var(--primary);
+            color: white;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn:hover { background: #004080; transform: translateY(-2px); }
+        .btn:active { transform: translateY(0); }
+
+        /* Recentes */
+        .recent-section {
+            margin-top: 25px;
+            text-align: left;
+        }
+        .recent-title { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 10px; }
+        .recent-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+        .tag {
+            background: var(--border);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+        .tag:hover { background: var(--accent); color: white; }
+
+        .footer { margin-top: 25px; font-size: 11px; opacity: 0.5; font-weight: 600; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        #barcode-canvas { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="card">
+            <span class="brand-logo">Klarke Solutions</span>
+            <h1>Emissor de Etiquetas</h1>
+
+            <div class="preview-box">
+                <span class="preview-label">VISUALIZAÇÃO DA ETIQUETA</span>
+                <svg id="preview-barcode"></svg>
+            </div>
+
+            <div class="input-row">
+                <div class="group">
+                    <label>Código do Item</label>
+                    <input type="text" id="inputCodigo" placeholder="Ex: 589" maxlength="15" autofocus>
+                </div>
+                <div class="group" style="flex: 0 0 100px;">
+                    <label>Quantidade</label>
+                    <input type="number" id="inputQtd" value="2" min="1">
+                </div>
+            </div>
+
+            <button class="btn" onclick="processar()">
+                
+                GERAR LOTE PDF
+            </button>
+
+            <div class="recent-section" id="sectionRecentes" style="display: none;">
+                <div class="recent-title">Usados recentemente</div>
+                <div class="recent-tags" id="recentTags"></div>
+            </div>
+
+            <div class="footer">
+                DESIGNED BY MATHEUS SILVA | Klarke Solutions
+            </div>
+        </div>
+    </div>
+
+    <canvas id="barcode-canvas"></canvas>
+
+    <script>
+        const inputCodigo = document.getElementById('inputCodigo');
+        const inputQtd = document.getElementById('inputQtd');
+        const recentTags = document.getElementById('recentTags');
+        const sectionRecentes = document.getElementById('sectionRecentes');
+
+// 1. Atualiza o Preview enquanto digita
+inputCodigo.addEventListener('input', () => {
+    const val = inputCodigo.value || "000";
+    JsBarcode("#preview-barcode", val, {
+        format: "CODE128",
+        width: 2,
+        height: 45,
+        displayValue: true,
+        fontSize: 16,
+        margin: 10  // <--- MUDE DE 0 PARA 10 AQUI
+    });
+});
+        // 2. Faz o preview carregar assim que você abre a página
+        window.onload = () => {
+            inputCodigo.dispatchEvent(new Event('input'));
+        };
+
+        // 2. Gerencia o Histórico no LocalStorage
+        function atualizarHistorico(novoCodigo) {
+            let historico = JSON.parse(localStorage.getItem('klarke_history') || "[]");
+            if (!historico.includes(novoCodigo)) {
+                historico.unshift(novoCodigo);
+                historico = historico.slice(0, 5); // Mantém apenas os 5 últimos
+                localStorage.setItem('klarke_history', JSON.stringify(historico));
+            }
+            renderizarHistorico();
+        }
+
+        function renderizarHistorico() {
+            const historico = JSON.parse(localStorage.getItem('klarke_history') || "[]");
+            if (historico.length > 0) {
+                sectionRecentes.style.display = 'block';
+                recentTags.innerHTML = historico.map(cod => `<span class="tag" onclick="usarRecente('${cod}')">${cod}</span>`).join('');
+            }
+        }
+
+        function usarRecente(cod) {
+            inputCodigo.value = cod;
+            inputCodigo.dispatchEvent(new Event('input')); // Atualiza o preview
+        }
+
+        // 3. Função de Geração (Calibração Física Mantida)
+    // 3. Função de Geração (Calibração Física Mantida)
+    async function processar() {
+            const codigo = inputCodigo.value.trim();
+            const qtdTotal = parseInt(inputQtd.value);
+            
+            if (!codigo) return;
+
+            const { jsPDF } = window.jspdf;
+            const canvas = document.getElementById('barcode-canvas');
+            
+            // BY3 - Mantendo a espessura que você aprovou
+            JsBarcode(canvas, codigo, {
+    format: "CODE128",
+    width: 2,       // Equivalente ao seu ^BY2
+    height: 100,    // Equivalente ao seu ^BY,,100
+    displayValue: true,
+    fontSize: 20,
+    margin: 0
+});
+
+            const imgData = canvas.toDataURL('image/png');
+            const doc = new jsPDF({ orientation: 'l', unit: 'mm', format: [82, 25] });
+            const totalRows = Math.ceil(qtdTotal / 2);
+
+            for (let i = 0; i < totalRows; i++) {
+                if (i > 0) doc.addPage([82, 25], 'l');
+                
+                // --- AJUSTE DE MARGEM ---
+                // Mudei para 9.0 (estava 7.0) para parar de cortar na esquerda
+                // Aumentei a largura para 32 (estava 31) para não ficar pequeno
+                doc.addImage(imgData, 'PNG', 6.2, 5.0, 24, 15);                
+                if ((i * 2 + 1) < qtdTotal) {
+    doc.addImage(imgData, 'PNG', 46.2, 5.0, 24, 15);
+}
+            }
+
+            doc.save(`Klarke_Lote_${codigo}.pdf`);
+            atualizarHistorico(codigo);
+        }
+        // Inicialização
+        renderizarHistorico();
+        inputCodigo.dispatchEvent(new Event('input')); // Inicia preview com "000"
+
+        // Enter Keys
+        [inputCodigo, inputQtd].forEach(el => el.addEventListener('keypress', e => { if (e.key === 'Enter') processar(); }));
+    </script>
+</body>
+</html>
