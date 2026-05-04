@@ -26,7 +26,7 @@ function Navbar() {
 
   return (
     <nav className="top-nav">
-      <div className="nav-brand" onClick={() => navigate('/dashboard')} style={{cursor: 'pointer'}}>
+      <div className="nav-brand" onClick={() => navigate('/control')} style={{cursor: 'pointer'}}>
         <img src="/logo.png" alt="Klarke Logo" className="nav-logo" />
         <h1>Klarke Control</h1>
       </div>

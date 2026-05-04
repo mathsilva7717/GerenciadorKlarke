@@ -66,7 +66,7 @@ function Home() {
       title: 'Máquinas e Acessos',
       desc: 'Gestão de computadores, MACs e acessos remotos.',
       icon: <Monitor size={28} />,
-      path: '/dashboard/machines',
+      path: '/control/machines',
       color: '#475569', // Slate 600
       count: stats.machines,
       label: 'Dispositivos'
@@ -75,7 +75,7 @@ function Home() {
       title: 'Sistema de Câmeras',
       desc: 'IPs de NVRs, DVRs e credenciais de CFTV.',
       icon: <Camera size={28} />,
-      path: '/dashboard/cameras',
+      path: '/control/cameras',
       color: '#64748b', // Slate 500
       count: stats.cameras,
       label: 'Câmeras'
@@ -84,7 +84,7 @@ function Home() {
       title: 'Infraestrutura de Rede',
       desc: 'Controle de modems, switches e operadoras.',
       icon: <RouterIcon size={28} />,
-      path: '/dashboard/network',
+      path: '/control/network',
       color: '#475569', // Slate 600
       count: stats.network,
       label: 'Equipamentos'
@@ -93,7 +93,7 @@ function Home() {
       title: 'Plano de Ação',
       desc: 'Checklist de tarefas e pendências técnicas.',
       icon: <ListTodo size={28} />,
-      path: '/dashboard/action-plan',
+      path: '/control/action-plan',
       color: '#334155', // Slate 700
       count: stats.tasks,
       label: 'Pendentes'
@@ -102,7 +102,7 @@ function Home() {
       title: 'Gestão de Usuários',
       desc: 'Controle de acessos e permissões do painel.',
       icon: <ShieldCheck size={28} />,
-      path: '/dashboard/users',
+      path: '/control/users',
       color: '#1e293b', // Slate 800
       count: stats.users,
       label: 'Usuários'
