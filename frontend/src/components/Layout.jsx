@@ -44,6 +44,11 @@ function Layout() {
 
   return (
     <div className="dashboard-layout">
+      <div className="bg-visuals">
+        <div className="shape shape-1"></div>
+        <div className="shape shape-2"></div>
+        <div className="shape shape-3"></div>
+      </div>
       <Navbar />
       <div className="app-container">
         <Outlet />
