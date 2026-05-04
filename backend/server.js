@@ -296,7 +296,7 @@ app.get('/api/backup', authenticate, (req, res) => {
 });
 
 // Catch-all para rotas do React (SPA)
-app.get('(.*)', (req, res) => {
+app.use((req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
