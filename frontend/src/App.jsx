@@ -8,6 +8,7 @@ import Cameras from './pages/Cameras';
 import NetworkDevices from './pages/NetworkDevices';
 import ActionPlan from './pages/ActionPlan';
 import Home from './pages/Home';
+import Users from './pages/Users';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
           <Route path="cameras" element={<Cameras />} />
           <Route path="network" element={<NetworkDevices />} />
           <Route path="action-plan" element={<ActionPlan />} />
+          <Route path="users" element={<Users />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

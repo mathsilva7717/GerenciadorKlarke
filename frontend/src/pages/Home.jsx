@@ -9,7 +9,8 @@ function Home() {
     machines: 0,
     cameras: 0,
     network: 0,
-    tasks: 0
+    tasks: 0,
+    users: 0
   });
 
   const getAuthConfig = () => {
@@ -20,17 +21,19 @@ function Home() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [m, c, n, t] = await Promise.all([
+        const [m, c, n, t, u] = await Promise.all([
           axios.get('/api/machines', getAuthConfig()),
           axios.get('/api/cameras', getAuthConfig()),
           axios.get('/api/network-devices', getAuthConfig()),
-          axios.get('/api/tasks', getAuthConfig())
+          axios.get('/api/tasks', getAuthConfig()),
+          axios.get('/api/users', getAuthConfig())
         ]);
         setStats({
           machines: m.data.length,
           cameras: c.data.length,
           network: n.data.length,
-          tasks: t.data.filter(x => !x.is_completed).length
+          tasks: t.data.filter(x => !x.is_completed).length,
+          users: u.data.length
         });
       } catch (e) {
         console.error("Stats error", e);
@@ -94,6 +97,15 @@ function Home() {
       color: '#334155', // Slate 700
       count: stats.tasks,
       label: 'Pendentes'
+    },
+    {
+      title: 'Gestão de Usuários',
+      desc: 'Controle de acessos e permissões do painel.',
+      icon: <ShieldCheck size={28} />,
+      path: '/dashboard/users',
+      color: '#1e293b', // Slate 800
+      count: stats.users,
+      label: 'Usuários'
     }
   ];
 

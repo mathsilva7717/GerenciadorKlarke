@@ -75,11 +75,40 @@ const db = new sqlite3.Database(dbPath, (err) => {
 // Login
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
-  if (username === 'admin' && password === 'admin123') {
-    res.json({ token: 'klarke-admin-token-xyz' });
-  } else {
-    res.status(401).json({ error: 'Credenciais inválidas' });
-  }
+  db.get("SELECT * FROM users WHERE username = ? AND password = ?", [username, password], (err, user) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (user) {
+      res.json({ 
+        token: 'klarke-admin-token-xyz',
+        user: { username: user.username, role: user.role }
+      });
+    } else {
+      res.status(401).json({ error: 'Credenciais inválidas' });
+    }
+  });
+});
+
+// User Management
+app.get('/api/users', authenticate, (req, res) => {
+  db.all('SELECT id, username, role, created_at FROM users', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+app.post('/api/users', authenticate, (req, res) => {
+  const { username, password, role } = req.body;
+  db.run("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", [username, password, role || 'user'], function(err) {
+    if (err) return res.status(500).json({ error: 'Usuário já existe ou erro no banco' });
+    res.status(201).json({ id: this.lastID, username, role });
+  });
+});
+
+app.delete('/api/users/:id', authenticate, (req, res) => {
+  db.run("DELETE FROM users WHERE id = ?", [req.params.id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: 'Usuário removido' });
+  });
 });
 
 // Middleware de Autenticação
