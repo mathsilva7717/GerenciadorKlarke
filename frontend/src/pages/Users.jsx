@@ -57,45 +57,45 @@ const Users = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <header>
+    <div className="users-container">
+      <header className="page-header">
         <h1 className="text-3xl font-bold text-slate-900">Gerenciamento de Usuários</h1>
         <p className="text-slate-500">Controle quem tem acesso ao painel Klarke.</p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="users-grid">
         {/* Formulário de Cadastro */}
-        <div className="lg:col-span-1 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+        <div className="user-card">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <UserPlus className="text-blue-600" /> Novo Usuário
+            <UserPlus className="text-blue-600" size={20} /> Novo Usuário
           </h2>
           <form onSubmit={handleCreateUser} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Nome de Usuário / Email</label>
+            <div className="form-group">
+              <label className="form-label">Nome de Usuário / Email</label>
               <input
                 type="text"
-                className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                className="form-input"
                 placeholder="ex: matheus@klarke"
                 value={newUser.username}
                 onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Senha</label>
+            <div className="form-group">
+              <label className="form-label">Senha</label>
               <input
                 type="password"
-                className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                className="form-input"
                 placeholder="Senha segura"
                 value={newUser.password}
                 onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Nível de Acesso</label>
+            <div className="form-group">
+              <label className="form-label">Nível de Acesso</label>
               <select
-                className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                className="form-input"
                 value={newUser.role}
                 onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
               >
@@ -105,12 +105,12 @@ const Users = () => {
             </div>
             <button
               type="submit"
-              className="w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+              className="btn btn-primary"
             >
               Cadastrar Usuário
             </button>
             {message.text && (
-              <p className={`text-sm text-center ${message.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+              <p className={`text-sm text-center ${message.type === 'success' ? 'text-green-600' : 'text-red-600'}`} style={{marginTop: '10px'}}>
                 {message.text}
               </p>
             )}
@@ -118,45 +118,45 @@ const Users = () => {
         </div>
 
         {/* Lista de Usuários */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+        <div className="user-card">
           <h2 className="text-lg font-semibold mb-4">Usuários Ativos</h2>
           {loading ? (
             <p>Carregando...</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
+            <div className="user-table-wrapper">
+              <table className="user-table">
                 <thead>
-                  <tr className="border-b border-slate-100 text-slate-400 text-sm">
-                    <th className="pb-3 font-medium">Usuário</th>
-                    <th className="pb-3 font-medium">Nível</th>
-                    <th className="pb-3 font-medium text-right">Ações</th>
+                  <tr>
+                    <th>Usuário</th>
+                    <th>Nível</th>
+                    <th style={{textAlign: 'right'}}>Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody>
                   {users.map((user) => (
-                    <tr key={user.id} className="group hover:bg-slate-50 transition-colors">
-                      <td className="py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
-                            <User />
+                    <tr key={user.id}>
+                      <td>
+                        <div className="user-info">
+                          <div className="user-avatar">
+                            <User size={18} />
                           </div>
                           <span className="font-medium text-slate-700">{user.username}</span>
                         </div>
                       </td>
-                      <td className="py-4 text-sm">
-                        <span className={`px-2 py-1 rounded-lg text-xs font-bold ${
-                          user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                      <td>
+                        <span className={`role-badge ${
+                          user.role === 'admin' ? 'role-admin' : 'role-user'
                         }`}>
-                          {user.role.toUpperCase()}
+                          {user.role}
                         </span>
                       </td>
-                      <td className="py-4 text-right">
+                      <td style={{textAlign: 'right'}}>
                         {user.username !== 'admin' && (
                           <button
                             onClick={() => handleDeleteUser(user.id)}
-                            className="p-2 text-slate-400 hover:text-red-600 transition-colors"
+                            className="delete-btn"
                           >
-                            <Trash2 />
+                            <Trash2 size={18} />
                           </button>
                         )}
                       </td>
