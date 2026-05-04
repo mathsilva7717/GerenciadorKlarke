@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const bcrypt = require('bcryptjs');
+require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -67,6 +69,24 @@ const db = new sqlite3.Database(dbPath, (err) => {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    db.run(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE,
+        password TEXT,
+        role TEXT DEFAULT 'user',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `, () => {
+      // Criar usuário padrão se não existir (Criptografado)
+      db.get("SELECT * FROM users WHERE username = 'admin'", async (err, row) => {
+        if (!row) {
+          const hashedAdmin = await bcrypt.hash('admin123', 10);
+          db.run("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", ['admin', hashedAdmin, 'admin']);
+        }
+      });
+    });
   }
 });
 
@@ -75,15 +95,16 @@ const db = new sqlite3.Database(dbPath, (err) => {
 // Login
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
-  db.get("SELECT * FROM users WHERE username = ? AND password = ?", [username, password], (err, user) => {
+  db.get("SELECT * FROM users WHERE username = ?", [username], async (err, user) => {
     if (err) return res.status(500).json({ error: err.message });
-    if (user) {
+    
+    if (user && await bcrypt.compare(password, user.password)) {
       res.json({ 
-        token: 'klarke-admin-token-xyz',
+        token: process.env.AUTH_TOKEN || 'klarke-admin-token-xyz',
         user: { username: user.username, role: user.role }
       });
     } else {
-      res.status(401).json({ error: 'Credenciais inválidas' });
+      res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
   });
 });
@@ -96,9 +117,11 @@ app.get('/api/users', authenticate, (req, res) => {
   });
 });
 
-app.post('/api/users', authenticate, (req, res) => {
+app.post('/api/users', authenticate, async (req, res) => {
   const { username, password, role } = req.body;
-  db.run("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", [username, password, role || 'user'], function(err) {
+  const hashedPassword = await bcrypt.hash(password, 10);
+  
+  db.run("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", [username, hashedPassword, role || 'user'], function(err) {
     if (err) return res.status(500).json({ error: 'Usuário já existe ou erro no banco' });
     res.status(201).json({ id: this.lastID, username, role });
   });
@@ -114,7 +137,9 @@ app.delete('/api/users/:id', authenticate, (req, res) => {
 // Middleware de Autenticação
 const authenticate = (req, res, next) => {
   const authHeader = req.headers.authorization;
-  if (authHeader === 'Bearer klarke-admin-token-xyz') {
+  const secretToken = process.env.AUTH_TOKEN || 'klarke-admin-token-xyz';
+  
+  if (authHeader === `Bearer ${secretToken}`) {
     next();
   } else {
     res.status(401).json({ error: 'Não autorizado' });
