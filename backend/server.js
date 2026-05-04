@@ -90,6 +90,18 @@ const db = new sqlite3.Database(dbPath, (err) => {
   }
 });
 
+// Middleware de Autenticação
+const authenticate = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  const secretToken = process.env.AUTH_TOKEN || 'klarke-admin-token-xyz';
+  
+  if (authHeader === `Bearer ${secretToken}`) {
+    next();
+  } else {
+    res.status(401).json({ error: 'Não autorizado' });
+  }
+};
+
 // Routes
 
 // Login
@@ -134,17 +146,6 @@ app.delete('/api/users/:id', authenticate, (req, res) => {
   });
 });
 
-// Middleware de Autenticação
-const authenticate = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  const secretToken = process.env.AUTH_TOKEN || 'klarke-admin-token-xyz';
-  
-  if (authHeader === `Bearer ${secretToken}`) {
-    next();
-  } else {
-    res.status(401).json({ error: 'Não autorizado' });
-  }
-};
 
 // Get all machines
 app.get('/api/machines', authenticate, (req, res) => {
