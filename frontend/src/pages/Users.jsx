@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FiUserPlus, FiTrash2, FiShield, FiUser } from 'react-icons/fi';
+import { UserPlus, Trash2, Shield, User } from 'lucide-react';
 
 const Users = () => {
   const [users, setUsers] = useState([]);
@@ -8,7 +8,7 @@ const Users = () => {
   const [newUser, setNewUser] = useState({ username: '', password: '', role: 'user' });
   const [message, setMessage] = useState({ type: '', text: '' });
 
-  const API_URL = import.meta.env.VITE_API_URL || '';
+  const API_URL = '';
 
   useEffect(() => {
     fetchUsers();
@@ -16,7 +16,7 @@ const Users = () => {
 
   const fetchUsers = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('klarke_token');
       const response = await axios.get(`${API_URL}/api/users`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -31,7 +31,7 @@ const Users = () => {
   const handleCreateUser = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('klarke_token');
       await axios.post(`${API_URL}/api/users`, newUser, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -46,7 +46,7 @@ const Users = () => {
   const handleDeleteUser = async (id) => {
     if (!window.confirm('Tem certeza que deseja remover este usuário?')) return;
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('klarke_token');
       await axios.delete(`${API_URL}/api/users/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -67,7 +67,7 @@ const Users = () => {
         {/* Formulário de Cadastro */}
         <div className="lg:col-span-1 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <FiUserPlus className="text-blue-600" /> Novo Usuário
+            <UserPlus className="text-blue-600" /> Novo Usuário
           </h2>
           <form onSubmit={handleCreateUser} className="space-y-4">
             <div>
@@ -138,7 +138,7 @@ const Users = () => {
                       <td className="py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
-                            <FiUser />
+                            <User />
                           </div>
                           <span className="font-medium text-slate-700">{user.username}</span>
                         </div>
@@ -156,7 +156,7 @@ const Users = () => {
                             onClick={() => handleDeleteUser(user.id)}
                             className="p-2 text-slate-400 hover:text-red-600 transition-colors"
                           >
-                            <FiTrash2 />
+                            <Trash2 />
                           </button>
                         )}
                       </td>
