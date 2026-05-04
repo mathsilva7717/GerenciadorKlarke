@@ -14,8 +14,7 @@ function NetworkDevices() {
   const [copiedField, setCopiedField] = useState(null);
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({
-    name: '', type: 'Modem', ip: '', username: '', password: '', location: '', isp: ''
+    name: '', type: 'Modem', ip: '', username: '', password: '', location: '', isp: '', serial_number: ''
   });
 
   const getAuthConfig = () => {
@@ -49,7 +48,7 @@ function NetworkDevices() {
       setFormData(device);
     } else {
       setEditingDevice(null);
-      setFormData({ name: '', type: 'Modem', ip: '', username: '', password: '', location: '', isp: '' });
+      setFormData({ name: '', type: 'Modem', ip: '', username: '', password: '', location: '', isp: '', serial_number: '' });
     }
     setIsModalOpen(true);
   };
@@ -93,7 +92,7 @@ function NetworkDevices() {
   };
 
   const copyFullData = (device) => {
-    const text = `Nome: ${device.name}\nTipo: ${device.type}\nIP: ${device.ip}\nLocal: ${device.location}\nOperadora: ${device.isp}\nUsuário: ${device.username}\nSenha: ${device.password}`;
+    const text = `Nome: ${device.name}\nTipo: ${device.type}\nSérie: ${device.serial_number || '-'}\nIP: ${device.ip}\nLocal: ${device.location}\nOperadora: ${device.isp}\nUsuário: ${device.username}\nSenha: ${device.password}`;
     navigator.clipboard.writeText(text);
     toast.success('Dados completos copiados!');
   };
@@ -215,6 +214,17 @@ function NetworkDevices() {
                     )}
                   </span>
                 </div>
+                <div className="detail-item">
+                  <span className="detail-label">Nº Série</span>
+                  <span className="detail-value">
+                    {device.serial_number || '-'}
+                    {device.serial_number && (
+                      <button className="copy-btn" onClick={(e) => { e.stopPropagation(); copyToClipboard(device.serial_number, `sn-${device.id}`); }}>
+                        {copiedField === `sn-${device.id}` ? <Check size={14} color="#2ecc71" /> : <Copy size={14} />}
+                      </button>
+                    )}
+                  </span>
+                </div>
               </div>
             </div>
           ))}
@@ -237,6 +247,11 @@ function NetworkDevices() {
               <div className="form-group">
                 <label className="form-label">Nome / Identificação</label>
                 <input required type="text" className="form-input" name="name" value={formData.name} onChange={handleInputChange} placeholder="Ex: Roteador Principal" />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Número de Série</label>
+                <input type="text" className="form-input" name="serial_number" value={formData.serial_number} onChange={handleInputChange} placeholder="Ex: SN-ROUTER-01" />
               </div>
 
               <div className="machine-details-grid-form">

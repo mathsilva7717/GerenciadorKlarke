@@ -22,7 +22,8 @@ function Dashboard() {
     location: '',
     rustdesk_id: '',
     anydesk_id: '',
-    password: ''
+    password: '',
+    serial_number: ''
   });
 
   const getAuthConfig = () => {
@@ -64,7 +65,7 @@ function Dashboard() {
       setFormData(machine);
     } else {
       setEditingMachine(null);
-      setFormData({ name: '', mac: '', ip: '', location: '', rustdesk_id: '', anydesk_id: '', password: '' });
+      setFormData({ name: '', mac: '', ip: '', location: '', rustdesk_id: '', anydesk_id: '', password: '', serial_number: '' });
     }
     setIsModalOpen(true);
   };
@@ -113,7 +114,7 @@ function Dashboard() {
   };
 
   const copyFullData = (machine) => {
-    const text = `Nome: ${machine.name}\nIP: ${machine.ip}\nMAC: ${machine.mac}\nLocal: ${machine.location}\nAnyDesk: ${machine.anydesk_id}\nRustDesk: ${machine.rustdesk_id}\nSenha: ${machine.password}`;
+    const text = `Nome: ${machine.name}\nSérie: ${machine.serial_number || '-'}\nIP: ${machine.ip}\nMAC: ${machine.mac}\nLocal: ${machine.location}\nAnyDesk: ${machine.anydesk_id}\nRustDesk: ${machine.rustdesk_id}\nSenha: ${machine.password}`;
     navigator.clipboard.writeText(text);
     toast.success('Dados completos copiados!');
   };
@@ -226,12 +227,12 @@ function Dashboard() {
                     </span>
                   </div>
                   <div className="detail-item">
-                    <span className="detail-label">Senha</span>
+                    <span className="detail-label">Nº Série</span>
                     <span className="detail-value">
-                      ********
-                      {machine.password && (
-                        <button className="copy-btn" onClick={(e) => { e.stopPropagation(); copyToClipboard(machine.password, `pw-${machine.id}`); }}>
-                          {copiedField === `pw-${machine.id}` ? <Check size={14} color="#2ecc71" /> : <Copy size={14} />}
+                      {machine.serial_number || '-'}
+                      {machine.serial_number && (
+                        <button className="copy-btn" onClick={(e) => { e.stopPropagation(); copyToClipboard(machine.serial_number, `sn-${machine.id}`); }}>
+                          {copiedField === `sn-${machine.id}` ? <Check size={14} color="#2ecc71" /> : <Copy size={14} />}
                         </button>
                       )}
                     </span>
@@ -260,6 +261,11 @@ function Dashboard() {
                 <div className="form-group">
                   <label className="form-label">Nome da Máquina</label>
                   <input required type="text" className="form-input" name="name" value={formData.name} onChange={handleInputChange} placeholder="Ex: PC Recepção" />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Número de Série</label>
+                  <input type="text" className="form-input" name="serial_number" value={formData.serial_number} onChange={handleInputChange} placeholder="Ex: SN12345678" />
                 </div>
                 
                 <div className="machine-details-grid-form">

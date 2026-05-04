@@ -14,8 +14,7 @@ function Cameras() {
   const [copiedField, setCopiedField] = useState(null);
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({
-    name: '', ip: '', port: '', username: '', password: '', location: ''
+    name: '', ip: '', port: '', username: '', password: '', location: '', serial_number: ''
   });
 
   const getAuthConfig = () => {
@@ -49,7 +48,7 @@ function Cameras() {
       setFormData(camera);
     } else {
       setEditingCamera(null);
-      setFormData({ name: '', ip: '', port: '', username: '', password: '', location: '' });
+      setFormData({ name: '', ip: '', port: '', username: '', password: '', location: '', serial_number: '' });
     }
     setIsModalOpen(true);
   };
@@ -93,7 +92,7 @@ function Cameras() {
   };
 
   const copyFullData = (camera) => {
-    const text = `Nome: ${camera.name}\nIP: ${camera.ip}\nPorta: ${camera.port}\nLocal: ${camera.location}\nUsuário: ${camera.username}\nSenha: ${camera.password}`;
+    const text = `Nome: ${camera.name}\nSérie: ${camera.serial_number || '-'}\nIP: ${camera.ip}\nPorta: ${camera.port}\nLocal: ${camera.location}\nUsuário: ${camera.username}\nSenha: ${camera.password}`;
     navigator.clipboard.writeText(text);
     toast.success('Dados completos copiados!');
   };
@@ -209,6 +208,17 @@ function Cameras() {
                     )}
                   </span>
                 </div>
+                <div className="detail-item">
+                  <span className="detail-label">Nº Série</span>
+                  <span className="detail-value">
+                    {camera.serial_number || '-'}
+                    {camera.serial_number && (
+                      <button className="copy-btn" onClick={(e) => { e.stopPropagation(); copyToClipboard(camera.serial_number, `sn-${camera.id}`); }}>
+                        {copiedField === `sn-${camera.id}` ? <Check size={14} color="#2ecc71" /> : <Copy size={14} />}
+                      </button>
+                    )}
+                  </span>
+                </div>
               </div>
             </div>
           ))}
@@ -231,6 +241,11 @@ function Cameras() {
               <div className="form-group">
                 <label className="form-label">Nome / Identificação</label>
                 <input required type="text" className="form-input" name="name" value={formData.name} onChange={handleInputChange} placeholder="Ex: Câmera Recepção ou NVR Central" />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Número de Série</label>
+                <input type="text" className="form-input" name="serial_number" value={formData.serial_number} onChange={handleInputChange} placeholder="Ex: SN98765432" />
               </div>
 
               <div className="machine-details-grid-form">

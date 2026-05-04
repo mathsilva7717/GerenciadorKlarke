@@ -148,18 +148,15 @@ app.get('/api/machines/:id', authenticate, (req, res) => {
   });
 });
 
-// Create new machine (Publico se a pessoa logar pode cadastrar, entao proteger tambem)
+// Create new machine
 app.post('/api/machines', authenticate, (req, res) => {
-  const { name, mac, ip, location, rustdesk_id, anydesk_id, password } = req.body;
+  const { name, mac, ip, location, rustdesk_id, anydesk_id, password, serial_number } = req.body;
   const sql = `
-    INSERT INTO machines (name, mac, ip, location, rustdesk_id, anydesk_id, password)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO machines (name, mac, ip, location, rustdesk_id, anydesk_id, password, serial_number)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `;
-  db.run(sql, [name, mac, ip, location, rustdesk_id, anydesk_id, password], function (err) {
-    if (err) {
-      res.status(500).json({ error: err.message });
-      return;
-    }
+  db.run(sql, [name, mac, ip, location, rustdesk_id, anydesk_id, password, serial_number], function (err) {
+    if (err) return res.status(500).json({ error: err.message });
     res.status(201).json({ id: this.lastID });
   });
 });
@@ -167,21 +164,14 @@ app.post('/api/machines', authenticate, (req, res) => {
 // Update machine
 app.put('/api/machines/:id', authenticate, (req, res) => {
   const { id } = req.params;
-  const { name, mac, ip, location, rustdesk_id, anydesk_id, password } = req.body;
+  const { name, mac, ip, location, rustdesk_id, anydesk_id, password, serial_number } = req.body;
   const sql = `
     UPDATE machines
-    SET name = ?, mac = ?, ip = ?, location = ?, rustdesk_id = ?, anydesk_id = ?, password = ?
+    SET name = ?, mac = ?, ip = ?, location = ?, rustdesk_id = ?, anydesk_id = ?, password = ?, serial_number = ?
     WHERE id = ?
   `;
-  db.run(sql, [name, mac, ip, location, rustdesk_id, anydesk_id, password, id], function (err) {
-    if (err) {
-      res.status(500).json({ error: err.message });
-      return;
-    }
-    if (this.changes === 0) {
-      res.status(404).json({ error: 'Máquina não encontrada' });
-      return;
-    }
+  db.run(sql, [name, mac, ip, location, rustdesk_id, anydesk_id, password, serial_number, id], function (err) {
+    if (err) return res.status(500).json({ error: err.message });
     res.json({ message: 'Máquina atualizada com sucesso' });
   });
 });
@@ -214,18 +204,18 @@ app.get('/api/cameras', authenticate, (req, res) => {
 });
 
 app.post('/api/cameras', authenticate, (req, res) => {
-  const { name, ip, port, username, password, location } = req.body;
-  const sql = `INSERT INTO cameras (name, ip, port, username, password, location) VALUES (?, ?, ?, ?, ?, ?)`;
-  db.run(sql, [name, ip, port, username, password, location], function (err) {
+  const { name, ip, port, username, password, location, serial_number } = req.body;
+  const sql = `INSERT INTO cameras (name, ip, port, username, password, location, serial_number) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+  db.run(sql, [name, ip, port, username, password, location, serial_number], function (err) {
     if (err) return res.status(500).json({ error: err.message });
     res.status(201).json({ id: this.lastID });
   });
 });
 
 app.put('/api/cameras/:id', authenticate, (req, res) => {
-  const { name, ip, port, username, password, location } = req.body;
-  const sql = `UPDATE cameras SET name = ?, ip = ?, port = ?, username = ?, password = ?, location = ? WHERE id = ?`;
-  db.run(sql, [name, ip, port, username, password, location, req.params.id], function (err) {
+  const { name, ip, port, username, password, location, serial_number } = req.body;
+  const sql = `UPDATE cameras SET name = ?, ip = ?, port = ?, username = ?, password = ?, location = ?, serial_number = ? WHERE id = ?`;
+  db.run(sql, [name, ip, port, username, password, location, serial_number, req.params.id], function (err) {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ message: 'Câmera atualizada com sucesso' });
   });
@@ -250,18 +240,18 @@ app.get('/api/network-devices', authenticate, (req, res) => {
 });
 
 app.post('/api/network-devices', authenticate, (req, res) => {
-  const { name, type, ip, username, password, location, isp } = req.body;
-  const sql = `INSERT INTO network_devices (name, type, ip, username, password, location, isp) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-  db.run(sql, [name, type, ip, username, password, location, isp], function (err) {
+  const { name, type, ip, username, password, location, isp, serial_number } = req.body;
+  const sql = `INSERT INTO network_devices (name, type, ip, username, password, location, isp, serial_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+  db.run(sql, [name, type, ip, username, password, location, isp, serial_number], function (err) {
     if (err) return res.status(500).json({ error: err.message });
     res.status(201).json({ id: this.lastID });
   });
 });
 
 app.put('/api/network-devices/:id', authenticate, (req, res) => {
-  const { name, type, ip, username, password, location, isp } = req.body;
-  const sql = `UPDATE network_devices SET name = ?, type = ?, ip = ?, username = ?, password = ?, location = ?, isp = ? WHERE id = ?`;
-  db.run(sql, [name, type, ip, username, password, location, isp, req.params.id], function (err) {
+  const { name, type, ip, username, password, location, isp, serial_number } = req.body;
+  const sql = `UPDATE network_devices SET name = ?, type = ?, ip = ?, username = ?, password = ?, location = ?, isp = ?, serial_number = ? WHERE id = ?`;
+  db.run(sql, [name, type, ip, username, password, location, isp, serial_number, req.params.id], function (err) {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ message: 'Dispositivo atualizado com sucesso' });
   });
