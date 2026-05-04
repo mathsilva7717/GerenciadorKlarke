@@ -14,6 +14,7 @@ function NetworkDevices() {
   const [copiedField, setCopiedField] = useState(null);
   const navigate = useNavigate();
 
+  const [formData, setFormData] = useState({
     name: '', type: 'Modem', ip: '', username: '', password: '', location: '', isp: '', serial_number: ''
   });
 

@@ -14,6 +14,7 @@ function Cameras() {
   const [copiedField, setCopiedField] = useState(null);
   const navigate = useNavigate();
 
+  const [formData, setFormData] = useState({
     name: '', ip: '', port: '', username: '', password: '', location: '', serial_number: ''
   });
 
