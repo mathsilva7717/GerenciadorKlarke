@@ -154,7 +154,7 @@ const AuditLogs = () => {
           border-radius: 4px;
           text-transform: uppercase;
         }
-        .badge-login { background: #334155; } /* Slate 700 */
+        .badge-login { background: var(--color-primary); }
         .badge-create { background: #065f46; } /* Emerald 800 */
         .badge-update { background: #1e40af; } /* Blue 800 */
         .badge-delete { background: #991b1b; } /* Red 800 */
