@@ -28,6 +28,10 @@ function Navbar() {
     <nav className="top-nav">
       <div className="nav-brand" onClick={() => navigate('/control')} style={{cursor: 'pointer'}}>
         <img src="/logo.png" alt="Klarke Logo" className="nav-logo" />
+        <div className="nav-brand-text hide-mobile">
+          <h1>Klarke Control</h1>
+          <span>Gestão de Infraestrutura</span>
+        </div>
       </div>
       
       {/* Navegação removida do topo para evitar redundância com a Home */}

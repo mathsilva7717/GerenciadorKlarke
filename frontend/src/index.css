@@ -478,11 +478,7 @@ body.dark .machine-card:hover {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background-color: #0f172a;
-  background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-  background-size: 40px 40px;
+  background: linear-gradient(135deg, #020617 0%, #0f172a 100%);
   position: relative;
   overflow: hidden;
   padding: 20px;
@@ -593,10 +589,10 @@ body.dark .machine-card:hover {
 .fbi-success-screen {
   background: rgba(2, 6, 23, 0.95);
   border: 1px solid #10b981;
-  padding: 40px;
+  padding: 24px;
   border-radius: 4px;
   width: 100%;
-  max-width: 500px;
+  max-width: 380px;
   box-shadow: 0 0 30px rgba(16, 185, 129, 0.2), inset 0 0 20px rgba(16, 185, 129, 0.1);
   display: flex;
   flex-direction: column;
@@ -621,8 +617,8 @@ body.dark .machine-card:hover {
 .fbi-title {
   color: #10b981;
   font-family: monospace;
-  font-size: 2rem;
-  letter-spacing: 4px;
+  font-size: 1.5rem;
+  letter-spacing: 2px;
   font-weight: 800;
   margin-bottom: 16px;
   text-shadow: 0 0 10px rgba(16,185,129,0.8);
@@ -632,7 +628,7 @@ body.dark .machine-card:hover {
   width: 100%;
   height: 2px;
   background: #10b981;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   box-shadow: 0 0 8px rgba(16,185,129,0.8);
 }
 
@@ -644,9 +640,9 @@ body.dark .machine-card:hover {
 .fbi-line {
   font-family: monospace;
   color: #34d399;
-  font-size: 1.1rem;
-  margin-bottom: 12px;
-  letter-spacing: 1px;
+  font-size: 0.95rem;
+  margin-bottom: 10px;
+  letter-spacing: 0.5px;
 }
 
 .fbi-label {
@@ -692,16 +688,35 @@ body.dark .machine-card:hover {
 }
 
 .nav-logo {
-  height: 90px;
+  height: 140px;
   width: auto;
   object-fit: contain;
+  margin: -30px 0;
 }
 
-.nav-brand h1 {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: white;
+.nav-brand-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
+
+.nav-brand-text h1 {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: white;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.nav-brand-text span {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+
 
 .top-nav {
   background-color: #0f172a;
@@ -1326,9 +1341,9 @@ body.dark .status-badge {
 }
 
 .stat-box-industrial {
-  background: white;
+  background: var(--color-surface);
   padding: 12px 20px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   border-left: 4px solid var(--color-accent);
   min-width: 160px;
   cursor: pointer;
@@ -1346,7 +1361,7 @@ body.dark .status-badge {
 .stat-box-industrial .stat-value {
   font-size: 0.9rem;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--color-text);
 }
 
 .indicator-static-green {
@@ -1369,8 +1384,8 @@ body.dark .status-badge {
 }
 
 .card-industrial {
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-bottom: 3px solid var(--accent-border);
   padding: 24px;
   display: flex;
@@ -1397,21 +1412,21 @@ body.dark .status-badge {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--color-border);
 }
 
 .industrial-badge {
   font-size: 1.2rem;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--color-text);
 }
 
 .industrial-body h3 {
   font-size: 1.1rem;
   font-weight: 700;
   margin-bottom: 4px;
-  color: #0f172a;
+  color: var(--color-text);
 }
 
 .industrial-body p {
@@ -1429,7 +1444,7 @@ body.dark .status-badge {
   font-weight: 700;
   color: var(--color-accent);
   padding-top: 16px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--color-border);
 }
 
 /* ================================
@@ -1490,14 +1505,14 @@ body.dark .status-badge {
 
   /* Modais e Formulários */
   .modal-overlay {
-    padding: 10px;
-    align-items: flex-start; /* Permite rolar desde o topo se passar da tela */
+    padding: 40px 10px 10px 10px; /* Mais espaço no topo para o título não ficar grudado */
+    align-items: flex-start; 
   }
 
   .modal-content {
     width: 100%;
-    max-height: 95vh;
-    padding: 16px;
+    max-height: calc(100vh - 50px);
+    padding: 20px 16px;
     margin: 0;
     border-radius: 8px;
   }

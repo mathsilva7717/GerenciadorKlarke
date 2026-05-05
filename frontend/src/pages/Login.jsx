@@ -40,7 +40,7 @@ function Login() {
         setIsSuccess(true);
         setTimeout(() => {
           navigate('/control');
-        }, 3000);
+        }, 6000);
       }
     } catch (err) {
       setError('Credenciais inválidas. Tente novamente.');
@@ -52,7 +52,7 @@ function Login() {
     return (
       <div className="login-container">
         <div className="fbi-success-screen">
-          <ShieldCheck size={80} className="fbi-icon" />
+          <ShieldCheck size={64} className="fbi-icon" />
           <h1 className="fbi-title">ACESSO CONCEDIDO</h1>
           <div className="fbi-divider"></div>
           <div className="fbi-details">
