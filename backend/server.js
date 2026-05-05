@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // Database setup
 const dbPath = path.join(__dirname, 'database.sqlite');
@@ -492,12 +492,8 @@ app.get('/api/backup', authenticate, (req, res) => {
   });
 });
 
-const fs = require('fs');
 
-// Middleware extra para uploads grandes (base64)
-app.use(express.json({ limit: '10mb' }));
-
-// Servir fotos das câmeras
+// Servir arquivos estáticos (Snapshots e Documentos)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ==========================================
@@ -525,13 +521,13 @@ app.get('/api/technical-docs', authenticate, (req, res) => {
 });
 
 app.post('/api/technical-docs', authenticate, uploadDoc.single('file'), (req, res) => {
-  const { title, type, content, amount } = req.body;
+  const { title, type, content, amount, folder_id } = req.body;
   const filePath = req.file ? req.file.filename : null;
   const fileSize = req.file ? `${(req.file.size / 1024).toFixed(1)} KB` : null;
 
   db.run(
-    "INSERT INTO technical_docs (title, type, content, file_path, file_size, amount) VALUES (?, ?, ?, ?, ?, ?)",
-    [title, type || 'Nota', content, filePath, fileSize, amount ? parseFloat(amount) : null],
+    "INSERT INTO technical_docs (title, type, content, file_path, file_size, amount, folder_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    [title, type || 'Nota', content, filePath, fileSize, amount ? parseFloat(amount) : null, folder_id || null],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
       res.status(201).json({ id: this.lastID, title, filePath });
@@ -539,10 +535,10 @@ app.post('/api/technical-docs', authenticate, uploadDoc.single('file'), (req, re
   );
 });
 app.put('/api/technical-docs/:id', authenticate, (req, res) => {
-  const { title, type, content, amount } = req.body;
+  const { title, type, content, amount, folder_id } = req.body;
   db.run(
-    "UPDATE technical_docs SET title = ?, type = ?, content = ?, amount = ? WHERE id = ?",
-    [title, type, content, amount ? parseFloat(amount) : null, req.params.id],
+    "UPDATE technical_docs SET title = ?, type = ?, content = ?, amount = ?, folder_id = ? WHERE id = ?",
+    [title, type, content, amount ? parseFloat(amount) : null, folder_id || null, req.params.id],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
       logAction(req, 'EDIÇÃO', `Alterou documento: ${title}`);
