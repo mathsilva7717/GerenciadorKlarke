@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, Plus, X, Copy, Monitor, MapPin, Check, Download, Clipboard, Trash2, QrCode, Activity } from 'lucide-react';
+import { Search, Plus, X, Copy, Monitor, MapPin, Check, Download, Clipboard, Trash2, QrCode, Activity, Edit, Printer, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -9,6 +9,8 @@ const API_URL = '/api/machines';
 function Dashboard() {
   const [machines, setMachines] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [editingMachine, setEditingMachine] = useState(null);
@@ -175,6 +177,132 @@ function Dashboard() {
     toast.success('Dados completos copiados!');
   };
 
+  const handlePrintLabel = (machine) => {
+    const printWindow = window.open('', '_blank');
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(machine.serial_number || machine.name)}`;
+    const kCode = machine.serial_number || `K${String(machine.id).padStart(3, '0')}`;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>ETIQUETA - ${kCode}</title>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+            body { 
+              margin: 0; 
+              padding: 0; 
+              display: flex; 
+              justify-content: center; 
+              align-items: center; 
+              height: 100vh; 
+              background: #fff;
+              font-family: 'Inter', sans-serif;
+            }
+            .sticker {
+              width: 350px;
+              height: 200px;
+              border: 3px solid #0f172a;
+              padding: 0;
+              position: relative;
+              overflow: hidden;
+              background: white;
+            }
+            .header-bar {
+              background: #0f172a;
+              color: white;
+              padding: 8px;
+              text-align: center;
+              font-weight: 900;
+              font-size: 14px;
+              letter-spacing: 2px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 10px;
+            }
+            .main-content {
+              display: flex;
+              padding: 10px;
+              height: 135px;
+            }
+            .qr-side {
+              flex: 0 0 130px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+            .info-side {
+              flex: 1;
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              padding-left: 15px;
+              border-left: 1px dashed #cbd5e1;
+            }
+            .k-number {
+              font-size: 32px;
+              font-weight: 900;
+              color: #0f172a;
+              margin: 0;
+              line-height: 1;
+            }
+            .machine-name {
+              font-size: 14px;
+              font-weight: 700;
+              color: #475569;
+              margin-top: 5px;
+              text-transform: uppercase;
+              overflow: hidden;
+              white-space: nowrap;
+              text-overflow: ellipsis;
+            }
+            .footer-tags {
+              position: absolute;
+              bottom: 0;
+              width: 100%;
+              background: #f8fafc;
+              border-top: 1px solid #0f172a;
+              display: flex;
+              justify-content: space-between;
+              padding: 4px 10px;
+              font-size: 9px;
+              font-weight: 800;
+              color: #0f172a;
+              box-sizing: border-box;
+            }
+            @media print {
+              body { background: none; }
+              .sticker { border: 4px solid #000; }
+            }
+          </style>
+        </head>
+        <body onload="setTimeout(() => { window.print(); window.close(); }, 500);">
+          <div class="sticker">
+            <div class="header-bar">
+              KLARKE SOLUTIONS
+            </div>
+            <div class="main-content">
+              <div class="qr-side">
+                <img src="${qrUrl}" width="110" height="110" />
+              </div>
+              <div class="info-side">
+                <div style="font-size: 10px; font-weight: 700; color: #64748b; margin-bottom: 2px;">PATRIMÔNIO / ID</div>
+                <div class="k-number">${kCode}</div>
+                <div class="machine-name">${machine.name}</div>
+                <div style="font-size: 10px; font-weight: 600; color: #94a3b8; margin-top: 8px;">IP: ${machine.ip || '---'}</div>
+              </div>
+            </div>
+            <div class="footer-tags">
+              <span>GERENCIAMENTO DE INFRAESTRUTURA</span>
+              <span>VERIFICADO</span>
+            </div>
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   const exportToCSV = () => {
     const headers = ['ID', 'Nome', 'IP', 'MAC', 'Local', 'AnyDesk', 'RustDesk', 'Senha', 'Série', 'Criado em'];
     const rows = machines.map(m => [
@@ -228,6 +356,22 @@ function Dashboard() {
     (m.ip && m.ip.includes(searchTerm)) ||
     (m.serial_number && m.serial_number.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  // Lógica de Paginação
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentMachines = filteredMachines.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredMachines.length / itemsPerPage);
+
+  const paginate = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Resetar para página 1 ao buscar
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   return (
     <>
@@ -317,7 +461,7 @@ function Dashboard() {
           </div>
         ) : (
           <div className="machines-grid">
-            {filteredMachines.map(machine => (
+            {currentMachines.map(machine => (
               <div key={machine.id} className="machine-card" onClick={() => openModal(machine)}>
                 <div className="machine-header">
                 <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
@@ -344,6 +488,12 @@ function Dashboard() {
                   </span>
                   <button className="copy-btn" title="Copiar Tudo" onClick={(e) => { e.stopPropagation(); copyFullData(machine); }}>
                     <Clipboard size={16} />
+                  </button>
+                  <button className="copy-btn" title="Editar" onClick={(e) => { e.stopPropagation(); openModal(machine); }}>
+                    <Edit size={16} />
+                  </button>
+                  <button className="copy-btn" title="Imprimir Etiqueta" onClick={(e) => { e.stopPropagation(); handlePrintLabel(machine); }}>
+                    <Printer size={16} />
                   </button>
                   <button className="delete-btn" title="Excluir" onClick={(e) => { e.stopPropagation(); deleteMachine(machine.id); }}>
                     <Trash2 size={16} />
@@ -402,6 +552,51 @@ function Dashboard() {
           </div>
         )}
 
+        {/* Controles de Paginação */}
+        {totalPages > 1 && (
+          <div className="pagination-container" style={{display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', marginTop: '32px', marginBottom: '40px'}}>
+            <button 
+              disabled={currentPage === 1}
+              onClick={() => paginate(currentPage - 1)}
+              className="pagination-btn"
+              style={{
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                padding: '8px 12px',
+                borderRadius: '4px',
+                cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                opacity: currentPage === 1 ? 0.5 : 1,
+                display: 'flex',
+                alignItems: 'center'
+              }}
+            >
+              <ChevronLeft size={20} />
+            </button>
+            
+            <div style={{fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--color-primary)', letterSpacing: '1px'}}>
+              PÁGINA {currentPage} DE {totalPages}
+            </div>
+
+            <button 
+              disabled={currentPage === totalPages}
+              onClick={() => paginate(currentPage + 1)}
+              className="pagination-btn"
+              style={{
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                padding: '8px 12px',
+                borderRadius: '4px',
+                cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                opacity: currentPage === totalPages ? 0.5 : 1,
+                display: 'flex',
+                alignItems: 'center'
+              }}
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        )}
+
         <button className="fab" onClick={() => openModal()}>
           <Plus size={24} />
         </button>
@@ -443,8 +638,8 @@ function Dashboard() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Número de Série</label>
-                  <input type="text" className="form-input" name="serial_number" value={formData.serial_number} onChange={handleInputChange} placeholder="Ex: SN12345678" />
+                  <label className="form-label">Número de Série / Patrimônio</label>
+                  <input type="text" className="form-input" name="serial_number" value={formData.serial_number} onChange={handleInputChange} placeholder="Ex: K001" />
                 </div>
                 
                 <div className="machine-details-grid-form">
@@ -479,13 +674,20 @@ function Dashboard() {
                   <input type="text" className="form-input" name="password" value={formData.password} onChange={handleInputChange} placeholder="Senha" />
                 </div>
 
-                <button type="submit" className="btn btn-primary btn-block">
-                  {editingMachine ? 'Salvar Alterações' : 'Adicionar Máquina'}
-                </button>
+                <div style={{display: 'grid', gridTemplateColumns: editingMachine ? '1fr 1fr' : '1fr', gap: '10px', marginTop: '20px'}}>
+                  <button type="submit" className="btn btn-primary" style={{marginTop: 0}}>
+                    {editingMachine ? 'SALVAR' : 'ADICIONAR'}
+                  </button>
+                  {editingMachine && (
+                    <button type="button" className="btn" style={{backgroundColor: '#64748b', color: 'white', marginTop: 0}} onClick={() => handlePrintLabel(editingMachine)}>
+                      <Printer size={18} style={{marginRight: '8px'}} /> ETIQUETA
+                    </button>
+                  )}
+                </div>
                 
                 {editingMachine && (
-                  <button type="button" className="btn btn-danger btn-block" onClick={() => deleteMachine(editingMachine.id)}>
-                    Excluir Máquina
+                  <button type="button" className="btn btn-danger" style={{marginTop: '10px'}} onClick={() => deleteMachine(editingMachine.id)}>
+                    <Trash2 size={18} style={{marginRight: '8px'}} /> EXCLUIR EQUIPAMENTO
                   </button>
                 )}
               </form>

@@ -115,6 +115,7 @@ app.post('/api/login', (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     
     if (user && await bcrypt.compare(password, user.password)) {
+      try { logAction(username, 'LOGIN', 'Usuário entrou no sistema'); } catch (e) {}
       res.json({ 
         token: process.env.AUTH_TOKEN || 'klarke-admin-token-xyz',
         user: { username: user.username, role: user.role }

@@ -363,12 +363,12 @@ body.dark .machine-card:hover {
   right: 0;
   bottom: 0;
   background-color: rgba(2, 20, 43, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid; /* Mudado para Grid para melhor controle de rolagem */
+  place-items: start center; /* Alinha no topo e centraliza horizontalmente */
   z-index: 1000;
-  padding: 20px;
+  padding: 40px 20px; /* Margem de segurança no topo e base */
   backdrop-filter: blur(4px);
+  overflow-y: auto; /* Permite rolar o fundo se o modal for gigante */
 }
 
 .modal-content {
@@ -377,10 +377,10 @@ body.dark .machine-card:hover {
   padding: 24px;
   width: 100%;
   max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
+  /* max-height removido para permitir que o modal cresça e role via overlay */
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   animation: slideUp 0.3s ease-out;
+  margin-bottom: 20px;
 }
 
 @keyframes slideUp {

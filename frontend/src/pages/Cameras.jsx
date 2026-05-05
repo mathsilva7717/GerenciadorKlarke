@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, Plus, X, Copy, Camera, MapPin, Check, Download, Clipboard, Trash2, QrCode, Activity } from 'lucide-react';
+import { Search, Plus, X, Copy, Camera, MapPin, Check, Download, Clipboard, Trash2, QrCode, Activity, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -9,6 +9,8 @@ const API_URL = '/api/cameras';
 function Cameras() {
   const [cameras, setCameras] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [editingCamera, setEditingCamera] = useState(null);
@@ -146,6 +148,49 @@ function Cameras() {
     toast.success('Dados completos copiados!');
   };
 
+  const handlePrintLabel = (camera) => {
+    const printWindow = window.open('', '_blank');
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(camera.serial_number || camera.name)}`;
+    const kCode = camera.serial_number || `C${String(camera.id).padStart(3, '0')}`;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>ETIQUETA - ${kCode}</title>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+            body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background: #fff; font-family: 'Inter', sans-serif; }
+            .sticker { width: 350px; height: 200px; border: 3px solid #0f172a; position: relative; overflow: hidden; background: white; }
+            .header-bar { background: #0f172a; color: white; padding: 8px; text-align: center; font-weight: 900; font-size: 14px; letter-spacing: 2px; }
+            .main-content { display: flex; padding: 10px; height: 135px; }
+            .qr-side { flex: 0 0 130px; display: flex; align-items: center; justify-content: center; }
+            .info-side { flex: 1; display: flex; flex-direction: column; justify-content: center; padding-left: 15px; border-left: 1px dashed #cbd5e1; }
+            .k-number { font-size: 32px; font-weight: 900; color: #0f172a; margin: 0; line-height: 1; }
+            .machine-name { font-size: 14px; font-weight: 700; color: #475569; margin-top: 5px; text-transform: uppercase; }
+            .footer-tags { position: absolute; bottom: 0; width: 100%; background: #f8fafc; border-top: 1px solid #0f172a; display: flex; justify-content: space-between; padding: 4px 10px; font-size: 9px; font-weight: 800; color: #0f172a; box-sizing: border-box; }
+            @media print { .sticker { border: 4px solid #000; } }
+          </style>
+        </head>
+        <body onload="setTimeout(() => { window.print(); window.close(); }, 500);">
+          <div class="sticker">
+            <div class="header-bar">KLARKE SOLUTIONS - CÂMERAS</div>
+            <div class="main-content">
+              <div class="qr-side"><img src="${qrUrl}" width="110" height="110" /></div>
+              <div class="info-side">
+                <div style="font-size: 10px; font-weight: 700; color: #64748b; margin-bottom: 2px;">PATRIMÔNIO / ID</div>
+                <div class="k-number">${kCode}</div>
+                <div class="machine-name">${camera.name}</div>
+                <div style="font-size: 10px; font-weight: 600; color: #94a3b8; margin-top: 8px;">IP: ${camera.ip || '---'}</div>
+              </div>
+            </div>
+            <div class="footer-tags"><span>MONITORAMENTO ATIVO</span><span>KLARKE</span></div>
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   const exportToCSV = () => {
     const headers = ['ID', 'Nome', 'IP', 'Porta', 'Local', 'Usuário', 'Senha', 'Série', 'Criado em'];
     const rows = cameras.map(c => [
@@ -178,6 +223,21 @@ function Cameras() {
     (c.location?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
     (c.serial_number?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
+
+  // Lógica de Paginação
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filtered.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+
+  const paginate = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   return (
     <>
@@ -232,7 +292,7 @@ function Cameras() {
         </div>
       ) : (
         <div className="machines-grid">
-          {filtered.map(camera => (
+          {currentItems.map(camera => (
             <div key={camera.id} className="machine-card" onClick={() => openModal(camera)}>
               <div className="machine-header">
                 <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
@@ -331,6 +391,49 @@ function Cameras() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Controles de Paginação */}
+      {totalPages > 1 && (
+        <div className="pagination-container" style={{display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', marginTop: '32px', marginBottom: '40px'}}>
+          <button 
+            disabled={currentPage === 1}
+            onClick={() => paginate(currentPage - 1)}
+            style={{
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              padding: '8px 12px',
+              borderRadius: '4px',
+              cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+              opacity: currentPage === 1 ? 0.5 : 1,
+              display: 'flex',
+              alignItems: 'center'
+            }}
+          >
+            <ChevronLeft size={20} />
+          </button>
+          
+          <div style={{fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--color-primary)', letterSpacing: '1px'}}>
+            PÁGINA {currentPage} DE {totalPages}
+          </div>
+
+          <button 
+            disabled={currentPage === totalPages}
+            onClick={() => paginate(currentPage + 1)}
+            style={{
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              padding: '8px 12px',
+              borderRadius: '4px',
+              cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+              opacity: currentPage === totalPages ? 0.5 : 1,
+              display: 'flex',
+              alignItems: 'center'
+            }}
+          >
+            <ChevronRight size={20} />
+          </button>
         </div>
       )}
 
