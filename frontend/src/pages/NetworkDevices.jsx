@@ -33,6 +33,10 @@ function NetworkDevices() {
     fetchDevices();
   }, [navigate]);
 
+  useEffect(() => {
+    let html5QrCode;
+    if (isScannerOpen) {
+      html5QrCode = new window.Html5Qrcode("reader-network");
       const qrCodeSuccessCallback = (decodedText) => {
         setIsScannerOpen(false);
         html5QrCode.stop();

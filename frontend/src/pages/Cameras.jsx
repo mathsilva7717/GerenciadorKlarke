@@ -33,6 +33,10 @@ function Cameras() {
     fetchCameras();
   }, [navigate]);
 
+  useEffect(() => {
+    let html5QrCode;
+    if (isScannerOpen) {
+      html5QrCode = new window.Html5Qrcode("reader-cameras");
       const qrCodeSuccessCallback = (decodedText) => {
         setIsScannerOpen(false);
         html5QrCode.stop();
