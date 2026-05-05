@@ -28,7 +28,6 @@ function Home() {
     return { headers: { Authorization: `Bearer ${token}` } };
   };
 
-  useEffect(() => {
   const fetchStats = async (manual = false) => {
     if (manual) setIsRefreshing(true);
     try {
