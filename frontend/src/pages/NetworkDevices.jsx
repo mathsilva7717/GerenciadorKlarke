@@ -346,7 +346,6 @@ function NetworkDevices() {
                   </div>
                 </div>
               )}
-={saveDevice}>
               <div className="form-group">
                 <label className="form-label">Nome / Identificação</label>
                 <input required type="text" className="form-input" name="name" value={formData.name} onChange={handleInputChange} placeholder="Ex: Roteador Principal" />
