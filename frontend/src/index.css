@@ -1459,7 +1459,22 @@ body.dark .status-badge {
   
   .top-nav {
     left: 0;
-    padding: 0 16px;
+    padding: 12px 16px;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .nav-logo {
+    height: 40px; /* Reduzido no celular para não vazar a navbar */
+    margin: 0;
+  }
+
+  .nav-brand-text h1 {
+    font-size: 1rem;
+  }
+  
+  .nav-brand-text span {
+    font-size: 0.6rem;
   }
 
   .home-hero-sober {
@@ -1511,10 +1526,11 @@ body.dark .status-badge {
 
   .modal-content {
     width: 100%;
-    max-height: calc(100vh - 50px);
+    max-height: calc(100vh - 140px); /* Subtrai o padding do topo (100px) e sobra (40px) para não cortar o final */
     padding: 20px 16px;
     margin: 0;
     border-radius: 8px;
+    overflow-y: auto;
   }
 
   .form-group {

@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['logo.png', 'favicon.svg'],
+      includeAssets: ['favicon.svg'],
       manifest: {
         name: 'Klarke Solutions Control',
         short_name: 'Klarke',
@@ -19,15 +19,9 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: 'logo.png',
-            sizes: '192x192',
-            type: 'image/png',
-            purpose: 'any maskable'
-          },
-          {
-            src: 'logo.png',
-            sizes: '512x512',
-            type: 'image/png',
+            src: 'favicon.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
             purpose: 'any maskable'
           }
         ]
