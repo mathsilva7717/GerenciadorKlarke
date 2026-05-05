@@ -101,6 +101,10 @@ function Dashboard() {
     }
   };
 
+  useEffect(() => {
+    fetchMachines();
+  }, []);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     let formattedValue = value;

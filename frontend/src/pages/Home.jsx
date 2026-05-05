@@ -65,7 +65,6 @@ function Home() {
     const interval = setInterval(() => fetchStats(false), 30000);
     return () => clearInterval(interval);
   }, []);
-  }, []);
 
   const downloadBackup = async () => {
     try {
