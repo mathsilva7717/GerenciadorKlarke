@@ -250,7 +250,6 @@ function Home() {
             </button>
           </div>
         </div>
-      </div>
 
       {/* MODULES GRID */}
       <div className="selection-grid-industrial">
@@ -337,7 +336,7 @@ function Home() {
         <div className="card-industrial" onClick={() => navigate('/control/technical-docs')}>
           <div className="card-industrial-header">
             <div className="industrial-icon"><BookOpen size={22} /></div>
-            <div className="industrial-badge">0</div>
+            <div className="industrial-badge">{stats.docs || 0}</div>
           </div>
           <div className="industrial-body">
             <h3>Tech Vault</h3>
