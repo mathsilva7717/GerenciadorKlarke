@@ -92,8 +92,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `, () => {
-      // Garantir que a coluna amount existe para bancos já criados
       db.run("ALTER TABLE technical_docs ADD COLUMN amount REAL", () => {});
+    });
     db.run(`
       CREATE TABLE IF NOT EXISTS credentials (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -104,6 +104,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
         notes TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
+    `);
     db.run(`
       CREATE TABLE IF NOT EXISTS inventory (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -115,6 +116,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
         notes TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
+    `);
     db.run(`
       CREATE TABLE IF NOT EXISTS voip_extensions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -127,6 +129,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    });
   }
 });
 
