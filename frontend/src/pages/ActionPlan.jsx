@@ -26,6 +26,9 @@ function ActionPlan() {
 
   useEffect(() => {
     fetchTasks();
+    // Atualização automática a cada 30 segundos para ver tarefas concluídas por outros
+    const interval = setInterval(fetchTasks, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const addTask = async (e) => {
@@ -51,7 +54,17 @@ function ActionPlan() {
       }, getAuthConfig());
       
       if (!currentStatus) {
-        toast.success(`✅ Concluído por ${user}!`);
+        toast.success(`TAREFA CONCLUÍDA POR: ${user.toUpperCase()}`, {
+          duration: 4000,
+          icon: '🛠️',
+          style: {
+            borderRadius: '4px',
+            background: '#1e293b',
+            color: '#fff',
+            fontWeight: 'bold',
+            border: '1px solid #10b981'
+          }
+        });
       }
       fetchTasks();
     } catch (error) {

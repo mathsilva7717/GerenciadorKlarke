@@ -146,7 +146,7 @@ function Home() {
       <div className="home-hero-sober">
         <div className="hero-content">
           <h1>SISTEMA KLARKE</h1>
-          <p>Monitoramento ativo de infraestrutura e segurança industrial.</p>
+          <p>Monitoramento de links, câmeras e acessos remotos.</p>
         </div>
         
         <div className="quick-stats-row-sober">
@@ -249,17 +249,17 @@ function Home() {
       </div>
 
       {/* QUICK ACTIONS BAR */}
-      <div style={{marginTop: '32px', padding: '24px', background: 'rgba(30, 41, 59, 0.5)', borderRadius: '12px', border: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px'}}>
+      <div style={{marginTop: '32px', padding: '24px', background: '#1e293b', borderRadius: '4px', border: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px', color: 'white'}}>
         <div>
-          <h4 style={{margin: 0, fontSize: '1rem'}}>Suporte Técnico em Campo</h4>
-          <p style={{margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--color-text-muted)'}}>Baixe as ferramentas necessárias para os PCs dos clientes.</p>
+          <h4 style={{margin: 0, fontSize: '1.1rem', fontWeight: '800'}}>Suporte Técnico em Campo</h4>
+          <p style={{margin: '4px 0 0 0', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)'}}>Baixe as ferramentas necessárias para configurar os PCs dos clientes.</p>
         </div>
-        <div style={{display: 'flex', gap: '12px'}}>
-          <button className="btn btn-primary" onClick={downloadAgent} style={{display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', background: '#334155'}}>
+        <div style={{display: 'flex', gap: '12px', flexWrap: 'wrap'}}>
+          <button className="btn btn-primary" onClick={downloadAgent} style={{display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', background: '#334155', border: '1px solid rgba(255,255,255,0.1)', width: 'auto'}}>
             <Activity size={18} />
             BAIXAR KLARKE AGENT (JS)
           </button>
-          <button className="btn btn-primary" onClick={() => navigate('/control/users')} style={{display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px'}}>
+          <button className="btn btn-primary" onClick={() => navigate('/control/users')} style={{display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', width: 'auto'}}>
             <ShieldCheck size={18} />
             GERENCIAR ACESSOS
           </button>

@@ -157,6 +157,35 @@ body {
   color: var(--color-text-muted);
 }
 
+.action-buttons-group {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.btn-action-square {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  width: 54px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-action-square:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn-action-square svg {
+  color: white;
+}
+
 /* Machine List */
 .machines-list {
   display: flex;
@@ -1479,8 +1508,8 @@ body.dark .status-badge {
 
 .stat-box-industrial .stat-label {
   font-size: 0.7rem;
-  color: #64748b;
-  font-weight: 700;
+  color: #334155; /* Slate 700 - Mais escuro para leitura */
+  font-weight: 800;
   text-transform: uppercase;
   margin-bottom: 4px;
   display: block;
@@ -1586,7 +1615,7 @@ body.dark .status-badge {
 
 .industrial-body p {
   font-size: 0.85rem;
-  color: #64748b;
+  color: #475569; /* Slate 600 - Mais nítido */
   line-height: 1.4;
 }
 

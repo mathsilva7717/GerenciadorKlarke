@@ -105,11 +105,12 @@ function NetworkDevices() {
   const saveDevice = async (e) => {
     e.preventDefault();
     try {
+      const user = localStorage.getItem('klarke_user') || 'Desconhecido';
       if (editingDevice) {
         await axios.put(`${API_URL}/${editingDevice.id}`, formData, getAuthConfig());
         toast.success('Equipamento atualizado!');
       } else {
-        await axios.post(API_URL, formData, getAuthConfig());
+        await axios.post(API_URL, { ...formData, created_by: user }, getAuthConfig());
         toast.success('Equipamento cadastrado!');
       }
       fetchDevices();
@@ -187,18 +188,20 @@ function NetworkDevices() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+        </div>
+        <div className="action-buttons-group">
           <button 
-            className="logout-btn" 
-            style={{padding: '8px', marginLeft: '8px', background: 'var(--color-accent)'}}
+            className="btn-action-square" 
+            style={{background: 'var(--color-accent)'}}
             onClick={() => setIsScannerOpen(true)}
             title="Escanear QR Code"
           >
             <QrCode size={20} color="white" />
           </button>
+          <button className="btn-action-square" onClick={exportToCSV} title="Exportar CSV">
+            <Download size={20} />
+          </button>
         </div>
-        <button className="btn btn-primary" style={{marginTop: 0, padding: '16px', width: 'auto'}} onClick={exportToCSV} title="Exportar CSV">
-          <Download size={20} />
-        </button>
       </div>
 
       {isScannerOpen && (
@@ -333,15 +336,26 @@ function NetworkDevices() {
             </div>
             
             <form onSubmit={saveDevice}>
-              {editingDevice && formData.serial_number && (
-                <div className="qr-container">
-                  <img 
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(formData.serial_number)}`} 
-                    alt="QR Code do Equipamento"
-                  />
-                  <p className="qr-label">QR Code de Identificação</p>
-                </div>
-              )}
+                {editingDevice && (
+                  <div style={{marginBottom: '20px', padding: '12px', background: 'rgba(0,0,0,0.02)', border: '1px solid var(--color-border)', borderRadius: '4px'}}>
+                    <div style={{fontSize: '0.7rem', color: 'var(--color-text-muted)', marginBottom: '4px'}}>AUDITORIA DE CADASTRO</div>
+                    <div style={{fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--color-primary)'}}>
+                      POR: {editingDevice.created_by || 'Sistema'}
+                    </div>
+                    <div style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>
+                      EM: {new Date(editingDevice.created_at).toLocaleString()}
+                    </div>
+                  </div>
+                )}
+                {editingDevice && formData.serial_number && (
+                  <div className="qr-container">
+                    <img 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(formData.serial_number)}`} 
+                      alt="QR Code do Equipamento"
+                    />
+                    <p className="qr-label">QR Code de Identificação</p>
+                  </div>
+                )}
               <div className="form-group">
                 <label className="form-label">Nome / Identificação</label>
                 <input required type="text" className="form-input" name="name" value={formData.name} onChange={handleInputChange} placeholder="Ex: Roteador Principal" />
