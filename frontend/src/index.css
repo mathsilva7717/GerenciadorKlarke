@@ -582,6 +582,24 @@ body.dark .machine-card:hover {
   color: var(--color-text-muted);
 }
 
+.add-btn {
+  background: var(--color-background-dark);
+  color: white;
+  border: none;
+  padding: 4px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 0.7rem;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .copy-btn {
   background: transparent !important;
   border: none !important;

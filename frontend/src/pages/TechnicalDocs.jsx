@@ -1,14 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { BookOpen, FileText, Download, ExternalLink, Search, Plus, X, Upload, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { 
+  BookOpen, FileText, Download, ExternalLink, Search, 
+  Plus, X, Upload, Image as ImageIcon, Trash2, 
+  Folder, FolderPlus, ChevronRight, MoreVertical, Edit 
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 function TechnicalDocs() {
   const [docs, setDocs] = useState([]);
+  const [folders, setFolders] = useState([]);
+  const [currentFolder, setCurrentFolder] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const [isUploading, setIsRefreshing] = useState(false);
-  const [formData, setFormData] = useState({ title: '', type: 'Nota', content: '', amount: '' });
+  const [newFolderName, setNewFolderName] = useState('');
+  const [formData, setFormData] = useState({ title: '', type: 'Nota', content: '', amount: '', folder_id: null });
   const [editingDoc, setEditingDoc] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
 
@@ -27,12 +35,50 @@ function TechnicalDocs() {
     }
   };
 
+  const fetchFolders = async () => {
+    try {
+      const response = await axios.get('/api/vault-folders', getAuthConfig());
+      setFolders(response.data);
+    } catch (e) {
+      toast.error('Erro ao buscar pastas');
+    }
+  };
+
   useEffect(() => {
     fetchDocs();
+    fetchFolders();
   }, []);
 
   const handleFileChange = (e) => {
     setSelectedFile(e.target.files[0]);
+  };
+
+  const createFolder = async (e) => {
+    e.preventDefault();
+    if (!newFolderName.trim()) return;
+    try {
+      await axios.post('/api/vault-folders', { name: newFolderName }, getAuthConfig());
+      toast.success('Pasta criada!');
+      setNewFolderName('');
+      setIsFolderModalOpen(false);
+      fetchFolders();
+    } catch (e) {
+      toast.error('Erro ao criar pasta');
+    }
+  };
+
+  const deleteFolder = async (id) => {
+    if (window.confirm('Excluir pasta? Os arquivos nela voltarão para a raiz.')) {
+      try {
+        await axios.delete(`/api/vault-folders/${id}`, getAuthConfig());
+        toast.success('Pasta removida');
+        if (currentFolder?.id === id) setCurrentFolder(null);
+        fetchFolders();
+        fetchDocs();
+      } catch (e) {
+        toast.error('Erro ao excluir');
+      }
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -44,13 +90,15 @@ function TechnicalDocs() {
     data.append('type', formData.type);
     data.append('content', formData.content);
     data.append('amount', formData.amount);
+    data.append('folder_id', currentFolder ? currentFolder.id : (formData.folder_id || ''));
     if (selectedFile) data.append('file', selectedFile);
 
     try {
       if (editingDoc) {
-        // Para simplificar, o edit aqui não troca o arquivo via FormData por enquanto, 
-        // ou você pode implementar uma rota de PUT que aceite FormData
-        await axios.put(`/api/technical-docs/${editingDoc.id}`, formData, getAuthConfig());
+        await axios.put(`/api/technical-docs/${editingDoc.id}`, {
+          ...formData,
+          folder_id: formData.folder_id
+        }, getAuthConfig());
         toast.success('Atualizado!');
       } else {
         await axios.post('/api/technical-docs', data, {
@@ -63,7 +111,7 @@ function TechnicalDocs() {
       }
       setIsModalOpen(false);
       setEditingDoc(null);
-      setFormData({ title: '', type: 'Nota', content: '', amount: '' });
+      setFormData({ title: '', type: 'Nota', content: '', amount: '', folder_id: null });
       setSelectedFile(null);
       fetchDocs();
     } catch (err) {
@@ -80,11 +128,12 @@ function TechnicalDocs() {
         title: doc.title, 
         type: doc.type, 
         content: doc.content || '', 
-        amount: doc.amount || '' 
+        amount: doc.amount || '',
+        folder_id: doc.folder_id
       });
     } else {
       setEditingDoc(null);
-      setFormData({ title: '', type: 'Nota', content: '', amount: '' });
+      setFormData({ title: '', type: 'Nota', content: '', amount: '', folder_id: currentFolder?.id || null });
       setSelectedFile(null);
     }
     setIsModalOpen(true);
@@ -102,10 +151,12 @@ function TechnicalDocs() {
     }
   };
 
-  const filtered = docs.filter(d => 
-    (d.title?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-    (d.content?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-  );
+  const filtered = docs.filter(d => {
+    const matchesSearch = (d.title?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                         (d.content?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+    const matchesFolder = currentFolder ? d.folder_id === currentFolder.id : !d.folder_id;
+    return matchesSearch && matchesFolder;
+  });
 
   return (
     <div className="users-container">
@@ -116,103 +167,179 @@ function TechnicalDocs() {
           </div>
           <div>
             <h1 style={{fontSize: '1.5rem', margin: 0}}>Tech Vault</h1>
-            <p style={{fontSize: '0.8rem', margin: 0, opacity: 0.7}}>Documentação e investimentos.</p>
+            <p style={{fontSize: '0.8rem', margin: 0, opacity: 0.7}}>Documentação e investimentos técnicos.</p>
           </div>
         </div>
-        <button className="btn btn-primary" style={{width: 'auto', padding: '8px 16px', fontSize: '0.8rem'}} onClick={() => openModal()}>
-          <Plus size={16} /> <span className="hide-mobile">NOVO ITEM</span>
-        </button>
-      </div>
-
-      <div className="search-wrapper" style={{marginBottom: '24px'}}>
-        <div className="search-container">
-          <Search className="search-icon" size={20} />
-          <input 
-            type="text" 
-            className="search-input" 
-            placeholder="Buscar no acervo..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div style={{display: 'flex', gap: '8px'}}>
+          <button className="add-btn" onClick={() => setIsFolderModalOpen(true)} style={{background: 'var(--color-accent)'}}>
+            <FolderPlus size={16} /> <span className="hide-mobile">PASTA</span>
+          </button>
+          <button className="add-btn" onClick={() => openModal()}>
+            <Plus size={16} /> <span className="hide-mobile">NOVO ITEM</span>
+          </button>
         </div>
       </div>
 
-      <div className="machines-grid">
-        {filtered.map(doc => (
-          <div key={doc.id} className="machine-card" style={{cursor: 'default'}}>
-            <div className="machine-header">
-              <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
-                {doc.file_path && (doc.file_path.endsWith('.jpg') || doc.file_path.endsWith('.png') || doc.file_path.endsWith('.jpeg')) ? (
-                  <ImageIcon size={20} color="var(--color-accent)" />
-                ) : (
-                  <FileText size={20} color="var(--color-accent)" />
-                )}
-                <div>
-                  <span className="machine-title" style={{fontSize: '1.1rem'}}>{doc.title}</span>
-                  <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-                    <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>
-                      {new Date(doc.created_at).toLocaleString()} • {doc.type}
-                    </span>
-                    {doc.amount && (
-                      <span style={{fontSize: '0.75rem', fontWeight: 'bold', color: '#10b981', background: '#f0fdf4', padding: '2px 6px', borderRadius: '4px'}}>
-                        R$ {parseFloat(doc.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </span>
+      <div style={{display: 'grid', gridTemplateColumns: '250px 1fr', gap: '24px'}}>
+        {/* SIDEBAR DE PASTAS */}
+        <div className="folders-sidebar hide-mobile">
+          <div 
+            className={`folder-item ${!currentFolder ? 'active' : ''}`}
+            onClick={() => setCurrentFolder(null)}
+          >
+            <Folder size={18} />
+            <span>Raiz do Acervo</span>
+          </div>
+          <div style={{marginTop: '12px', marginBottom: '8px', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--color-text-muted)', textTransform: 'uppercase'}}>
+            Pastas
+          </div>
+          {folders.map(folder => (
+            <div 
+              key={folder.id} 
+              className={`folder-item ${currentFolder?.id === folder.id ? 'active' : ''}`}
+              onClick={() => setCurrentFolder(folder)}
+            >
+              <div style={{display: 'flex', alignItems: 'center', gap: '8px', flex: 1}}>
+                <Folder size={18} fill={currentFolder?.id === folder.id ? 'white' : 'transparent'} />
+                <span>{folder.name}</span>
+              </div>
+              <button className="folder-delete-small" onClick={(e) => { e.stopPropagation(); deleteFolder(folder.id); }}>
+                <X size={12} />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <div className="vault-content">
+          <div className="search-wrapper" style={{marginBottom: '24px'}}>
+            <div className="search-container">
+              <Search className="search-icon" size={20} />
+              <input 
+                type="text" 
+                className="search-input" 
+                placeholder="Buscar no acervo..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Breadcrumb / Mobile Selector */}
+          <div className="vault-breadcrumb" style={{marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--color-text-muted)'}}>
+            <span onClick={() => setCurrentFolder(null)} style={{cursor: 'pointer', fontWeight: !currentFolder ? 'bold' : 'normal'}}>Raiz</span>
+            {currentFolder && (
+              <>
+                <ChevronRight size={14} />
+                <span style={{fontWeight: 'bold', color: 'var(--color-text)'}}>{currentFolder.name}</span>
+              </>
+            )}
+          </div>
+
+          <div className="machines-grid">
+            {filtered.length === 0 && (
+              <div style={{textAlign: 'center', padding: '40px', background: 'rgba(255,255,255,0.5)', borderRadius: '12px', border: '2px dashed #ddd'}}>
+                <BookOpen size={40} style={{opacity: 0.2, marginBottom: '12px'}} />
+                <p style={{margin: 0, opacity: 0.5}}>Nenhum item encontrado nesta pasta.</p>
+              </div>
+            )}
+            {filtered.map(doc => (
+              <div key={doc.id} className="machine-card" style={{cursor: 'default'}}>
+                <div className="machine-header">
+                  <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                    {doc.file_path && (doc.file_path.endsWith('.jpg') || doc.file_path.endsWith('.png') || doc.file_path.endsWith('.jpeg')) ? (
+                      <ImageIcon size={20} color="var(--color-accent)" />
+                    ) : (
+                      <FileText size={20} color="var(--color-accent)" />
                     )}
+                    <div>
+                      <span className="machine-title" style={{fontSize: '1.1rem'}}>{doc.title}</span>
+                      <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+                        <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>
+                          {new Date(doc.created_at).toLocaleDateString()} • {doc.type}
+                        </span>
+                        {doc.amount && (
+                          <span style={{fontSize: '0.75rem', fontWeight: 'bold', color: '#10b981', background: '#f0fdf4', padding: '2px 6px', borderRadius: '4px'}}>
+                            R$ {parseFloat(doc.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{display: 'flex', gap: '8px'}}>
+                    <button className="copy-btn" onClick={() => openModal(doc)} title="Editar"><Edit size={16} /></button>
+                    {doc.file_path && (
+                      <a 
+                        href={`/uploads/docs/${doc.file_path}`} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="copy-btn"
+                        title="Abrir Arquivo"
+                      >
+                        <ExternalLink size={16} />
+                      </a>
+                    )}
+                    <button className="delete-btn" onClick={() => deleteDoc(doc.id)}><Trash2 size={16} /></button>
                   </div>
                 </div>
-              </div>
-              <div style={{display: 'flex', gap: '8px'}}>
-                <button className="copy-btn" onClick={() => openModal(doc)} title="Editar"><Edit size={16} /></button>
-                {doc.file_path && (
-                  <a 
-                    href={`/uploads/docs/${doc.file_path}`} 
-                    target="_blank" 
-                    rel="noreferrer" 
-                    className="copy-btn"
-                    title="Abrir Arquivo"
-                  >
-                    <ExternalLink size={16} />
-                  </a>
+
+                {doc.content && (
+                  <div style={{
+                    marginTop: '12px', 
+                    padding: '12px', 
+                    background: '#f8fafc', 
+                    borderRadius: '6px', 
+                    fontSize: '0.9rem', 
+                    color: '#334155',
+                    whiteSpace: 'pre-wrap',
+                    borderLeft: '4px solid var(--color-accent)'
+                  }}>
+                    {doc.content}
+                  </div>
                 )}
-                <button className="delete-btn" onClick={() => deleteDoc(doc.id)}><Trash2 size={16} /></button>
+                
+                {doc.file_path && (doc.file_path.endsWith('.jpg') || doc.file_path.endsWith('.png') || doc.file_path.endsWith('.jpeg')) && (
+                  <div style={{marginTop: '12px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #eee'}}>
+                    <img 
+                      src={`/uploads/docs/${doc.file_path}`} 
+                      alt={doc.title} 
+                      style={{width: '100%', maxHeight: '200px', objectFit: 'cover'}} 
+                    />
+                  </div>
+                )}
               </div>
-            </div>
-
-            {doc.file_path && (doc.file_path.endsWith('.jpg') || doc.file_path.endsWith('.png') || doc.file_path.endsWith('.jpeg')) && (
-              <div style={{marginTop: '12px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #eee'}}>
-                <img 
-                  src={`/uploads/docs/${doc.file_path}`} 
-                  alt={doc.title} 
-                  style={{width: '100%', maxHeight: '300px', objectFit: 'cover'}} 
-                />
-              </div>
-            )}
-
-            {doc.content && (
-              <div style={{
-                marginTop: '12px', 
-                padding: '12px', 
-                background: '#f8fafc', 
-                borderRadius: '6px', 
-                fontSize: '0.9rem', 
-                color: '#334155',
-                whiteSpace: 'pre-wrap',
-                borderLeft: '4px solid var(--color-accent)'
-              }}>
-                {doc.content}
-              </div>
-            )}
-
-            {doc.file_path && !doc.file_path.match(/\.(jpg|jpeg|png)$/i) && (
-              <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-muted)', fontSize: '0.8rem'}}>
-                <Download size={14} />
-                <span>Arquivo: {doc.file_path} ({doc.file_size})</span>
-              </div>
-            )}
+            ))}
           </div>
-        ))}
+        </div>
       </div>
 
+      {/* MODAL NOVA PASTA */}
+      {isFolderModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsFolderModalOpen(false)}>
+          <div className="modal-content" style={{maxWidth: '400px'}} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Criar Nova Pasta</h2>
+              <button className="close-btn" onClick={() => setIsFolderModalOpen(false)}><X size={24} /></button>
+            </div>
+            <form onSubmit={createFolder}>
+              <div className="form-group">
+                <label className="form-label">Nome da Pasta</label>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  required 
+                  autoFocus
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  placeholder="Ex: Documentos Loja 01"
+                />
+              </div>
+              <button type="submit" className="btn btn-primary btn-block">CRIAR PASTA</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL NOVO ITEM */}
       {isModalOpen && (
         <div className="modal-overlay" onClick={() => { setIsModalOpen(false); setEditingDoc(null); }}>
           <div className="modal-content" style={{maxWidth: '500px'}} onClick={(e) => e.stopPropagation()}>
@@ -232,6 +359,23 @@ function TechnicalDocs() {
                   placeholder="Ex: Foto Rack Loja X ou Recibo Uber"
                 />
               </div>
+              
+              {!editingDoc && (
+                <div className="form-group">
+                  <label className="form-label">Pasta de Destino</label>
+                  <select 
+                    className="form-input"
+                    value={formData.folder_id || ''}
+                    onChange={(e) => setFormData({...formData, folder_id: e.target.value || null})}
+                  >
+                    <option value="">Raiz do Acervo</option>
+                    {folders.map(f => (
+                      <option key={f.id} value={f.id}>{f.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div className="machine-details-grid-form">
                 <div className="form-group">
                   <label className="form-label">Tipo</label>
@@ -249,7 +393,7 @@ function TechnicalDocs() {
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Valor (Opcional R$)</label>
+                  <label className="form-label">Valor (R$)</label>
                   <input 
                     type="number" 
                     step="0.01"
@@ -261,37 +405,34 @@ function TechnicalDocs() {
                 </div>
               </div>
               <div className="form-group">
-                <label className="form-label">Anotações / Descrição</label>
+                <label className="form-label">Anotações</label>
                 <textarea 
                   className="form-input" 
-                  rows="4"
+                  rows="3"
                   value={formData.content}
                   onChange={(e) => setFormData({...formData, content: e.target.value})}
-                  placeholder="Escreva aqui detalhes, custos ou observações..."
                 ></textarea>
               </div>
-              <div className="form-group">
-                <label className="form-label">Anexar Arquivo (Foto ou PDF)</label>
-                <div style={{
-                  border: '2px dashed #cbd5e1',
-                  padding: '20px',
-                  borderRadius: '8px',
-                  textAlign: 'center',
-                  background: selectedFile ? '#f0fdf4' : '#f8fafc',
-                  cursor: 'pointer',
-                  position: 'relative'
-                }}>
-                  <input 
-                    type="file" 
-                    onChange={handleFileChange}
-                    style={{position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer'}}
-                  />
-                  <Upload size={24} color={selectedFile ? '#10b981' : '#64748b'} style={{marginBottom: '8px'}} />
-                  <p style={{margin: 0, fontSize: '0.85rem', color: selectedFile ? '#10b981' : '#64748b'}}>
-                    {selectedFile ? `Selecionado: ${selectedFile.name}` : 'Clique ou arraste para subir'}
-                  </p>
+              {!editingDoc && (
+                <div className="form-group">
+                  <label className="form-label">Anexar Arquivo</label>
+                  <div style={{
+                    border: '2px dashed #cbd5e1',
+                    padding: '20px',
+                    borderRadius: '8px',
+                    textAlign: 'center',
+                    background: selectedFile ? '#f0fdf4' : '#f8fafc',
+                    cursor: 'pointer',
+                    position: 'relative'
+                  }}>
+                    <input type="file" onChange={handleFileChange} style={{position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer'}} />
+                    <Upload size={24} color={selectedFile ? '#10b981' : '#64748b'} style={{marginBottom: '8px'}} />
+                    <p style={{margin: 0, fontSize: '0.85rem', color: selectedFile ? '#10b981' : '#64748b'}}>
+                      {selectedFile ? selectedFile.name : 'Clique para subir'}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
               <button type="submit" className="btn btn-primary btn-block" disabled={isUploading}>
                 {isUploading ? 'SALVANDO...' : (editingDoc ? 'ATUALIZAR' : 'SALVAR NO VAULT')}
               </button>
@@ -299,6 +440,47 @@ function TechnicalDocs() {
           </div>
         </div>
       )}
+
+      {/* ESTILOS INTERNOS PARA SIDEBAR */}
+      <style>{`
+        .folder-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 10px 14px;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.2s;
+          color: #475569;
+          font-weight: 500;
+          font-size: 0.9rem;
+        }
+        .folder-item:hover {
+          background: rgba(15, 23, 42, 0.05);
+          color: var(--color-primary);
+        }
+        .folder-item.active {
+          background: var(--color-primary);
+          color: white;
+          box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+        }
+        .folder-delete-small {
+          background: transparent;
+          border: none;
+          color: inherit;
+          opacity: 0.5;
+          cursor: pointer;
+          padding: 4px;
+        }
+        .folder-delete-small:hover {
+          opacity: 1;
+          color: #ef4444;
+        }
+        .vault-breadcrumb span:hover {
+          color: var(--color-primary);
+          text-decoration: underline;
+        }
+      `}</style>
     </div>
   );
 }

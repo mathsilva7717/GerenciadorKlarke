@@ -73,8 +73,8 @@ function Login() {
       <div className="login-card">
         <div className="login-header">
           <img src="/logo.png" alt="Klarke Logo" className="login-logo" />
-          <h2>Klarke Control</h2>
-          <p>Acesse o painel de gerenciamento de infraestrutura.</p>
+          <h1>Klarke Control</h1>
+          <p>Centro de Comando Unificado para Monitoramento e Gestão de Ativos de TI.</p>
         </div>
 
         {error && <div className="login-error">{error}</div>}

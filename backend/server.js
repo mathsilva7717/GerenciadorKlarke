@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const multer = require('multer');
 require('dotenv').config();
@@ -50,7 +51,6 @@ const db = new sqlite3.Database(dbPath, (err) => {
       db.run(`CREATE TABLE IF NOT EXISTS tasks (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT)`);
       const tCols = ['description', 'is_completed', 'completed_by', 'completed_at'];
       tCols.forEach(col => db.run(`ALTER TABLE tasks ADD COLUMN ${col} TEXT`, (err) => handleMigrate('tasks', col, err)));
-    });
 
     db.run(`
       CREATE TABLE IF NOT EXISTS users (
@@ -81,6 +81,15 @@ const db = new sqlite3.Database(dbPath, (err) => {
     `);
 
     db.run(`
+      CREATE TABLE IF NOT EXISTS vault_folders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        parent_id INTEGER DEFAULT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    db.run(`
       CREATE TABLE IF NOT EXISTS technical_docs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT,
@@ -89,10 +98,13 @@ const db = new sqlite3.Database(dbPath, (err) => {
         file_path TEXT,
         file_size TEXT,
         amount REAL,
+        folder_id INTEGER DEFAULT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `, () => {
+      // Migrações para bancos existentes
       db.run("ALTER TABLE technical_docs ADD COLUMN amount REAL", () => {});
+      db.run("ALTER TABLE technical_docs ADD COLUMN folder_id INTEGER DEFAULT NULL", () => {});
     });
     db.run(`
       CREATE TABLE IF NOT EXISTS credentials (
@@ -129,6 +141,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    });
   }
 });
 
@@ -690,8 +703,37 @@ app.delete('/api/technical-docs/:id', authenticate, (req, res) => {
   });
 });
 
-// Servir arquivos do acervo
-app.use('/uploads/docs', express.static(path.join(__dirname, 'uploads/docs')));
+// --- VAULT FOLDERS ---
+app.get('/api/vault-folders', authenticate, (req, res) => {
+  db.all('SELECT * FROM vault_folders ORDER BY name ASC', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+app.post('/api/vault-folders', authenticate, (req, res) => {
+  const { name, parent_id } = req.body;
+  db.run("INSERT INTO vault_folders (name, parent_id) VALUES (?, ?)", [name, parent_id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    logAction(req, 'CRIAÇÃO', `Criou pasta: ${name}`);
+    res.json({ id: this.lastID, name, parent_id });
+  });
+});
+
+app.delete('/api/vault-folders/:id', authenticate, (req, res) => {
+  const { id } = req.params;
+  db.get('SELECT name FROM vault_folders WHERE id = ?', [id], (err, row) => {
+    const folderName = row ? row.name : id;
+    db.run("DELETE FROM vault_folders WHERE id = ?", [id], (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      // Opcional: Mover arquivos da pasta para o root ou deletar? 
+      // Por segurança, vamos apenas desvincular os arquivos
+      db.run("UPDATE technical_docs SET folder_id = NULL WHERE folder_id = ?", [id]);
+      logAction(req, 'EXCLUSÃO', `Removeu pasta: ${folderName}`);
+      res.json({ message: 'Pasta removida' });
+    });
+  });
+});
 
 // Rota para o Agente enviar fotos
 app.post('/api/monitoring/snapshot', (req, res) => {

@@ -12,6 +12,7 @@ function Home() {
     network: 0, networkOnline: 0,
     tasks: 0,
     users: 0,
+    docs: 0,
     logsToday: 0
   });
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -32,7 +33,7 @@ function Home() {
   const fetchStats = async (manual = false) => {
     if (manual) setIsRefreshing(true);
     try {
-      const [m, c, n, t, u, logs, creds, inv, v] = await Promise.all([
+      const [m, c, n, t, u, logs, creds, inv, voip, docs] = await Promise.all([
         axios.get('/api/machines', getAuthConfig()),
         axios.get('/api/cameras', getAuthConfig()),
         axios.get('/api/network-devices', getAuthConfig()),
@@ -41,7 +42,8 @@ function Home() {
         axios.get('/api/audit-logs', getAuthConfig()),
         axios.get('/api/credentials', getAuthConfig()),
         axios.get('/api/inventory', getAuthConfig()),
-        axios.get('/api/voip', getAuthConfig())
+        axios.get('/api/voip', getAuthConfig()),
+        axios.get('/api/technical-docs', getAuthConfig())
       ]);
       setStats({
         machines: m.data?.length || 0,
@@ -55,7 +57,8 @@ function Home() {
         logsToday: (logs.data || []).filter(x => new Date(x.created_at).toDateString() === new Date().toDateString()).length,
         credentials: creds.data?.length || 0,
         inventory: inv.data?.length || 0,
-        voip: v.data?.length || 0
+        voip: voip.data?.length || 0,
+        docs: docs.data?.length || 0
       });
       if (manual) toast.success('Dados atualizados!');
     } catch (e) {
@@ -141,7 +144,7 @@ function Home() {
       icon: <BookOpen size={28} />,
       path: '/control/technical-docs',
       color: '#0f172a', // Slate 950
-      count: 0,
+      count: stats.docs || 0,
       label: 'Arquivos'
     },
     {
@@ -195,10 +198,16 @@ function Home() {
   return (
     <div className="home-container">
       {/* HEADER: GLOBAL HEALTH */}
-      <div className="home-hero-sober">
-        <div className="hero-content">
+        <div className="home-hero-sober">
+          <div className="hero-content">
+            <div className="status-pill">
+              <Activity size={14} className="pulse" />
+              <span>SISTEMA ONLINE • v3.5.0</span>
+            </div>
+            <h1>CENTRO OPERACIONAL</h1>
+            <p>Centro de Comando Unificado para Monitoramento, Gestão de Ativos e Inteligência Operacional.</p>
+          </div>
           <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-            <h1>SISTEMA KLARKE</h1>
             <button 
               className={`refresh-btn-circular ${isRefreshing ? 'spinning' : ''}`}
               onClick={() => fetchStats(true)}
