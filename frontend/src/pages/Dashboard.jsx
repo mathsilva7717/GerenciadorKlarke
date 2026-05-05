@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, Plus, X, Copy, Monitor, MapPin, Check, Download, Clipboard, Trash2, QrCode, Activity, Edit, Printer, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, X, Copy, Monitor, MapPin, Check, Download, Clipboard, Trash2, QrCode, Activity, Edit, Printer, ChevronLeft, ChevronRight, RotateCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -15,6 +15,7 @@ function Dashboard() {
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [editingMachine, setEditingMachine] = useState(null);
   const [copiedField, setCopiedField] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const navigate = useNavigate();
 
   // Form State
@@ -82,16 +83,21 @@ function Dashboard() {
     };
   }, [isScannerOpen, machines]);
 
-  const fetchMachines = async () => {
+  const fetchMachines = async (manual = false) => {
+    if (manual) setIsRefreshing(true);
     try {
       const response = await axios.get(API_URL, getAuthConfig());
       setMachines(response.data);
+      if (manual) toast.success('Lista atualizada!');
     } catch (error) {
       console.error('Erro ao buscar máquinas:', error);
+      if (manual) toast.error('Erro ao atualizar lista');
       if (error.response?.status === 401) {
         localStorage.removeItem('klarke_token');
         navigate('/');
       }
+    } finally {
+      if (manual) setTimeout(() => setIsRefreshing(false), 500);
     }
   };
 
@@ -411,6 +417,14 @@ function Dashboard() {
         </div>
         <div className="action-buttons-group">
           <button 
+            className={`btn-refresh-sober ${isRefreshing ? 'spinning' : ''}`}
+            onClick={() => fetchMachines(true)}
+            title="Atualizar Lista"
+            disabled={isRefreshing}
+          >
+            <RotateCw size={20} />
+          </button>
+          <button 
             className="btn-action-square" 
             style={{background: 'var(--color-accent)'}}
             onClick={() => setIsScannerOpen(true)}
@@ -481,23 +495,31 @@ function Dashboard() {
                     </span>
                   </div>
                 </div>
-                <div style={{display:'flex', gap:'8px', alignItems:'center'}}>
+                <div className="card-actions-wrapper">
                   <span className="machine-location">
                     <MapPin size={12} style={{display: 'inline', marginRight: 4}} />
                     {machine.location || 'Sem local'}
                   </span>
-                  <button className="copy-btn" title="Copiar Tudo" onClick={(e) => { e.stopPropagation(); copyFullData(machine); }}>
-                    <Clipboard size={16} />
-                  </button>
-                  <button className="copy-btn" title="Editar" onClick={(e) => { e.stopPropagation(); openModal(machine); }}>
-                    <Edit size={16} />
-                  </button>
-                  <button className="copy-btn" title="Imprimir Etiqueta" onClick={(e) => { e.stopPropagation(); handlePrintLabel(machine); }}>
-                    <Printer size={16} />
-                  </button>
-                  <button className="delete-btn" title="Excluir" onClick={(e) => { e.stopPropagation(); deleteMachine(machine.id); }}>
-                    <Trash2 size={16} />
-                  </button>
+                  
+                  <div className="actions-group utility">
+                    <button className="action-chip" title="Copiar Tudo" onClick={(e) => { e.stopPropagation(); copyFullData(machine); }}>
+                      <Clipboard size={14} /> <span>COPIAR</span>
+                    </button>
+                    <button className="action-chip" title="Imprimir Etiqueta" onClick={(e) => { e.stopPropagation(); handlePrintLabel(machine); }}>
+                      <Printer size={14} /> <span>ETIQUETA</span>
+                    </button>
+                  </div>
+
+                  <div className="actions-separator"></div>
+
+                  <div className="actions-group management">
+                    <button className="action-chip edit" title="Editar" onClick={(e) => { e.stopPropagation(); openModal(machine); }}>
+                      <Edit size={14} />
+                    </button>
+                    <button className="action-chip delete" title="Excluir" onClick={(e) => { e.stopPropagation(); deleteMachine(machine.id); }}>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               </div>
                 

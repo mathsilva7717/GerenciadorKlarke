@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, Plus, X, Copy, Router as RouterIcon, MapPin, Check, Download, Clipboard, Trash2, QrCode, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, X, Copy, Router as RouterIcon, MapPin, Check, Download, Clipboard, Trash2, QrCode, ChevronLeft, ChevronRight, RotateCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -15,6 +15,7 @@ function NetworkDevices() {
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [editingDevice, setEditingDevice] = useState(null);
   const [copiedField, setCopiedField] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -68,14 +69,23 @@ function NetworkDevices() {
     };
   }, [isScannerOpen, devices]);
 
-  const fetchDevices = async () => {
+  const fetchDevices = async (manual = false) => {
+    if (manual) setIsRefreshing(true);
     try {
       const response = await axios.get(API_URL, getAuthConfig());
       setDevices(response.data);
+      if (manual) toast.success('Lista atualizada!');
     } catch (error) {
-      if (error.response?.status === 401) navigate('/');
+      console.error('Erro ao buscar dispositivos:', error);
+      if (manual) toast.error('Erro ao atualizar lista');
+    } finally {
+      if (manual) setTimeout(() => setIsRefreshing(false), 500);
     }
   };
+
+  useEffect(() => {
+    fetchDevices();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -250,6 +260,14 @@ function NetworkDevices() {
           />
         </div>
         <div className="action-buttons-group">
+          <button 
+            className={`btn-refresh-sober ${isRefreshing ? 'spinning' : ''}`}
+            onClick={() => fetchDevices(true)}
+            title="Atualizar Lista"
+            disabled={isRefreshing}
+          >
+            <RotateCw size={20} />
+          </button>
           <button 
             className="btn-action-square" 
             style={{background: 'var(--color-accent)'}}

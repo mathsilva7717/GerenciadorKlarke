@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, Monitor, Camera, Router as RouterIcon, Moon, Sun, ListTodo, ArrowLeft, Home, Users, Activity, History } from 'lucide-react';
+import { LogOut, Monitor, Camera, Router as RouterIcon, Moon, Sun, ListTodo, ArrowLeft, Home, Users, Activity, History, BookOpen } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 function Navbar() {
@@ -32,6 +32,7 @@ function Navbar() {
     { icon: <Camera size={20} />, label: 'Câmeras', path: '/control/cameras' },
     { icon: <RouterIcon size={20} />, label: 'Rede', path: '/control/network' },
     { icon: <ListTodo size={20} />, label: 'Tarefas', path: '/control/action-plan' },
+    { icon: <BookOpen size={20} />, label: 'Vault', path: '/control/technical-docs' },
     { icon: <History size={20} />, label: 'Logs', path: '/control/audit-logs' },
   ];
 

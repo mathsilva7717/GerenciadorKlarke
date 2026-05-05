@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Monitor, Camera, Router as RouterIcon, ListTodo, ChevronRight, Activity, ShieldCheck, Cpu, Database } from 'lucide-react';
+import { Monitor, Camera, Router as RouterIcon, ListTodo, ChevronRight, Activity, ShieldCheck, Cpu, Database, RotateCw, BookOpen } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 function Home() {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ function Home() {
     users: 0,
     logsToday: 0
   });
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const isOnline = (lastSeen) => {
     if (!lastSeen) return false;
@@ -27,34 +29,42 @@ function Home() {
   };
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const [m, c, n, t, u, logs] = await Promise.all([
-          axios.get('/api/machines', getAuthConfig()),
-          axios.get('/api/cameras', getAuthConfig()),
-          axios.get('/api/network-devices', getAuthConfig()),
-          axios.get('/api/tasks', getAuthConfig()),
-          axios.get('/api/users', getAuthConfig()),
-          axios.get('/api/audit-logs', getAuthConfig())
-        ]);
-        setStats({
-          machines: m.data?.length || 0,
-          machinesOnline: (m.data || []).filter(x => isOnline(x.last_seen)).length,
-          cameras: c.data?.length || 0,
-          camerasOnline: (c.data || []).filter(x => isOnline(x.last_seen)).length,
-          network: n.data?.length || 0,
-          networkOnline: (n.data || []).filter(x => isOnline(x.last_seen)).length,
-          tasks: (t.data || []).filter(x => !x.is_completed).length,
-          users: u.data?.length || 0,
-          logsToday: (logs.data || []).filter(x => new Date(x.created_at).toDateString() === new Date().toDateString()).length
-        });
-      } catch (e) {
-        console.error("Stats error", e);
-      }
-    };
+  const fetchStats = async (manual = false) => {
+    if (manual) setIsRefreshing(true);
+    try {
+      const [m, c, n, t, u, logs] = await Promise.all([
+        axios.get('/api/machines', getAuthConfig()),
+        axios.get('/api/cameras', getAuthConfig()),
+        axios.get('/api/network-devices', getAuthConfig()),
+        axios.get('/api/tasks', getAuthConfig()),
+        axios.get('/api/users', getAuthConfig()),
+        axios.get('/api/audit-logs', getAuthConfig())
+      ]);
+      setStats({
+        machines: m.data?.length || 0,
+        machinesOnline: (m.data || []).filter(x => isOnline(x.last_seen)).length,
+        cameras: c.data?.length || 0,
+        camerasOnline: (c.data || []).filter(x => isOnline(x.last_seen)).length,
+        network: n.data?.length || 0,
+        networkOnline: (n.data || []).filter(x => isOnline(x.last_seen)).length,
+        tasks: (t.data || []).filter(x => !x.is_completed).length,
+        users: u.data?.length || 0,
+        logsToday: (logs.data || []).filter(x => new Date(x.created_at).toDateString() === new Date().toDateString()).length
+      });
+      if (manual) toast.success('Dados atualizados!');
+    } catch (e) {
+      console.error("Stats error", e);
+      if (manual) toast.error('Erro ao atualizar dados');
+    } finally {
+      if (manual) setTimeout(() => setIsRefreshing(false), 500);
+    }
+  };
+
+  useEffect(() => {
     fetchStats();
-    const interval = setInterval(fetchStats, 30000);
+    const interval = setInterval(() => fetchStats(false), 30000);
     return () => clearInterval(interval);
+  }, []);
   }, []);
 
   const downloadBackup = async () => {
@@ -114,13 +124,20 @@ function Home() {
       label: 'Pendentes'
     },
     {
-      title: 'Gestão de Usuários',
-      desc: 'Controle de acessos e permissões do painel.',
       icon: <ShieldCheck size={28} />,
       path: '/control/users',
       color: '#1e293b', // Slate 800
       count: stats.users,
       label: 'Usuários'
+    },
+    {
+      title: 'Tech Vault',
+      desc: 'Manuais, procedimentos e documentação de rede.',
+      icon: <BookOpen size={28} />,
+      path: '/control/technical-docs',
+      color: '#0f172a', // Slate 950
+      count: 0,
+      label: 'Arquivos'
     }
   ];
 
@@ -148,7 +165,17 @@ function Home() {
       {/* HEADER: GLOBAL HEALTH */}
       <div className="home-hero-sober">
         <div className="hero-content">
-          <h1>SISTEMA KLARKE</h1>
+          <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+            <h1>SISTEMA KLARKE</h1>
+            <button 
+              className={`refresh-btn-circular ${isRefreshing ? 'spinning' : ''}`}
+              onClick={() => fetchStats(true)}
+              title="Atualizar Painel"
+              disabled={isRefreshing}
+            >
+              <RotateCw size={18} />
+            </button>
+          </div>
           <p>Monitoramento de links, câmeras e acessos remotos.</p>
         </div>
         
@@ -264,6 +291,22 @@ function Home() {
             </div>
           </div>
           <div className="industrial-footer"><span>AUDITORIA</span><ChevronRight size={14} /></div>
+        </div>
+
+        <div className="card-industrial" onClick={() => navigate('/control/technical-docs')}>
+          <div className="card-industrial-header">
+            <div className="industrial-icon"><BookOpen size={22} /></div>
+            <div className="industrial-badge">0</div>
+          </div>
+          <div className="industrial-body">
+            <h3>Tech Vault</h3>
+            <p>Repositório central de manuais e procedimentos.</p>
+            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <Database size={12} color="#64748b" />
+              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Central de documentação</span>
+            </div>
+          </div>
+          <div className="industrial-footer"><span>VER ACERVO</span><ChevronRight size={14} /></div>
         </div>
       </div>
 

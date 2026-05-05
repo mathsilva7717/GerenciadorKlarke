@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, Plus, X, Copy, Camera, MapPin, Check, Download, Clipboard, Trash2, QrCode, Activity, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, X, Copy, Camera, MapPin, Check, Download, Clipboard, Trash2, QrCode, Activity, ChevronLeft, ChevronRight, RotateCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -15,6 +15,7 @@ function Cameras() {
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [editingCamera, setEditingCamera] = useState(null);
   const [copiedField, setCopiedField] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -68,14 +69,23 @@ function Cameras() {
     };
   }, [isScannerOpen, cameras]);
 
-  const fetchCameras = async () => {
+  const fetchCameras = async (manual = false) => {
+    if (manual) setIsRefreshing(true);
     try {
       const response = await axios.get(API_URL, getAuthConfig());
       setCameras(response.data);
+      if (manual) toast.success('Lista atualizada!');
     } catch (error) {
-      if (error.response?.status === 401) navigate('/');
+      console.error('Erro ao buscar câmeras:', error);
+      if (manual) toast.error('Erro ao atualizar lista');
+    } finally {
+      if (manual) setTimeout(() => setIsRefreshing(false), 500);
     }
   };
+
+  useEffect(() => {
+    fetchCameras();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -253,6 +263,14 @@ function Cameras() {
           />
         </div>
         <div className="action-buttons-group">
+          <button 
+            className={`btn-refresh-sober ${isRefreshing ? 'spinning' : ''}`}
+            onClick={() => fetchCameras(true)}
+            title="Atualizar Lista"
+            disabled={isRefreshing}
+          >
+            <RotateCw size={20} />
+          </button>
           <button 
             className="btn-action-square" 
             style={{background: 'var(--color-accent)'}}

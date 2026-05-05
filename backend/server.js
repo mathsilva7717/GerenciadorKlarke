@@ -3,6 +3,7 @@ const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const bcrypt = require('bcryptjs');
+const multer = require('multer');
 require('dotenv').config();
 
 const app = express();
@@ -75,6 +76,18 @@ const db = new sqlite3.Database(dbPath, (err) => {
         user TEXT,
         action TEXT,
         details TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    db.run(`
+      CREATE TABLE IF NOT EXISTS technical_docs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT,
+        type TEXT,
+        content TEXT,
+        file_path TEXT,
+        file_size TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -411,6 +424,61 @@ app.use(express.json({ limit: '10mb' }));
 
 // Servir fotos das câmeras
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// ==========================================
+// ROUTES: TECHNICAL DOCS (ACERVO)
+// ==========================================
+
+// Config Multer para Acervo
+const docStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, 'uploads/docs');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    cb(null, `doc_${Date.now()}_${file.originalname.replace(/\s+/g, '_')}`);
+  }
+});
+const uploadDoc = multer({ storage: docStorage });
+
+app.get('/api/technical-docs', authenticate, (req, res) => {
+  db.all('SELECT * FROM technical_docs ORDER BY created_at DESC', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+app.post('/api/technical-docs', authenticate, uploadDoc.single('file'), (req, res) => {
+  const { title, type, content } = req.body;
+  const filePath = req.file ? req.file.filename : null;
+  const fileSize = req.file ? `${(req.file.size / 1024).toFixed(1)} KB` : null;
+
+  db.run(
+    "INSERT INTO technical_docs (title, type, content, file_path, file_size) VALUES (?, ?, ?, ?, ?)",
+    [title, type || 'Nota', content, filePath, fileSize],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.status(201).json({ id: this.lastID, title, filePath });
+    }
+  );
+});
+
+app.delete('/api/technical-docs/:id', authenticate, (req, res) => {
+  db.get("SELECT file_path FROM technical_docs WHERE id = ?", [req.params.id], (err, row) => {
+    if (row && row.file_path) {
+      const fullPath = path.join(__dirname, 'uploads/docs', row.file_path);
+      if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+    }
+    db.run("DELETE FROM technical_docs WHERE id = ?", [req.params.id], (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ message: 'Documento removido' });
+    });
+  });
+});
+
+// Servir arquivos do acervo
+app.use('/uploads/docs', express.static(path.join(__dirname, 'uploads/docs')));
 
 // Rota para o Agente enviar fotos
 app.post('/api/monitoring/snapshot', (req, res) => {

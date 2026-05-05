@@ -10,6 +10,7 @@ import ActionPlan from './pages/ActionPlan';
 import Home from './pages/Home';
 import AuditLogs from './pages/AuditLogs';
 import Users from './pages/Users';
+import TechnicalDocs from './pages/TechnicalDocs';
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
             <Route path="action-plan" element={<ActionPlan />} />
             <Route path="audit-logs" element={<AuditLogs />} />
             <Route path="users" element={<Users />} />
+            <Route path="technical-docs" element={<TechnicalDocs />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />
