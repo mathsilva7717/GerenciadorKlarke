@@ -111,54 +111,51 @@ function Home() {
 
   return (
     <div className="home-container">
-      <div className="home-hero">
+      <div className="home-hero-sober">
         <div className="hero-content">
-          <h1>Central de Controle</h1>
-          <p>Infraestrutura Klarke sob monitoramento ativo.</p>
+          <h1>Monitoramento Klarke Solutions</h1>
+          <p>Gestão centralizada de infraestrutura crítica.</p>
         </div>
-        <div className="system-status">
-          <div className="status-badge">
-            <Activity size={14} className="pulse" />
-            <span>Sistema Online</span>
+        
+        <div className="quick-stats-row-sober">
+          <div className="stat-box-industrial">
+            <span className="stat-label">Status</span>
+            <div className="stat-value-row">
+              <div className="indicator-static-green"></div>
+              <span className="stat-value">ONLINE</span>
+            </div>
+          </div>
+
+          <div className="stat-box-industrial" onClick={downloadBackup}>
+            <span className="stat-label">Database</span>
+            <span className="stat-value">BACKUP OK</span>
           </div>
         </div>
       </div>
 
-      <div className="stats-strip">
-        <div className="stat-pill">
-          <ShieldCheck size={18} />
-          <span>Firewall Ativo</span>
-        </div>
-        <div className="stat-pill" onClick={downloadBackup} style={{cursor: 'pointer'}}>
-          <Database size={18} />
-          <span>Baixar Backup</span>
-        </div>
-      </div>
-
-      <div className="selection-grid">
+      <div className="selection-grid-industrial">
         {modules.map((module, index) => (
           <div 
             key={index} 
-            className="selection-card" 
+            className="card-industrial" 
             onClick={() => navigate(module.path)}
-            style={{ '--accent-color': module.color }}
+            style={{ '--accent-border': module.color }}
           >
-            <div className="card-accent-bar"></div>
-            <div className="selection-card-header">
-              <div className="selection-icon-wrapper" style={{ backgroundColor: `${module.color}15`, color: module.color }}>
+            <div className="card-industrial-header">
+              <div className="industrial-icon" style={{ color: module.color }}>
                 {module.icon}
               </div>
-              <div className="selection-count">
-                <span className="count-num">{module.count}</span>
-                <span className="count-label">{module.label}</span>
+              <div className="industrial-badge">
+                {module.count}
               </div>
             </div>
-            <div className="selection-content">
+            <div className="industrial-body">
               <h3>{module.title}</h3>
               <p>{module.desc}</p>
             </div>
-            <div className="selection-card-footer">
-              <ChevronRight size={16} />
+            <div className="industrial-footer">
+              <span>GERENCIAR</span>
+              <ChevronRight size={14} />
             </div>
           </div>
         ))}

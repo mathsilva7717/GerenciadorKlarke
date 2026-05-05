@@ -21,7 +21,7 @@ function Login() {
       const response = await axios.post(API_URL, { username, password });
       if (response.data.token) {
         localStorage.setItem('klarke_token', response.data.token);
-        navigate('/dashboard');
+        navigate('/control');
       }
     } catch (err) {
       setError('Credenciais inválidas. Tente novamente.');

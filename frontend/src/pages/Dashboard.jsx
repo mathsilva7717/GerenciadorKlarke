@@ -56,7 +56,26 @@ function Dashboard() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    let formattedValue = value;
+
+    // Máscara para MAC Address
+    if (name === 'mac') {
+      formattedValue = value.replace(/[^a-fA-F0-9]/g, '').toUpperCase();
+      const parts = formattedValue.match(/.{1,2}/g);
+      if (parts) formattedValue = parts.slice(0, 6).join(':');
+    }
+
+    // Máscara para IP Address
+    if (name === 'ip') {
+      formattedValue = value.replace(/[^0-9.]/g, '');
+    }
+
+    // Máscara para IDs de Acesso Remoto (Apenas números)
+    if (name === 'anydesk_id' || name === 'rustdesk_id') {
+      formattedValue = value.replace(/[^0-9]/g, '');
+    }
+
+    setFormData({ ...formData, [name]: formattedValue });
   };
 
   const openModal = (machine = null) => {

@@ -41,7 +41,16 @@ function NetworkDevices() {
     }
   };
 
-  const handleInputChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    let formattedValue = value;
+
+    if (name === 'ip') {
+      formattedValue = value.replace(/[^0-9.]/g, '');
+    }
+
+    setFormData({ ...formData, [name]: formattedValue });
+  };
 
   const openModal = (device = null) => {
     if (device) {
