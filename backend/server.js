@@ -20,9 +20,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
   } else {
     console.log('Conectado ao banco de dados SQLite.');
     db.serialize(() => {
-      console.log('Iniciando migração de banco de dados...');
+      console.log('Iniciando Super Migração de banco de dados...');
       
-      // Helper para logar erros de migração
       const handleMigrate = (table, column, err) => {
         if (err && !err.message.includes('duplicate column name')) {
           console.error(`Erro ao adicionar ${column} em ${table}:`, err.message);
@@ -31,42 +30,25 @@ const db = new sqlite3.Database(dbPath, (err) => {
         }
       };
 
-      // Máquinas
-      db.run(`CREATE TABLE IF NOT EXISTS machines (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT, mac TEXT, ip TEXT, location TEXT, rustdesk_id TEXT, anydesk_id TEXT,
-        password TEXT, serial_number TEXT, last_seen DATETIME, created_by TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`);
-      db.run("ALTER TABLE machines ADD COLUMN created_by TEXT", (err) => handleMigrate('machines', 'created_by', err));
+      // Máquinas - Garantir TODAS as colunas
+      db.run(`CREATE TABLE IF NOT EXISTS machines (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`);
+      const mCols = ['mac', 'ip', 'location', 'rustdesk_id', 'anydesk_id', 'password', 'serial_number', 'last_seen', 'created_by'];
+      mCols.forEach(col => db.run(`ALTER TABLE machines ADD COLUMN ${col} TEXT`, (err) => handleMigrate('machines', col, err)));
 
-      // Câmeras
-      db.run(`CREATE TABLE IF NOT EXISTS cameras (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT, ip TEXT, port TEXT, username TEXT, password TEXT, location TEXT,
-        serial_number TEXT, last_seen DATETIME, last_snapshot TEXT, rtsp_link TEXT,
-        created_by TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`);
-      db.run("ALTER TABLE cameras ADD COLUMN created_by TEXT", (err) => handleMigrate('cameras', 'created_by', err));
-      db.run("ALTER TABLE cameras ADD COLUMN rtsp_link TEXT", (err) => handleMigrate('cameras', 'rtsp_link', err));
+      // Câmeras - Garantir TODAS as colunas
+      db.run(`CREATE TABLE IF NOT EXISTS cameras (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`);
+      const cCols = ['ip', 'port', 'username', 'password', 'location', 'serial_number', 'last_seen', 'last_snapshot', 'rtsp_link', 'created_by'];
+      cCols.forEach(col => db.run(`ALTER TABLE cameras ADD COLUMN ${col} TEXT`, (err) => handleMigrate('cameras', col, err)));
 
-      // Rede
-      db.run(`CREATE TABLE IF NOT EXISTS network_devices (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT, type TEXT, ip TEXT, username TEXT, password TEXT, location TEXT,
-        isp TEXT, serial_number TEXT, last_seen DATETIME, created_by TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`);
-      db.run("ALTER TABLE network_devices ADD COLUMN created_by TEXT", (err) => handleMigrate('network_devices', 'created_by', err));
+      // Rede - Garantir TODAS as colunas
+      db.run(`CREATE TABLE IF NOT EXISTS network_devices (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`);
+      const nCols = ['type', 'ip', 'username', 'password', 'location', 'isp', 'serial_number', 'last_seen', 'created_by'];
+      nCols.forEach(col => db.run(`ALTER TABLE network_devices ADD COLUMN ${col} TEXT`, (err) => handleMigrate('network_devices', col, err)));
 
       // Tarefas
-      db.run(`CREATE TABLE IF NOT EXISTS tasks (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT, description TEXT, is_completed INTEGER DEFAULT 0,
-        completed_by TEXT, completed_at DATETIME, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`);
-      db.run("ALTER TABLE tasks ADD COLUMN completed_by TEXT", (err) => handleMigrate('tasks', 'completed_by', err));
-      db.run("ALTER TABLE tasks ADD COLUMN completed_at DATETIME", (err) => handleMigrate('tasks', 'completed_at', err));
+      db.run(`CREATE TABLE IF NOT EXISTS tasks (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT)`);
+      const tCols = ['description', 'is_completed', 'completed_by', 'completed_at'];
+      tCols.forEach(col => db.run(`ALTER TABLE tasks ADD COLUMN ${col} TEXT`, (err) => handleMigrate('tasks', col, err)));
     });
 
     db.run(`
@@ -207,11 +189,11 @@ app.post('/api/machines', authenticate, (req, res) => {
     if (err && (err.message.includes('no such column') || err.message.includes('has no column'))) {
       console.warn('Banco desatualizado, salvando sem auditoria...');
       db.run(sqlSimple, [name, mac, ip, location, rustdesk_id, anydesk_id, password, serial_number], function (err2) {
-        if (err2) return res.status(500).json({ error: err2.message });
+        if (err2) return res.status(500).json({ error: `Simples: ${err2.message}` });
         res.status(201).json({ id: this.lastID });
       });
     } else if (err) {
-      return res.status(500).json({ error: err.message });
+      return res.status(500).json({ error: `Audit: ${err.message}` });
     } else {
       try { logAction(created_by || 'Sistema', 'NOVO EQUIPAMENTO', `Cadastrou máquina: ${name}`); } catch (e) {}
       res.status(201).json({ id: this.lastID });
@@ -269,11 +251,11 @@ app.post('/api/cameras', authenticate, (req, res) => {
   db.run(sqlWithAudit, [name, ip, port, username, password, location, serial_number, rtsp_link, created_by || 'Sistema'], function (err) {
     if (err && (err.message.includes('no such column') || err.message.includes('has no column'))) {
       db.run(sqlSimple, [name, ip, port, username, password, location, serial_number, rtsp_link], function (err2) {
-        if (err2) return res.status(500).json({ error: err2.message });
+        if (err2) return res.status(500).json({ error: `Simples Cam: ${err2.message}` });
         res.status(201).json({ id: this.lastID });
       });
     } else if (err) {
-      return res.status(500).json({ error: err.message });
+      return res.status(500).json({ error: `Audit Cam: ${err.message}` });
     } else {
       try { logAction(created_by || 'Sistema', 'NOVA CÂMERA', `Cadastrou câmera: ${name}`); } catch (e) {}
       res.status(201).json({ id: this.lastID });
@@ -316,11 +298,11 @@ app.post('/api/network-devices', authenticate, (req, res) => {
   db.run(sqlWithAudit, [name, type, ip, username, password, location, isp, serial_number, created_by || 'Sistema'], function (err) {
     if (err && (err.message.includes('no such column') || err.message.includes('has no column'))) {
       db.run(sqlSimple, [name, type, ip, username, password, location, isp, serial_number], function (err2) {
-        if (err2) return res.status(500).json({ error: err2.message });
+        if (err2) return res.status(500).json({ error: `Simples Net: ${err2.message}` });
         res.status(201).json({ id: this.lastID });
       });
     } else if (err) {
-      return res.status(500).json({ error: err.message });
+      return res.status(500).json({ error: `Audit Net: ${err.message}` });
     } else {
       try { logAction(created_by || 'Sistema', 'NOVA REDE', `Cadastrou dispositivo de rede: ${name}`); } catch (e) {}
       res.status(201).json({ id: this.lastID });
