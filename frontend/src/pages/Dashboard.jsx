@@ -424,7 +424,7 @@ function Dashboard() {
                       POR: {editingMachine.created_by || 'Sistema'}
                     </div>
                     <div style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>
-                      EM: {new Date(editingMachine.created_at).toLocaleString()}
+                      EM: {new Date((editingMachine.created_at || '').replace(' ', 'T') + 'Z').toLocaleString()}
                     </div>
                   </div>
                 )}

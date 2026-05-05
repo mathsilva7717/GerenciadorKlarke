@@ -10,7 +10,8 @@ function Home() {
     cameras: 0, camerasOnline: 0,
     network: 0, networkOnline: 0,
     tasks: 0,
-    users: 0
+    users: 0,
+    logsToday: 0
   });
 
   const isOnline = (lastSeen) => {
@@ -28,12 +29,13 @@ function Home() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [m, c, n, t, u] = await Promise.all([
+        const [m, c, n, t, u, logs] = await Promise.all([
           axios.get('/api/machines', getAuthConfig()),
           axios.get('/api/cameras', getAuthConfig()),
           axios.get('/api/network-devices', getAuthConfig()),
           axios.get('/api/tasks', getAuthConfig()),
-          axios.get('/api/users', getAuthConfig())
+          axios.get('/api/users', getAuthConfig()),
+          axios.get('/api/audit-logs', getAuthConfig())
         ]);
         setStats({
           machines: m.data.length,
@@ -43,7 +45,8 @@ function Home() {
           network: n.data.length,
           networkOnline: n.data.filter(x => isOnline(x.last_seen)).length,
           tasks: t.data.filter(x => !x.is_completed).length,
-          users: u.data.length
+          users: u.data.length,
+          logsToday: logs.data.filter(x => new Date(x.created_at).toDateString() === new Date().toDateString()).length
         });
       } catch (e) {
         console.error("Stats error", e);
@@ -185,7 +188,7 @@ function Home() {
       <div className="selection-grid-industrial">
         <div className="card-industrial" onClick={() => navigate('/control/machines')}>
           <div className="card-industrial-header">
-            <div className="industrial-icon"><Monitor size={24} /></div>
+            <div className="industrial-icon"><Monitor size={22} /></div>
             <div className="industrial-badge">{stats.machines}</div>
           </div>
           <div className="industrial-body">
@@ -201,7 +204,7 @@ function Home() {
 
         <div className="card-industrial" onClick={() => navigate('/control/cameras')}>
           <div className="card-industrial-header">
-            <div className="industrial-icon"><Camera size={24} /></div>
+            <div className="industrial-icon"><Camera size={22} /></div>
             <div className="industrial-badge">{stats.cameras}</div>
           </div>
           <div className="industrial-body">
@@ -217,7 +220,7 @@ function Home() {
 
         <div className="card-industrial" onClick={() => navigate('/control/network')}>
           <div className="card-industrial-header">
-            <div className="industrial-icon"><RouterIcon size={24} /></div>
+            <div className="industrial-icon"><RouterIcon size={22} /></div>
             <div className="industrial-badge">{stats.network}</div>
           </div>
           <div className="industrial-body">
@@ -233,7 +236,7 @@ function Home() {
 
         <div className="card-industrial" onClick={() => navigate('/control/action-plan')}>
           <div className="card-industrial-header">
-            <div className="industrial-icon"><ListTodo size={24} /></div>
+            <div className="industrial-icon"><ListTodo size={22} /></div>
             <div className="industrial-badge">{stats.tasks}</div>
           </div>
           <div className="industrial-body">
@@ -245,6 +248,22 @@ function Home() {
             </div>
           </div>
           <div className="industrial-footer"><span>TAREFAS</span><ChevronRight size={14} /></div>
+        </div>
+
+        <div className="card-industrial" onClick={() => navigate('/control/audit-logs')}>
+          <div className="card-industrial-header">
+            <div className="industrial-icon"><ShieldCheck size={22} /></div>
+            <div className="industrial-badge">{stats.logsToday}</div>
+          </div>
+          <div className="industrial-body">
+            <h3>Histórico e Logs</h3>
+            <p>Auditoria completa de acessos e alterações.</p>
+            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <Activity size={12} color="#64748b" />
+              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Atividade em tempo real</span>
+            </div>
+          </div>
+          <div className="industrial-footer"><span>AUDITORIA</span><ChevronRight size={14} /></div>
         </div>
       </div>
 

@@ -359,7 +359,7 @@ function Cameras() {
                       POR: {editingCamera.created_by || 'Sistema'}
                     </div>
                     <div style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>
-                      EM: {new Date(editingCamera.created_at).toLocaleString()}
+                      EM: {new Date((editingCamera.created_at || '').replace(' ', 'T') + 'Z').toLocaleString()}
                     </div>
                   </div>
                 )}

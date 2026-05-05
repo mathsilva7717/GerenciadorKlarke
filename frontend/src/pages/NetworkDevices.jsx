@@ -343,7 +343,7 @@ function NetworkDevices() {
                       POR: {editingDevice.created_by || 'Sistema'}
                     </div>
                     <div style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>
-                      EM: {new Date(editingDevice.created_at).toLocaleString()}
+                      EM: {new Date((editingDevice.created_at || '').replace(' ', 'T') + 'Z').toLocaleString()}
                     </div>
                   </div>
                 )}
