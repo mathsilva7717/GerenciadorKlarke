@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Lock, User, ShieldCheck } from 'lucide-react';
+import { Lock, User, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 
 const API_URL = '/api/login';
 
@@ -11,6 +11,7 @@ function Login() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [successData, setSuccessData] = useState(null);
   const navigate = useNavigate();
 
@@ -97,12 +98,21 @@ function Login() {
             <div className="input-icon-wrapper">
               <Lock size={20} className="input-icon" />
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="Senha"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                className="password-input-asterisk"
               />
+              <button 
+                type="button" 
+                className="eye-toggle-btn"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex="-1"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           </div>
 

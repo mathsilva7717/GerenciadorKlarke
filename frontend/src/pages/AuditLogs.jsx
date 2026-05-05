@@ -44,6 +44,15 @@ const AuditLogs = () => {
     (log.details?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
+  const getBadgeClass = (action) => {
+    const a = action?.toLowerCase() || '';
+    if (a.includes('login')) return 'badge-login';
+    if (a.includes('novo') || a.includes('cadastrou') || a.includes('criou')) return 'badge-create';
+    if (a.includes('editou') || a.includes('alterou') || a.includes('atualizou')) return 'badge-update';
+    if (a.includes('excluiu') || a.includes('removeu') || a.includes('deletou')) return 'badge-delete';
+    return 'badge-default';
+  };
+
   return (
     <div className="audit-container">
       <div className="search-wrapper">
@@ -82,7 +91,7 @@ const AuditLogs = () => {
                   <span className="log-date">{formatDate(log.created_at)}</span>
                 </div>
                 <div className="log-action-row">
-                  <span className="log-badge">{log.action}</span>
+                  <span className={`log-badge ${getBadgeClass(log.action)}`}>{log.action}</span>
                   <span className="log-details">{log.details}</span>
                 </div>
               </div>
@@ -141,11 +150,15 @@ const AuditLogs = () => {
           font-size: 0.65rem;
           font-weight: 800;
           padding: 4px 8px;
-          background: var(--color-primary);
           color: white;
           border-radius: 4px;
           text-transform: uppercase;
         }
+        .badge-login { background: #334155; } /* Slate 700 */
+        .badge-create { background: #065f46; } /* Emerald 800 */
+        .badge-update { background: #1e40af; } /* Blue 800 */
+        .badge-delete { background: #991b1b; } /* Red 800 */
+        .badge-default { background: var(--color-primary); }
         .log-details {
           font-size: 0.9rem;
           color: var(--color-text);
