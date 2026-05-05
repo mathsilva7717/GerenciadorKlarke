@@ -11,6 +11,9 @@ import Home from './pages/Home';
 import AuditLogs from './pages/AuditLogs';
 import Users from './pages/Users';
 import TechnicalDocs from './pages/TechnicalDocs';
+import Voip from './pages/Voip';
+import Inventory from './pages/Inventory';
+import KeyKeeper from './pages/KeyKeeper';
 
 function App() {
   return (
@@ -29,6 +32,9 @@ function App() {
             <Route path="audit-logs" element={<AuditLogs />} />
             <Route path="users" element={<Users />} />
             <Route path="technical-docs" element={<TechnicalDocs />} />
+            <Route path="voip" element={<Voip />} />
+            <Route path="inventory" element={<Inventory />} />
+            <Route path="key-keeper" element={<KeyKeeper />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

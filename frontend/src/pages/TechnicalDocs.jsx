@@ -8,12 +8,15 @@ function TechnicalDocs() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUploading, setIsRefreshing] = useState(false);
-  const [formData, setFormData] = useState({ title: '', type: 'Nota', content: '' });
+  const [formData, setFormData] = useState({ title: '', type: 'Nota', content: '', amount: '' });
+  const [editingDoc, setEditingDoc] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
 
-  const getAuthConfig = () => ({
-    headers: { Authorization: `Bearer ${localStorage.getItem('klarke_token')}` }
-  });
+  const getAuthConfig = () => {
+    const token = localStorage.getItem('klarke_token');
+    const user = localStorage.getItem('klarke_user') || 'Sistema';
+    return { headers: { Authorization: `Bearer ${token}`, 'X-User': user } };
+  };
 
   const fetchDocs = async () => {
     try {
@@ -40,25 +43,51 @@ function TechnicalDocs() {
     data.append('title', formData.title);
     data.append('type', formData.type);
     data.append('content', formData.content);
+    data.append('amount', formData.amount);
     if (selectedFile) data.append('file', selectedFile);
 
     try {
-      await axios.post('/api/technical-docs', data, {
-        headers: { 
-          ...getAuthConfig().headers,
-          'Content-Type': 'multipart/form-data' 
-        }
-      });
-      toast.success('Adicionado ao acervo!');
+      if (editingDoc) {
+        // Para simplificar, o edit aqui não troca o arquivo via FormData por enquanto, 
+        // ou você pode implementar uma rota de PUT que aceite FormData
+        await axios.put(`/api/technical-docs/${editingDoc.id}`, formData, getAuthConfig());
+        toast.success('Atualizado!');
+      } else {
+        await axios.post('/api/technical-docs', data, {
+          headers: { 
+            ...getAuthConfig().headers,
+            'Content-Type': 'multipart/form-data' 
+          }
+        });
+        toast.success('Adicionado ao acervo!');
+      }
       setIsModalOpen(false);
-      setFormData({ title: '', type: 'Nota', content: '' });
+      setEditingDoc(null);
+      setFormData({ title: '', type: 'Nota', content: '', amount: '' });
       setSelectedFile(null);
       fetchDocs();
     } catch (err) {
-      toast.error('Erro ao enviar');
+      toast.error('Erro ao salvar');
     } finally {
       setIsRefreshing(false);
     }
+  };
+
+  const openModal = (doc = null) => {
+    if (doc) {
+      setEditingDoc(doc);
+      setFormData({ 
+        title: doc.title, 
+        type: doc.type, 
+        content: doc.content || '', 
+        amount: doc.amount || '' 
+      });
+    } else {
+      setEditingDoc(null);
+      setFormData({ title: '', type: 'Nota', content: '', amount: '' });
+      setSelectedFile(null);
+    }
+    setIsModalOpen(true);
   };
 
   const deleteDoc = async (id) => {
@@ -80,18 +109,18 @@ function TechnicalDocs() {
 
   return (
     <div className="users-container">
-      <div className="page-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+      <div className="page-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
         <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-          <div className="industrial-icon" style={{background: 'var(--color-primary)', color: 'white', padding: '10px', borderRadius: '8px'}}>
-            <BookOpen size={24} />
+          <div className="industrial-icon" style={{background: 'var(--color-primary)', color: 'white', padding: '8px', borderRadius: '6px'}}>
+            <BookOpen size={20} />
           </div>
           <div>
-            <h1>Tech Vault</h1>
-            <p>Documentação, fotos de campo e anotações seguras.</p>
+            <h1 style={{fontSize: '1.5rem', margin: 0}}>Tech Vault</h1>
+            <p style={{fontSize: '0.8rem', margin: 0, opacity: 0.7}}>Documentação e investimentos.</p>
           </div>
         </div>
-        <button className="btn btn-primary" style={{width: 'auto'}} onClick={() => setIsModalOpen(true)}>
-          <Plus size={20} /> <span className="hide-mobile">NOVO ITEM</span>
+        <button className="btn btn-primary" style={{width: 'auto', padding: '8px 16px', fontSize: '0.8rem'}} onClick={() => openModal()}>
+          <Plus size={16} /> <span className="hide-mobile">NOVO ITEM</span>
         </button>
       </div>
 
@@ -120,12 +149,20 @@ function TechnicalDocs() {
                 )}
                 <div>
                   <span className="machine-title" style={{fontSize: '1.1rem'}}>{doc.title}</span>
-                  <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block'}}>
-                    {new Date(doc.created_at).toLocaleString()} • {doc.type}
-                  </span>
+                  <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+                    <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>
+                      {new Date(doc.created_at).toLocaleString()} • {doc.type}
+                    </span>
+                    {doc.amount && (
+                      <span style={{fontSize: '0.75rem', fontWeight: 'bold', color: '#10b981', background: '#f0fdf4', padding: '2px 6px', borderRadius: '4px'}}>
+                        R$ {parseFloat(doc.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
               <div style={{display: 'flex', gap: '8px'}}>
+                <button className="copy-btn" onClick={() => openModal(doc)} title="Editar"><Edit size={16} /></button>
                 {doc.file_path && (
                   <a 
                     href={`/uploads/docs/${doc.file_path}`} 
@@ -177,11 +214,11 @@ function TechnicalDocs() {
       </div>
 
       {isModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{maxWidth: '500px'}}>
+        <div className="modal-overlay" onClick={() => { setIsModalOpen(false); setEditingDoc(null); }}>
+          <div className="modal-content" style={{maxWidth: '500px'}} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Novo Item no Vault</h2>
-              <button className="close-btn" onClick={() => setIsModalOpen(false)}><X size={24} /></button>
+              <h2>{editingDoc ? 'Editar Item' : 'Novo Item no Vault'}</h2>
+              <button className="close-btn" onClick={() => { setIsModalOpen(false); setEditingDoc(null); }}><X size={24} /></button>
             </div>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
@@ -204,10 +241,23 @@ function TechnicalDocs() {
                     onChange={(e) => setFormData({...formData, type: e.target.value})}
                   >
                     <option value="Nota">Nota / Texto</option>
+                    <option value="Investimento">Investimento</option>
+                    <option value="Orçamento">Orçamento</option>
+                    <option value="Recibo">Recibo / Custo</option>
                     <option value="Foto">Foto de Campo</option>
                     <option value="Manual">Manual PDF</option>
-                    <option value="Recibo">Recibo / Custo</option>
                   </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Valor (Opcional R$)</label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    className="form-input"
+                    value={formData.amount}
+                    onChange={(e) => setFormData({...formData, amount: e.target.value})}
+                    placeholder="0.00"
+                  />
                 </div>
               </div>
               <div className="form-group">
@@ -243,7 +293,7 @@ function TechnicalDocs() {
                 </div>
               </div>
               <button type="submit" className="btn btn-primary btn-block" disabled={isUploading}>
-                {isUploading ? 'ENVIANDO...' : 'SALVAR NO VAULT'}
+                {isUploading ? 'SALVANDO...' : (editingDoc ? 'ATUALIZAR' : 'SALVAR NO VAULT')}
               </button>
             </form>
           </div>

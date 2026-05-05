@@ -9,9 +9,11 @@ const AuditLogs = () => {
 
   const API_URL = '/api/audit-logs';
 
-  const getAuthConfig = () => ({
-    headers: { Authorization: `Bearer ${localStorage.getItem('klarke_token')}` }
-  });
+  const getAuthConfig = () => {
+    const token = localStorage.getItem('klarke_token');
+    const user = localStorage.getItem('klarke_user') || 'Sistema';
+    return { headers: { Authorization: `Bearer ${token}`, 'X-User': user } };
+  };
 
   useEffect(() => {
     fetchLogs();

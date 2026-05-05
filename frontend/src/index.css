@@ -415,26 +415,27 @@ body.dark .machine-card:hover {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(2, 20, 43, 0.7);
+  background-color: rgba(2, 6, 23, 0.8);
   display: flex;
-  align-items: center;
   justify-content: center;
-  z-index: 9999; /* Garante que fique ACIMA da navbar azul */
-  padding: 20px;
+  align-items: flex-start;
+  z-index: 99999;
+  padding: 80px 20px 40px 20px;
   backdrop-filter: blur(8px);
   overflow-y: auto;
+  cursor: pointer; /* Indica que o fundo é clicável para fechar */
 }
 
 .modal-content {
   background-color: var(--color-surface);
-  border-radius: var(--border-radius);
-  padding: 24px;
+  border-radius: 12px;
+  padding: 32px;
   width: 100%;
-  max-width: 500px;
-  /* max-height removido para permitir que o modal cresça e role via overlay */
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  max-width: 550px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   animation: slideUp 0.3s ease-out;
-  margin-bottom: 20px;
+  position: relative;
+  cursor: default; /* Dentro do formulário o cursor volta ao normal */
 }
 
 @keyframes slideUp {
@@ -579,6 +580,46 @@ body.dark .machine-card:hover {
   text-align: center;
   padding: 40px 20px;
   color: var(--color-text-muted);
+}
+
+.copy-btn {
+  background: transparent !important;
+  border: none !important;
+  padding: 4px !important;
+  color: var(--color-accent) !important;
+  cursor: pointer;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  box-shadow: none !important;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+.copy-btn:hover {
+  background: rgba(14, 165, 233, 0.1) !important;
+  transform: scale(1.1);
+  color: var(--color-primary-light) !important;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  color: #ef4444;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.delete-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  transform: scale(1.1);
 }
 
 .empty-icon {
@@ -1028,18 +1069,16 @@ body.dark .machine-card:hover {
 
   /* Modais e Formulários */
   .modal-overlay {
-    padding: 20px 10px; 
-    align-items: center; 
-    z-index: 9999;
+    padding: 60px 10px 30px 10px; 
+    align-items: flex-start; 
+    z-index: 99999;
   }
 
   .modal-content {
     width: 100%;
-    max-height: 90vh;
-    padding: 20px 16px;
+    padding: 24px 16px;
     margin: 0;
     border-radius: 8px;
-    overflow-y: auto;
   }
 
   .form-group {

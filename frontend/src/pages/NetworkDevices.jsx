@@ -24,7 +24,8 @@ function NetworkDevices() {
 
   const getAuthConfig = () => {
     const token = localStorage.getItem('klarke_token');
-    return { headers: { Authorization: `Bearer ${token}` } };
+    const user = localStorage.getItem('klarke_user') || 'Sistema';
+    return { headers: { Authorization: `Bearer ${token}`, 'X-User': user } };
   };
 
   useEffect(() => {

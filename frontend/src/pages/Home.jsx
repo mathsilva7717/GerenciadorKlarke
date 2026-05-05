@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Monitor, Camera, Router as RouterIcon, ListTodo, ChevronRight, Activity, ShieldCheck, Cpu, Database, RotateCw, BookOpen } from 'lucide-react';
+import { Monitor, Camera, Router as RouterIcon, ListTodo, ChevronRight, Activity, ShieldCheck, Cpu, Database, RotateCw, BookOpen, Phone, Package, Key } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 function Home() {
@@ -25,19 +25,23 @@ function Home() {
 
   const getAuthConfig = () => {
     const token = localStorage.getItem('klarke_token');
-    return { headers: { Authorization: `Bearer ${token}` } };
+    const user = localStorage.getItem('klarke_user') || 'Sistema';
+    return { headers: { Authorization: `Bearer ${token}`, 'X-User': user } };
   };
 
   const fetchStats = async (manual = false) => {
     if (manual) setIsRefreshing(true);
     try {
-      const [m, c, n, t, u, logs] = await Promise.all([
+      const [m, c, n, t, u, logs, creds, inv, v] = await Promise.all([
         axios.get('/api/machines', getAuthConfig()),
         axios.get('/api/cameras', getAuthConfig()),
         axios.get('/api/network-devices', getAuthConfig()),
         axios.get('/api/tasks', getAuthConfig()),
         axios.get('/api/users', getAuthConfig()),
-        axios.get('/api/audit-logs', getAuthConfig())
+        axios.get('/api/audit-logs', getAuthConfig()),
+        axios.get('/api/credentials', getAuthConfig()),
+        axios.get('/api/inventory', getAuthConfig()),
+        axios.get('/api/voip', getAuthConfig())
       ]);
       setStats({
         machines: m.data?.length || 0,
@@ -48,7 +52,10 @@ function Home() {
         networkOnline: (n.data || []).filter(x => isOnline(x.last_seen)).length,
         tasks: (t.data || []).filter(x => !x.is_completed).length,
         users: u.data?.length || 0,
-        logsToday: (logs.data || []).filter(x => new Date(x.created_at).toDateString() === new Date().toDateString()).length
+        logsToday: (logs.data || []).filter(x => new Date(x.created_at).toDateString() === new Date().toDateString()).length,
+        credentials: creds.data?.length || 0,
+        inventory: inv.data?.length || 0,
+        voip: v.data?.length || 0
       });
       if (manual) toast.success('Dados atualizados!');
     } catch (e) {
@@ -136,6 +143,33 @@ function Home() {
       color: '#0f172a', // Slate 950
       count: 0,
       label: 'Arquivos'
+    },
+    {
+      title: 'VOIP & Telefonia',
+      desc: 'Ramais, contas SIP e IPs de ATAs.',
+      icon: <Phone size={28} />,
+      path: '/control/voip',
+      color: '#1e293b',
+      count: stats.voip || 0,
+      label: 'Ramais'
+    },
+    {
+      title: 'Inventory',
+      desc: 'Estoque de ativos, cabos e peças.',
+      icon: <Package size={28} />,
+      path: '/control/inventory',
+      color: '#334155',
+      count: stats.inventory || 0,
+      label: 'Itens'
+    },
+    {
+      title: 'Key Keeper',
+      desc: 'Cofre de senhas críticas e acessos.',
+      icon: <Key size={28} />,
+      path: '/control/key-keeper',
+      color: '#0f172a',
+      count: stats.credentials || 0,
+      label: 'Chaves'
     }
   ];
 
@@ -305,6 +339,54 @@ function Home() {
             </div>
           </div>
           <div className="industrial-footer"><span>VER ACERVO</span><ChevronRight size={14} /></div>
+        </div>
+
+        <div className="card-industrial" onClick={() => navigate('/control/voip')}>
+          <div className="card-industrial-header">
+            <div className="industrial-icon"><Phone size={22} /></div>
+            <div className="industrial-badge">{stats.voip || 0}</div>
+          </div>
+          <div className="industrial-body">
+            <h3>VOIP & Telefonia</h3>
+            <p>Gestão de ramais e contas SIP.</p>
+            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <Activity size={12} color="#64748b" />
+              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Comunicação ativa</span>
+            </div>
+          </div>
+          <div className="industrial-footer"><span>CONFIGURAR</span><ChevronRight size={14} /></div>
+        </div>
+
+        <div className="card-industrial" onClick={() => navigate('/control/inventory')}>
+          <div className="card-industrial-header">
+            <div className="industrial-icon"><Package size={22} /></div>
+            <div className="industrial-badge">{stats.inventory || 0}</div>
+          </div>
+          <div className="industrial-body">
+            <h3>Inventory</h3>
+            <p>Controle de ativos e estoque técnico.</p>
+            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <Database size={12} color="#64748b" />
+              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Itens em estoque</span>
+            </div>
+          </div>
+          <div className="industrial-footer"><span>ESTOQUE</span><ChevronRight size={14} /></div>
+        </div>
+
+        <div className="card-industrial" onClick={() => navigate('/control/key-keeper')}>
+          <div className="card-industrial-header">
+            <div className="industrial-icon"><Key size={22} /></div>
+            <div className="industrial-badge">{stats.credentials || 0}</div>
+          </div>
+          <div className="industrial-body">
+            <h3>Key Keeper</h3>
+            <p>Cofre de senhas e acessos root.</p>
+            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <ShieldCheck size={12} color="#64748b" />
+              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Criptografia ativa</span>
+            </div>
+          </div>
+          <div className="industrial-footer"><span>ACESSAR COFRE</span><ChevronRight size={14} /></div>
         </div>
       </div>
 

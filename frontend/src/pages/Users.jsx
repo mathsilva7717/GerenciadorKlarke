@@ -43,13 +43,16 @@ const Users = () => {
     }
   };
 
+  const getAuthConfig = () => {
+    const token = localStorage.getItem('klarke_token');
+    const user = localStorage.getItem('klarke_user') || 'Sistema';
+    return { headers: { Authorization: `Bearer ${token}`, 'X-User': user } };
+  };
+
   const handleDeleteUser = async (id) => {
     if (!window.confirm('Tem certeza que deseja remover este usuário?')) return;
     try {
-      const token = localStorage.getItem('klarke_token');
-      await axios.delete(`${API_URL}/api/users/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await axios.delete(`${API_URL}/api/users/${id}`, getAuthConfig());
       fetchUsers();
     } catch (error) {
       alert('Erro ao remover usuário.');

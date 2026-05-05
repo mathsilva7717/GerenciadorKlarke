@@ -88,6 +88,42 @@ const db = new sqlite3.Database(dbPath, (err) => {
         content TEXT,
         file_path TEXT,
         file_size TEXT,
+        amount REAL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `, () => {
+      // Garantir que a coluna amount existe para bancos já criados
+      db.run("ALTER TABLE technical_docs ADD COLUMN amount REAL", () => {});
+    db.run(`
+      CREATE TABLE IF NOT EXISTS credentials (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT,
+        username TEXT,
+        password TEXT,
+        category TEXT,
+        notes TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    db.run(`
+      CREATE TABLE IF NOT EXISTS inventory (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        quantity INTEGER DEFAULT 0,
+        unit TEXT DEFAULT 'un',
+        category TEXT,
+        location TEXT,
+        notes TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    db.run(`
+      CREATE TABLE IF NOT EXISTS voip_extensions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        extension TEXT,
+        name TEXT,
+        password TEXT,
+        ip_address TEXT,
+        status TEXT DEFAULT 'Ativo',
+        notes TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -107,8 +143,9 @@ const authenticate = (req, res, next) => {
 };
 
 // Helper: Registrar ação no log de auditoria
-const logAction = (user, action, details) => {
-  db.run("INSERT INTO audit_logs (user, action, details) VALUES (?, ?, ?)", [user || 'Sistema', action, details]);
+const logAction = (req, action, details) => {
+  const user = req.headers['x-user'] || 'Sistema';
+  db.run("INSERT INTO audit_logs (user, action, details) VALUES (?, ?, ?)", [user, action, details]);
 };
 
 // Route: Get all audit logs
@@ -158,9 +195,14 @@ app.post('/api/users', authenticate, async (req, res) => {
 });
 
 app.delete('/api/users/:id', authenticate, (req, res) => {
-  db.run("DELETE FROM users WHERE id = ?", [req.params.id], function(err) {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: 'Usuário removido' });
+  const { id } = req.params;
+  db.get('SELECT username FROM users WHERE id = ?', [id], (err, row) => {
+    const username = row ? row.username : id;
+    db.run('DELETE FROM users WHERE id = ?', id, function (err) {
+      if (err) return res.status(500).json({ error: err.message });
+      logAction(req, 'EXCLUSÃO', `Removeu usuário: ${username}`);
+      res.json({ message: 'Usuário deletado com sucesso' });
+    });
   });
 });
 
@@ -209,7 +251,7 @@ app.post('/api/machines', authenticate, (req, res) => {
     } else if (err) {
       return res.status(500).json({ error: `Audit: ${err.message}` });
     } else {
-      try { logAction(created_by || 'Sistema', 'NOVO EQUIPAMENTO', `Cadastrou máquina: ${name}`); } catch (e) {}
+      try { logAction(req, 'NOVO EQUIPAMENTO', `Cadastrou máquina: ${name}`); } catch (e) {}
       res.status(201).json({ id: this.lastID });
     }
   });
@@ -226,6 +268,7 @@ app.put('/api/machines/:id', authenticate, (req, res) => {
   `;
   db.run(sql, [name, mac, ip, location, rustdesk_id, anydesk_id, password, serial_number, id], function (err) {
     if (err) return res.status(500).json({ error: err.message });
+    logAction(req, 'EDIÇÃO', `Alterou máquina: ${name}`);
     res.json({ message: 'Máquina atualizada com sucesso' });
   });
 });
@@ -233,16 +276,13 @@ app.put('/api/machines/:id', authenticate, (req, res) => {
 // Delete machine
 app.delete('/api/machines/:id', authenticate, (req, res) => {
   const { id } = req.params;
-  db.run('DELETE FROM machines WHERE id = ?', id, function (err) {
-    if (err) {
-      res.status(500).json({ error: err.message });
-      return;
-    }
-    if (this.changes === 0) {
-      res.status(404).json({ error: 'Máquina não encontrada' });
-      return;
-    }
-    res.json({ message: 'Máquina deletada com sucesso' });
+  db.get('SELECT name FROM machines WHERE id = ?', [id], (err, row) => {
+    const machineName = row ? row.name : id;
+    db.run('DELETE FROM machines WHERE id = ?', id, function (err) {
+      if (err) return res.status(500).json({ error: err.message });
+      logAction(req, 'EXCLUSÃO', `Removeu máquina: ${machineName}`);
+      res.json({ message: 'Máquina deletada com sucesso' });
+    });
   });
 });
 
@@ -271,7 +311,7 @@ app.post('/api/cameras', authenticate, (req, res) => {
     } else if (err) {
       return res.status(500).json({ error: `Audit Cam: ${err.message}` });
     } else {
-      try { logAction(created_by || 'Sistema', 'NOVA CÂMERA', `Cadastrou câmera: ${name}`); } catch (e) {}
+      try { logAction(req, 'NOVA CÂMERA', `Cadastrou câmera: ${name}`); } catch (e) {}
       res.status(201).json({ id: this.lastID });
     }
   });
@@ -282,14 +322,20 @@ app.put('/api/cameras/:id', authenticate, (req, res) => {
   const sql = `UPDATE cameras SET name = ?, ip = ?, port = ?, username = ?, password = ?, location = ?, serial_number = ?, rtsp_link = ? WHERE id = ?`;
   db.run(sql, [name, ip, port, username, password, location, serial_number, rtsp_link, req.params.id], function (err) {
     if (err) return res.status(500).json({ error: err.message });
+    logAction(req, 'EDIÇÃO', `Alterou câmera: ${name}`);
     res.json({ message: 'Câmera atualizada com sucesso' });
   });
 });
 
 app.delete('/api/cameras/:id', authenticate, (req, res) => {
-  db.run('DELETE FROM cameras WHERE id = ?', req.params.id, function (err) {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: 'Câmera deletada com sucesso' });
+  const { id } = req.params;
+  db.get('SELECT name FROM cameras WHERE id = ?', [id], (err, row) => {
+    const camName = row ? row.name : id;
+    db.run('DELETE FROM cameras WHERE id = ?', id, function (err) {
+      if (err) return res.status(500).json({ error: err.message });
+      logAction(req, 'EXCLUSÃO', `Removeu câmera: ${camName}`);
+      res.json({ message: 'Câmera deletada com sucesso' });
+    });
   });
 });
 
@@ -318,7 +364,7 @@ app.post('/api/network-devices', authenticate, (req, res) => {
     } else if (err) {
       return res.status(500).json({ error: `Audit Net: ${err.message}` });
     } else {
-      try { logAction(created_by || 'Sistema', 'NOVA REDE', `Cadastrou dispositivo de rede: ${name}`); } catch (e) {}
+      try { logAction(req, 'NOVA REDE', `Cadastrou dispositivo de rede: ${name}`); } catch (e) {}
       res.status(201).json({ id: this.lastID });
     }
   });
@@ -329,14 +375,20 @@ app.put('/api/network-devices/:id', authenticate, (req, res) => {
   const sql = `UPDATE network_devices SET name = ?, type = ?, ip = ?, username = ?, password = ?, location = ?, isp = ?, serial_number = ? WHERE id = ?`;
   db.run(sql, [name, type, ip, username, password, location, isp, serial_number, req.params.id], function (err) {
     if (err) return res.status(500).json({ error: err.message });
+    logAction(req, 'EDIÇÃO', `Alterou dispositivo de rede: ${name}`);
     res.json({ message: 'Dispositivo atualizado com sucesso' });
   });
 });
 
 app.delete('/api/network-devices/:id', authenticate, (req, res) => {
-  db.run('DELETE FROM network_devices WHERE id = ?', req.params.id, function (err) {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: 'Dispositivo deletado com sucesso' });
+  const { id } = req.params;
+  db.get('SELECT name FROM network_devices WHERE id = ?', [id], (err, row) => {
+    const devName = row ? row.name : id;
+    db.run('DELETE FROM network_devices WHERE id = ?', id, function (err) {
+      if (err) return res.status(500).json({ error: err.message });
+      logAction(req, 'EXCLUSÃO', `Removeu dispositivo de rede: ${devName}`);
+      res.json({ message: 'Equipamento deletado com sucesso' });
+    });
   });
 });
 
@@ -367,16 +419,21 @@ app.put('/api/tasks/:id', authenticate, (req, res) => {
   db.run(sql, [is_completed ? 1 : 0, is_completed ? completed_by : null, completed_at, req.params.id], function(err) {
     if (err) return res.status(500).json({ error: err.message });
     if (is_completed) {
-      logAction(completed_by, 'TAREFA CONCLUÍDA', `Finalizou tarefa ID #${req.params.id}`);
+      logAction(req, 'TAREFA CONCLUÍDA', `Finalizou tarefa ID #${req.params.id}`);
     }
     res.json({ updated: this.changes });
   });
 });
 
 app.delete('/api/tasks/:id', authenticate, (req, res) => {
-  db.run(`DELETE FROM tasks WHERE id = ?`, req.params.id, function(err) {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ deleted: this.changes });
+  const { id } = req.params;
+  db.get('SELECT title FROM tasks WHERE id = ?', [id], (err, row) => {
+    const taskTitle = row ? row.title : id;
+    db.run('DELETE FROM tasks WHERE id = ?', id, function (err) {
+      if (err) return res.status(500).json({ error: err.message });
+      logAction(req, 'EXCLUSÃO', `Removeu tarefa: ${taskTitle}`);
+      res.json({ message: 'Tarefa deletada com sucesso' });
+    });
   });
 });
 
@@ -450,29 +507,180 @@ app.get('/api/technical-docs', authenticate, (req, res) => {
 });
 
 app.post('/api/technical-docs', authenticate, uploadDoc.single('file'), (req, res) => {
-  const { title, type, content } = req.body;
+  const { title, type, content, amount } = req.body;
   const filePath = req.file ? req.file.filename : null;
   const fileSize = req.file ? `${(req.file.size / 1024).toFixed(1)} KB` : null;
 
   db.run(
-    "INSERT INTO technical_docs (title, type, content, file_path, file_size) VALUES (?, ?, ?, ?, ?)",
-    [title, type || 'Nota', content, filePath, fileSize],
+    "INSERT INTO technical_docs (title, type, content, file_path, file_size, amount) VALUES (?, ?, ?, ?, ?, ?)",
+    [title, type || 'Nota', content, filePath, fileSize, amount ? parseFloat(amount) : null],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
       res.status(201).json({ id: this.lastID, title, filePath });
     }
   );
 });
+app.put('/api/technical-docs/:id', authenticate, (req, res) => {
+  const { title, type, content, amount } = req.body;
+  db.run(
+    "UPDATE technical_docs SET title = ?, type = ?, content = ?, amount = ? WHERE id = ?",
+    [title, type, content, amount ? parseFloat(amount) : null, req.params.id],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      logAction(req, 'EDIÇÃO', `Alterou documento: ${title}`);
+      res.json({ message: 'Documento atualizado' });
+    }
+  );
+});
+
+// --- KEY KEEPER (CREDENTIALS) ---
+app.get('/api/credentials', authenticate, (req, res) => {
+  db.all('SELECT * FROM credentials ORDER BY category ASC, title ASC', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+app.post('/api/credentials', authenticate, (req, res) => {
+  const { title, username, password, category, notes } = req.body;
+  db.run(
+    "INSERT INTO credentials (title, username, password, category, notes) VALUES (?, ?, ?, ?, ?)",
+    [title, username, password, category || 'Geral', notes],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.status(201).json({ id: this.lastID });
+    }
+  );
+});
+
+app.put('/api/credentials/:id', authenticate, (req, res) => {
+  const { title, username, password, category, notes } = req.body;
+  db.run(
+    "UPDATE credentials SET title = ?, username = ?, password = ?, category = ?, notes = ? WHERE id = ?",
+    [title, username, password, category, notes, req.params.id],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      logAction(req, 'EDIÇÃO', `Alterou credencial: ${title}`);
+      res.json({ message: 'Credencial atualizada' });
+    }
+  );
+});
+
+// --- INVENTORY ---
+app.get('/api/inventory', authenticate, (req, res) => {
+  db.all('SELECT * FROM inventory ORDER BY name ASC', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+app.post('/api/inventory', authenticate, (req, res) => {
+  const { name, quantity, unit, category, location, notes } = req.body;
+  db.run(
+    "INSERT INTO inventory (name, quantity, unit, category, location, notes) VALUES (?, ?, ?, ?, ?, ?)",
+    [name, quantity || 0, unit || 'un', category || 'Geral', location, notes],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.status(201).json({ id: this.lastID });
+    }
+  );
+});
+
+app.put('/api/inventory/:id', authenticate, (req, res) => {
+  const { name, quantity, unit, category, location, notes } = req.body;
+  db.run(
+    "UPDATE inventory SET name = ?, quantity = ?, unit = ?, category = ?, location = ?, notes = ? WHERE id = ?",
+    [name, quantity, unit, category, location, notes, req.params.id],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      logAction(req, 'EDIÇÃO', `Alterou item do estoque: ${name}`);
+      res.json({ message: 'Item atualizado' });
+    }
+  );
+});
+
+// --- VOIP ---
+app.get('/api/voip', authenticate, (req, res) => {
+  db.all('SELECT * FROM voip_extensions ORDER BY extension ASC', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+app.post('/api/voip', authenticate, (req, res) => {
+  const { extension, name, password, ip_address, status, notes } = req.body;
+  db.run(
+    "INSERT INTO voip_extensions (extension, name, password, ip_address, status, notes) VALUES (?, ?, ?, ?, ?, ?)",
+    [extension, name, password, ip_address, status || 'Ativo', notes],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.status(201).json({ id: this.lastID });
+    }
+  );
+});
+
+app.put('/api/voip/:id', authenticate, (req, res) => {
+  const { extension, name, password, ip_address, status, notes } = req.body;
+  db.run(
+    "UPDATE voip_extensions SET extension = ?, name = ?, password = ?, ip_address = ?, status = ?, notes = ? WHERE id = ?",
+    [extension, name, password, ip_address, status, notes, req.params.id],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      logAction(req, 'EDIÇÃO', `Alterou ramal: ${extension}`);
+      res.json({ message: 'Ramal atualizado' });
+    }
+  );
+});
+
+app.delete('/api/voip/:id', authenticate, (req, res) => {
+  const { id } = req.params;
+  db.get('SELECT extension FROM voip_extensions WHERE id = ?', [id], (err, row) => {
+    const extNumber = row ? row.extension : id;
+    db.run("DELETE FROM voip_extensions WHERE id = ?", [id], (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      logAction(req, 'EXCLUSÃO', `Removeu ramal: ${extNumber}`);
+      res.json({ message: 'Ramal removido' });
+    });
+  });
+});
+
+app.delete('/api/inventory/:id', authenticate, (req, res) => {
+  const { id } = req.params;
+  db.get('SELECT name FROM inventory WHERE id = ?', [id], (err, row) => {
+    const itemName = row ? row.name : id;
+    db.run("DELETE FROM inventory WHERE id = ?", [id], (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      logAction(req, 'EXCLUSÃO', `Removeu item do estoque: ${itemName}`);
+      res.json({ message: 'Item removido' });
+    });
+  });
+});
+
+app.delete('/api/credentials/:id', authenticate, (req, res) => {
+  const { id } = req.params;
+  db.get('SELECT title FROM credentials WHERE id = ?', [id], (err, row) => {
+    const credTitle = row ? row.title : id;
+    db.run("DELETE FROM credentials WHERE id = ?", [id], (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      logAction(req, 'EXCLUSÃO', `Removeu credencial: ${credTitle}`);
+      res.json({ message: 'Credencial removida' });
+    });
+  });
+});
 
 app.delete('/api/technical-docs/:id', authenticate, (req, res) => {
-  db.get("SELECT file_path FROM technical_docs WHERE id = ?", [req.params.id], (err, row) => {
+  const { id } = req.params;
+  db.get("SELECT title, file_path FROM technical_docs WHERE id = ?", [id], (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    const docTitle = row ? row.title : id;
     if (row && row.file_path) {
       const fullPath = path.join(__dirname, 'uploads/docs', row.file_path);
       if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
     }
-    db.run("DELETE FROM technical_docs WHERE id = ?", [req.params.id], (err) => {
+    db.run("DELETE FROM technical_docs WHERE id = ?", [id], (err) => {
       if (err) return res.status(500).json({ error: err.message });
-      res.json({ message: 'Documento removido' });
+      logAction(req, 'EXCLUSÃO', `Removeu documento: ${docTitle}`);
+      res.json({ message: 'Documento deletado' });
     });
   });
 });
