@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, Plus, X, Copy, Camera, MapPin, Check, Download, Clipboard, Trash2 } from 'lucide-react';
+import { Search, Plus, X, Copy, Camera, MapPin, Check, Download, Clipboard, Trash2, QrCode } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -10,12 +10,13 @@ function Cameras() {
   const [cameras, setCameras] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [editingCamera, setEditingCamera] = useState(null);
   const [copiedField, setCopiedField] = useState(null);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    name: '', ip: '', port: '', username: '', password: '', location: '', serial_number: ''
+    name: '', ip: '', port: '', username: '', password: '', location: '', serial_number: '', rtsp_link: ''
   });
 
   const getAuthConfig = () => {
@@ -31,6 +32,35 @@ function Cameras() {
     }
     fetchCameras();
   }, [navigate]);
+
+      const qrCodeSuccessCallback = (decodedText) => {
+        setIsScannerOpen(false);
+        html5QrCode.stop();
+
+        // Busca automática e abertura do modal
+        const match = cameras.find(c => 
+          c.serial_number === decodedText || 
+          c.id.toString() === decodedText ||
+          c.name === decodedText
+        );
+
+        if (match) {
+          openModal(match);
+          toast.success(`Câmera Identificada: ${match.name}`);
+        } else {
+          setSearchTerm(decodedText);
+          toast.error("Câmera não encontrada, filtrando lista...");
+        }
+      };
+      const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+      html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback);
+    }
+    return () => {
+      if (html5QrCode && html5QrCode.isScanning) {
+        html5QrCode.stop();
+      }
+    };
+  }, [isScannerOpen, cameras]);
 
   const fetchCameras = async () => {
     try {
@@ -62,7 +92,7 @@ function Cameras() {
       setFormData(camera);
     } else {
       setEditingCamera(null);
-      setFormData({ name: '', ip: '', port: '', username: '', password: '', location: '', serial_number: '' });
+      setFormData({ name: '', ip: '', port: '', username: '', password: '', location: '', serial_number: '', rtsp_link: '' });
     }
     setIsModalOpen(true);
   };
@@ -112,9 +142,9 @@ function Cameras() {
   };
 
   const exportToCSV = () => {
-    const headers = ['ID', 'Nome', 'IP', 'Porta', 'Local', 'Usuário', 'Senha', 'Criado em'];
+    const headers = ['ID', 'Nome', 'IP', 'Porta', 'Local', 'Usuário', 'Senha', 'Série', 'Criado em'];
     const rows = cameras.map(c => [
-      c.id, c.name, c.ip, c.port, c.location, c.username, c.password, c.created_at
+      c.id, c.name, c.ip, c.port, c.location, c.username, c.password, c.serial_number, c.created_at
     ]);
     const csvContent = "data:text/csv;charset=utf-8," 
       + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
@@ -129,10 +159,19 @@ function Cameras() {
     toast.success('Exportação concluída!');
   };
 
+  const isOnline = (lastSeen) => {
+    if (!lastSeen) return false;
+    const lastSeenDate = new Date(lastSeen + 'Z');
+    const now = new Date();
+    const diffInMinutes = (now - lastSeenDate) / (1000 * 60);
+    return diffInMinutes < 5;
+  };
+
   const filtered = cameras.filter(c => 
     (c.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
     (c.ip?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-    (c.location?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+    (c.location?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (c.serial_number?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -143,15 +182,40 @@ function Cameras() {
           <input 
             type="text" 
             className="search-input" 
-            placeholder="Buscar câmera..." 
+            placeholder="Buscar por nome, IP ou série..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+          <button 
+            className="logout-btn" 
+            style={{padding: '8px', marginLeft: '8px', background: 'var(--color-accent)'}}
+            onClick={() => setIsScannerOpen(true)}
+            title="Escanear QR Code"
+          >
+            <QrCode size={20} color="white" />
+          </button>
         </div>
         <button className="btn btn-primary" style={{marginTop: 0, padding: '16px', width: 'auto'}} onClick={exportToCSV} title="Exportar CSV">
           <Download size={20} />
         </button>
       </div>
+
+      {isScannerOpen && (
+        <div className="modal-overlay" style={{zIndex: 3000}}>
+          <div className="modal-content" style={{maxWidth: '400px', textAlign: 'center'}}>
+             <div className="modal-header">
+                <h2 className="modal-title">Escanear QR Code</h2>
+                <button className="close-btn" onClick={() => setIsScannerOpen(false)}>
+                  <X size={24} />
+                </button>
+              </div>
+              <div id="reader-cameras" style={{width: '100%', minHeight: '300px', background: '#000', borderRadius: '8px', overflow: 'hidden'}}></div>
+              <p style={{marginTop: '16px', fontSize: '0.9rem', color: 'var(--color-text-muted)'}}>
+                Aponte a câmera para o QR Code da etiqueta.
+              </p>
+          </div>
+        </div>
+      )}
 
       {cameras.length === 0 ? (
         <div className="empty-state">
@@ -164,11 +228,23 @@ function Cameras() {
           {filtered.map(camera => (
             <div key={camera.id} className="machine-card" onClick={() => openModal(camera)}>
               <div className="machine-header">
-                <div>
-                  <span className="machine-title" style={{display: 'block'}}>{camera.name || 'Câmera'}</span>
-                  <span style={{fontSize: '0.75rem', color: 'var(--color-text-muted)'}}>
-                    {camera.created_at ? new Date(camera.created_at).toLocaleString() : ''}
-                  </span>
+                <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                  <div 
+                    title={isOnline(camera.last_seen) ? 'Online' : 'Offline'}
+                    style={{
+                      width: '12px', 
+                      height: '12px', 
+                      borderRadius: '50%', 
+                      background: isOnline(camera.last_seen) ? '#10b981' : '#ef4444',
+                      boxShadow: isOnline(camera.last_seen) ? '0 0 8px #10b981' : 'none'
+                    }} 
+                  />
+                  <div>
+                    <span className="machine-title" style={{display: 'block'}}>{camera.name || 'Câmera'}</span>
+                    <span style={{fontSize: '0.75rem', color: 'var(--color-text-muted)'}}>
+                      {camera.created_at ? new Date(camera.created_at).toLocaleString() : ''}
+                    </span>
+                  </div>
                 </div>
                 <div style={{display:'flex', gap:'8px', alignItems:'center'}}>
                   <span className="machine-location">
@@ -234,6 +310,19 @@ function Cameras() {
                   </span>
                 </div>
               </div>
+
+              {camera.last_snapshot && (
+                <div style={{marginTop: '16px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--color-border)'}}>
+                   <img 
+                    src={`/uploads/${camera.last_snapshot}`} 
+                    alt="Último Snapshot" 
+                    style={{width: '100%', height: '180px', objectFit: 'cover', display: 'block'}}
+                   />
+                   <div style={{padding: '4px 8px', fontSize: '0.65rem', background: 'rgba(15, 23, 42, 0.9)', textAlign: 'right', color: 'var(--color-accent)', fontWeight: 'bold'}}>
+                    CAPTURADA EM: {new Date(parseInt(camera.last_snapshot.split('_')[2].split('.')[0])).toLocaleString()}
+                   </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -252,6 +341,23 @@ function Cameras() {
             </div>
             
             <form onSubmit={saveCamera}>
+              {editingCamera && editingCamera.last_snapshot && (
+                <div style={{marginBottom: '20px', borderRadius: '12px', overflow: 'hidden', border: '2px solid var(--color-accent)'}}>
+                  <img src={`/uploads/${editingCamera.last_snapshot}`} style={{width: '100%', display: 'block'}} alt="Preview" />
+                </div>
+              )}
+              {editingCamera && formData.serial_number && (
+                <div style={{display: 'flex', justifyContent: 'center', marginBottom: '20px', background: '#fff', padding: '10px', borderRadius: '8px'}}>
+                  <div style={{textAlign: 'center'}}>
+                    <img 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(formData.serial_number)}`} 
+                      alt="QR Code da Câmera"
+                      style={{border: '4px solid #fff'}}
+                    />
+                    <p style={{fontSize: '0.7rem', color: '#64748b', marginTop: '4px'}}>QR Code de Identificação</p>
+                  </div>
+                </div>
+              )}
               <div className="form-group">
                 <label className="form-label">Nome / Identificação</label>
                 <input required type="text" className="form-input" name="name" value={formData.name} onChange={handleInputChange} placeholder="Ex: Câmera Recepção ou NVR Central" />
@@ -271,6 +377,11 @@ function Cameras() {
                   <label className="form-label">Porta</label>
                   <input type="text" className="form-input" name="port" value={formData.port} onChange={handleInputChange} placeholder="Ex: 8080, 37777" />
                 </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Link RTSP (Opcional para fotos)</label>
+                <input type="text" className="form-input" name="rtsp_link" value={formData.rtsp_link} onChange={handleInputChange} placeholder="rtsp://user:pass@ip:port/stream" />
               </div>
 
               <div className="form-group">

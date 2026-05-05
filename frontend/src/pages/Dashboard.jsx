@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, Plus, X, Copy, Monitor, MapPin, Check, Download, Clipboard, Trash2 } from 'lucide-react';
+import { Search, Plus, X, Copy, Monitor, MapPin, Check, Download, Clipboard, Trash2, QrCode } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -10,6 +10,7 @@ function Dashboard() {
   const [machines, setMachines] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [editingMachine, setEditingMachine] = useState(null);
   const [copiedField, setCopiedField] = useState(null);
   const navigate = useNavigate();
@@ -36,11 +37,48 @@ function Dashboard() {
   useEffect(() => {
     const token = localStorage.getItem('klarke_token');
     if (!token) {
-      navigate('/'); // Redireciona para login se não tiver token
+      navigate('/'); 
       return;
     }
     fetchMachines();
+
+    // Polling para monitoramento ao vivo (30 segundos)
+    const interval = setInterval(fetchMachines, 30000);
+    return () => clearInterval(interval);
   }, [navigate]);
+
+  useEffect(() => {
+    let html5QrCode;
+    if (isScannerOpen) {
+      html5QrCode = new window.Html5Qrcode("reader");
+      const qrCodeSuccessCallback = (decodedText) => {
+        setIsScannerOpen(false);
+        html5QrCode.stop();
+        
+        // Busca automática e abertura do modal
+        const match = machines.find(m => 
+          m.serial_number === decodedText || 
+          m.id.toString() === decodedText ||
+          m.name === decodedText
+        );
+
+        if (match) {
+          openModal(match);
+          toast.success(`Equipamento Identificado: ${match.name}`);
+        } else {
+          setSearchTerm(decodedText);
+          toast.error("Equipamento não encontrado, filtrando lista...");
+        }
+      };
+      const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+      html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback);
+    }
+    return () => {
+      if (html5QrCode && html5QrCode.isScanning) {
+        html5QrCode.stop();
+      }
+    };
+  }, [isScannerOpen, machines]);
 
   const fetchMachines = async () => {
     try {
@@ -49,7 +87,8 @@ function Dashboard() {
     } catch (error) {
       console.error('Erro ao buscar máquinas:', error);
       if (error.response?.status === 401) {
-        handleLogout();
+        localStorage.removeItem('klarke_token');
+        navigate('/');
       }
     }
   };
@@ -58,19 +97,16 @@ function Dashboard() {
     const { name, value } = e.target;
     let formattedValue = value;
 
-    // Máscara para MAC Address
     if (name === 'mac') {
       formattedValue = value.replace(/[^a-fA-F0-9]/g, '').toUpperCase();
       const parts = formattedValue.match(/.{1,2}/g);
       if (parts) formattedValue = parts.slice(0, 6).join(':');
     }
 
-    // Máscara para IP Address
     if (name === 'ip') {
       formattedValue = value.replace(/[^0-9.]/g, '');
     }
 
-    // Máscara para IDs de Acesso Remoto (Apenas números)
     if (name === 'anydesk_id' || name === 'rustdesk_id') {
       formattedValue = value.replace(/[^0-9]/g, '');
     }
@@ -139,9 +175,9 @@ function Dashboard() {
   };
 
   const exportToCSV = () => {
-    const headers = ['ID', 'Nome', 'IP', 'MAC', 'Local', 'AnyDesk', 'RustDesk', 'Senha', 'Criado em'];
+    const headers = ['ID', 'Nome', 'IP', 'MAC', 'Local', 'AnyDesk', 'RustDesk', 'Senha', 'Série', 'Criado em'];
     const rows = machines.map(m => [
-      m.id, m.name, m.ip, m.mac, m.location, m.anydesk_id, m.rustdesk_id, m.password, m.created_at
+      m.id, m.name, m.ip, m.mac, m.location, m.anydesk_id, m.rustdesk_id, m.password, m.serial_number, m.created_at
     ]);
     const csvContent = "data:text/csv;charset=utf-8," 
       + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
@@ -156,29 +192,112 @@ function Dashboard() {
     toast.success('Exportação concluída!');
   };
 
+  const downloadAgent = async () => {
+    try {
+      const response = await axios.get('/api/monitoring/agent-download', {
+        ...getAuthConfig(),
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'klarke-agent.js');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success('Agente baixado com sucesso!');
+    } catch (e) {
+      toast.error('Erro ao baixar agente');
+    }
+  };
+
+  const isOnline = (lastSeen) => {
+    if (!lastSeen) return false;
+    const lastSeenDate = new Date(lastSeen + 'Z'); // Add Z for UTC
+    const now = new Date();
+    const diffInMinutes = (now - lastSeenDate) / (1000 * 60);
+    return diffInMinutes < 5; // 5 minutos de tolerância
+  };
+
+  const onlineCount = machines.filter(m => isOnline(m.last_seen)).length;
+  const offlineCount = machines.length - onlineCount;
+
   const filteredMachines = machines.filter(m => 
-    (m.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-    (m.ip?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-    (m.location?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+    m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (m.ip && m.ip.includes(searchTerm)) ||
+    (m.serial_number && m.serial_number.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
     <>
+      <div className="quick-stats-row-sober" style={{marginBottom: '24px'}}>
+        <div className="stat-box-industrial" style={{borderColor: '#10b981'}}>
+          <span className="stat-label">Equipamentos Online</span>
+          <div className="stat-value-row">
+            <div className="indicator-static-green" style={{boxShadow: '0 0 10px #10b981'}}></div>
+            <span className="stat-value">{onlineCount}</span>
+          </div>
+        </div>
+        <div className="stat-box-industrial" style={{borderColor: '#ef4444'}}>
+          <span className="stat-label">Equipamentos Offline</span>
+          <div className="stat-value-row">
+            <div className="indicator-static-green" style={{background: '#ef4444', boxShadow: '0 0 10px #ef4444'}}></div>
+            <span className="stat-value">{offlineCount}</span>
+          </div>
+        </div>
+        <div className="stat-box-industrial" style={{borderColor: 'var(--color-accent)'}}>
+          <span className="stat-label">Taxa de Operação</span>
+          <div className="stat-value-row">
+             <span className="stat-value">{machines.length > 0 ? Math.round((onlineCount / machines.length) * 100) : 0}%</span>
+          </div>
+        </div>
+      </div>
+
       <div className="search-wrapper">
         <div className="search-container">
           <Search className="search-icon" size={20} />
           <input 
             type="text" 
             className="search-input" 
-            placeholder="Buscar por nome, IP ou local..." 
+            placeholder="Buscar por nome, IP ou série..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+          <button 
+            className="logout-btn" 
+            style={{padding: '8px', marginLeft: '8px', background: 'var(--color-accent)'}}
+            onClick={() => setIsScannerOpen(true)}
+            title="Escanear QR Code"
+          >
+            <QrCode size={20} color="white" />
+          </button>
         </div>
-        <button className="btn btn-primary" style={{marginTop: 0, padding: '16px', width: 'auto'}} onClick={exportToCSV} title="Exportar CSV">
-          <Download size={20} />
-        </button>
+        <div style={{display: 'flex', gap: '8px'}}>
+          <button className="btn btn-primary" style={{marginTop: 0, padding: '16px', width: 'auto', background: '#334155'}} onClick={downloadAgent} title="Baixar Klarke Agent">
+            <Activity size={20} />
+          </button>
+          <button className="btn btn-primary" style={{marginTop: 0, padding: '16px', width: 'auto'}} onClick={exportToCSV} title="Exportar CSV">
+            <Download size={20} />
+          </button>
+        </div>
       </div>
+
+      {isScannerOpen && (
+        <div className="modal-overlay" style={{zIndex: 3000}}>
+          <div className="modal-content" style={{maxWidth: '400px', textAlign: 'center'}}>
+             <div className="modal-header">
+                <h2 className="modal-title">Escanear QR Code</h2>
+                <button className="close-btn" onClick={() => setIsScannerOpen(false)}>
+                  <X size={24} />
+                </button>
+              </div>
+              <div id="reader" style={{width: '100%', minHeight: '300px', background: '#000', borderRadius: '8px', overflow: 'hidden'}}></div>
+              <p style={{marginTop: '16px', fontSize: '0.9rem', color: 'var(--color-text-muted)'}}>
+                Aponte a câmera para o QR Code da etiqueta.
+              </p>
+          </div>
+        </div>
+      )}
 
         {machines.length === 0 ? (
           <div className="empty-state">
@@ -191,11 +310,23 @@ function Dashboard() {
             {filteredMachines.map(machine => (
               <div key={machine.id} className="machine-card" onClick={() => openModal(machine)}>
                 <div className="machine-header">
-                <div>
-                  <span className="machine-title" style={{display: 'block'}}>{machine.name || 'Máquina sem nome'}</span>
-                  <span style={{fontSize: '0.75rem', color: 'var(--color-text-muted)'}}>
-                    {machine.created_at ? new Date(machine.created_at).toLocaleString() : ''}
-                  </span>
+                <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                  <div 
+                    title={isOnline(machine.last_seen) ? 'Online' : 'Offline'}
+                    style={{
+                      width: '12px', 
+                      height: '12px', 
+                      borderRadius: '50%', 
+                      background: isOnline(machine.last_seen) ? '#10b981' : '#ef4444',
+                      boxShadow: isOnline(machine.last_seen) ? '0 0 8px #10b981' : 'none'
+                    }} 
+                  />
+                  <div>
+                    <span className="machine-title" style={{display: 'block'}}>{machine.name || 'Máquina sem nome'}</span>
+                    <span style={{fontSize: '0.75rem', color: 'var(--color-text-muted)'}}>
+                      {machine.created_at ? new Date(machine.created_at).toLocaleString() : ''}
+                    </span>
+                  </div>
                 </div>
                 <div style={{display:'flex', gap:'8px', alignItems:'center'}}>
                   <span className="machine-location">
@@ -277,6 +408,18 @@ function Dashboard() {
               </div>
               
               <form onSubmit={saveMachine}>
+                {editingMachine && formData.serial_number && (
+                  <div style={{display: 'flex', justifyContent: 'center', marginBottom: '20px', background: '#fff', padding: '10px', borderRadius: '8px'}}>
+                    <div style={{textAlign: 'center'}}>
+                      <img 
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(formData.serial_number)}`} 
+                        alt="QR Code do Equipamento"
+                        style={{border: '4px solid #fff'}}
+                      />
+                      <p style={{fontSize: '0.7rem', color: '#64748b', marginTop: '4px'}}>QR Code de Identificação</p>
+                    </div>
+                  </div>
+                )}
                 <div className="form-group">
                   <label className="form-label">Nome da Máquina</label>
                   <input required type="text" className="form-input" name="name" value={formData.name} onChange={handleInputChange} placeholder="Ex: PC Recepção" />

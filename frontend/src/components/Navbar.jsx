@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, Monitor, Camera, Router as RouterIcon, Moon, Sun, ListTodo, ArrowLeft } from 'lucide-react';
+import { LogOut, Monitor, Camera, Router as RouterIcon, Moon, Sun, ListTodo, ArrowLeft, Home, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 function Navbar() {
@@ -26,41 +26,77 @@ function Navbar() {
     navigate('/');
   };
 
+  const navItems = [
+    { icon: <Home size={20} />, label: 'Início', path: '/control' },
+    { icon: <Monitor size={20} />, label: 'Máquinas', path: '/control/machines' },
+    { icon: <Camera size={20} />, label: 'Câmeras', path: '/control/cameras' },
+    { icon: <ListTodo size={20} />, label: 'Tarefas', path: '/control/action-plan' },
+  ];
+
   return (
-    <nav className="top-nav">
-      <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-        {!isHome && (
-          <button 
-            className="logout-btn" 
-            onClick={() => navigate(-1)} 
-            style={{padding: '8px', background: 'rgba(255,255,255,0.1)'}}
-            title="Voltar"
-          >
-            <ArrowLeft size={20} />
-          </button>
-        )}
-        <div className="nav-brand" onClick={() => navigate('/control')} style={{cursor: 'pointer'}}>
-          <img src="/logo.png" alt="Klarke Logo" className="nav-logo" />
-          <div className="nav-brand-text hide-mobile">
-            <h1>Klarke Control</h1>
-            <span>Gestão de Infraestrutura</span>
+    <>
+      <nav className="top-nav">
+        <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+          {!isHome && (
+            <button 
+              className="logout-btn" 
+              onClick={() => navigate(-1)} 
+              style={{padding: '8px', background: 'rgba(255,255,255,0.1)'}}
+              title="Voltar"
+            >
+              <ArrowLeft size={20} />
+            </button>
+          )}
+          <div className="nav-brand" onClick={() => navigate('/control')} style={{cursor: 'pointer'}}>
+            <img src="/logo.png" alt="Klarke Logo" className="nav-logo" />
+            <div className="nav-brand-text hide-mobile">
+              <h1>Klarke Control</h1>
+              <span>Gestão de Infraestrutura</span>
+            </div>
           </div>
         </div>
-      </div>
-      
-      {/* Navegação removida do topo para evitar redundância com a Home */}
+        
+        <div className="nav-links hide-mobile">
+          {navItems.map(item => (
+            <NavLink 
+              key={item.path} 
+              to={item.path} 
+              className={({isActive}) => isActive ? 'nav-link active' : 'nav-link'}
+              end={item.path === '/control'}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+            </NavLink>
+          ))}
+        </div>
 
-      <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-        <button className="logout-btn" onClick={() => setIsDark(!isDark)} style={{padding: '8px'}}>
-          {isDark ? <Sun size={18} /> : <Moon size={18} />}
-        </button>
+        <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+          <button className="logout-btn" onClick={() => setIsDark(!isDark)} style={{padding: '8px'}}>
+            {isDark ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
 
-        <button className="logout-btn" onClick={handleLogout}>
-          <LogOut size={18} />
-          <span className="hide-mobile">Sair</span>
-        </button>
+          <button className="logout-btn" onClick={handleLogout}>
+            <LogOut size={18} />
+            <span className="hide-mobile">Sair</span>
+          </button>
+        </div>
+      </nav>
+
+      {/* Bottom Nav for Mobile */}
+      <div className="bottom-nav show-mobile">
+        {navItems.map(item => (
+          <NavLink 
+            key={item.path} 
+            to={item.path} 
+            className={({isActive}) => isActive ? 'bottom-nav-item active' : 'bottom-nav-item'}
+            end={item.path === '/control'}
+          >
+            {item.icon}
+            <span>{item.label}</span>
+          </NavLink>
+        ))}
       </div>
-    </nav>
+    </>
   );
 }
 

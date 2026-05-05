@@ -388,6 +388,19 @@ body.dark .machine-card:hover {
   border-radius: 4px;
 }
 
+.hide-mobile {
+  display: flex;
+}
+
+.show-mobile {
+  display: none;
+}
+
+.nav-link.active {
+  background: var(--color-accent);
+  color: white;
+}
+
 .close-btn:hover {
   color: var(--color-error);
   background-color: rgba(231, 76, 60, 0.1);
@@ -791,43 +804,164 @@ body.dark .machine-card:hover {
 ================================ */
 @media (max-width: 768px) {
   .top-nav {
-    flex-direction: row;
-    justify-content: space-between;
+    left: 0;
     padding: 12px 16px;
-    gap: 8px;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
   }
-  .nav-brand h1 {
+
+  .nav-logo {
+    height: 40px;
+    margin: 0;
+  }
+
+  .nav-brand-text h1 {
     font-size: 1rem;
   }
-  .nav-links {
+  
+  .nav-brand-text span {
+    font-size: 0.6rem;
+  }
+
+  .hide-mobile {
+    display: none !important;
+  }
+
+  .show-mobile {
+    display: flex !important;
+  }
+
+  /* Bottom Navigation */
+  .bottom-nav {
     position: fixed;
     bottom: 0;
     left: 0;
-    width: 100%;
-    background: var(--color-primary);
-    padding: 8px;
-    border-radius: 0;
+    right: 0;
+    height: 65px;
+    background: #0f172a;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
     justify-content: space-around;
-    z-index: 1000;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    align-items: center;
+    padding: 0 10px;
+    z-index: 2000;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
   }
-  .nav-link {
+
+  .bottom-nav-item {
+    display: flex;
     flex-direction: column;
+    align-items: center;
     gap: 4px;
-    padding: 8px;
+    color: rgba(255, 255, 255, 0.5);
+    text-decoration: none;
     font-size: 0.7rem;
-    color: rgba(255,255,255,0.6);
+    font-weight: 600;
+    flex: 1;
+    transition: var(--transition);
   }
-  .nav-link.active {
-    background: none;
-    color: white;
-    box-shadow: none;
+
+  .bottom-nav-item.active {
+    color: var(--color-accent);
   }
-  .nav-link span {
-    display: block !important;
+
+  .bottom-nav-item svg {
+    transition: transform 0.2s ease;
   }
+
+  .bottom-nav-item.active svg {
+    transform: translateY(-2px);
+  }
+
+  /* Ajuste no layout principal para não cobrir o bottom nav */
   .app-container {
     padding-bottom: 80px;
+  }
+
+  .home-hero-sober {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+  
+  .quick-stats-row-sober {
+    flex-direction: column;
+    width: 100%;
+    margin-top: 16px;
+  }
+  
+  .hero-content h1 {
+    font-size: 1.5rem;
+  }
+
+  .quick-stats-row-sober {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .stat-box-industrial {
+    width: 100%;
+  }
+
+  /* Grids de Máquinas, Redes e Câmeras */
+  .machines-grid, .selection-grid-industrial, .users-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .machine-card, .card-industrial {
+    padding: 16px;
+  }
+
+  .machine-details-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  /* Modais e Formulários */
+  .modal-overlay {
+    padding: 100px 10px 20px 10px; /* Desce o modal para não bater na navbar azul */
+    align-items: flex-start; 
+  }
+
+  .modal-content {
+    width: 100%;
+    max-height: calc(100vh - 140px); /* Subtrai o padding do topo (100px) e sobra (40px) para não cortar o final */
+    padding: 20px 16px;
+    margin: 0;
+    border-radius: 8px;
+    overflow-y: auto;
+  }
+
+  .form-group {
+    margin-bottom: 12px; /* Reduz margens entre inputs no celular */
+  }
+  
+  .form-input {
+    padding: 10px 12px; /* Reduz padding dos inputs */
+  }
+
+  .machine-details-grid-form {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  
+  /* Pesquisa */
+  .search-wrapper {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .search-container {
+    width: 100%;
+  }
+  
+  .btn-primary[title="Exportar CSV"] {
+    width: 100% !important;
   }
 }
 
@@ -1451,21 +1585,18 @@ body.dark .status-badge {
    MOBILE RESPONSIVENESS
 ================================ */
 @media (max-width: 768px) {
-  /* Layout Básico */
-  .main-content {
-    padding: 16px;
-    margin-left: 0;
-  }
-  
   .top-nav {
     left: 0;
     padding: 12px 16px;
     justify-content: space-between;
     align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
   }
 
   .nav-logo {
-    height: 40px; /* Reduzido no celular para não vazar a navbar */
+    height: 40px;
     margin: 0;
   }
 
@@ -1477,86 +1608,90 @@ body.dark .status-badge {
     font-size: 0.6rem;
   }
 
+  .hide-mobile {
+    display: none !important;
+  }
+
+  .show-mobile {
+    display: flex !important;
+  }
+
+  /* Bottom Navigation */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 65px;
+    background: #0f172a;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0 10px;
+    z-index: 2000;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+  }
+
+  .bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    color: rgba(255, 255, 255, 0.5);
+    text-decoration: none;
+    font-size: 0.7rem;
+    font-weight: 600;
+    flex: 1;
+    transition: var(--transition);
+  }
+
+  .bottom-nav-item.active {
+    color: var(--color-accent);
+  }
+
+  .bottom-nav-item svg {
+    transition: transform 0.2s ease;
+  }
+
+  .bottom-nav-item.active svg {
+    transform: translateY(-2px);
+  }
+
+  /* Layout adjustments */
+  .app-container {
+    padding-bottom: 80px;
+  }
+
   .home-hero-sober {
     flex-direction: column;
     align-items: flex-start;
     gap: 24px;
     margin-bottom: 24px;
   }
-  
-  .quick-stats-row-sober {
-    flex-direction: column;
-    width: 100%;
-    margin-top: 16px;
-  }
-  
-  .hero-content h1 {
-    font-size: 1.5rem;
-  }
 
   .quick-stats-row-sober {
     flex-direction: column;
     width: 100%;
+    margin-top: 16px;
   }
 
   .stat-box-industrial {
     width: 100%;
   }
 
-  /* Grids de Máquinas, Redes e Câmeras */
   .machines-grid, .selection-grid-industrial, .users-grid {
     grid-template-columns: 1fr;
     gap: 16px;
   }
 
-  .machine-card, .card-industrial {
-    padding: 16px;
-  }
-
-  .machine-details-grid {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  /* Modais e Formulários */
   .modal-overlay {
-    padding: 100px 10px 20px 10px; /* Desce o modal para não bater na navbar azul */
-    align-items: flex-start; 
+    padding: 100px 10px 20px 10px;
   }
 
   .modal-content {
     width: 100%;
-    max-height: calc(100vh - 140px); /* Subtrai o padding do topo (100px) e sobra (40px) para não cortar o final */
-    padding: 20px 16px;
-    margin: 0;
-    border-radius: 8px;
+    max-height: calc(100vh - 140px);
     overflow-y: auto;
-  }
-
-  .form-group {
-    margin-bottom: 12px; /* Reduz margens entre inputs no celular */
-  }
-  
-  .form-input {
-    padding: 10px 12px; /* Reduz padding dos inputs */
-  }
-
-  .machine-details-grid-form {
-    grid-template-columns: 1fr;
-    gap: 0;
-  }
-  
-  /* Pesquisa */
-  .search-wrapper {
-    flex-direction: column;
-    gap: 12px;
-  }
-  
-  .search-container {
-    width: 100%;
-  }
-  
-  .btn-primary[title="Exportar CSV"] {
-    width: 100% !important;
   }
 }

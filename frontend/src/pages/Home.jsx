@@ -6,12 +6,19 @@ import { Monitor, Camera, Router as RouterIcon, ListTodo, ChevronRight, Activity
 function Home() {
   const navigate = useNavigate();
   const [stats, setStats] = useState({
-    machines: 0,
-    cameras: 0,
-    network: 0,
+    machines: 0, machinesOnline: 0,
+    cameras: 0, camerasOnline: 0,
+    network: 0, networkOnline: 0,
     tasks: 0,
     users: 0
   });
+
+  const isOnline = (lastSeen) => {
+    if (!lastSeen) return false;
+    const lastSeenDate = new Date(lastSeen + 'Z');
+    const now = new Date();
+    return (now - lastSeenDate) / (1000 * 60) < 5;
+  };
 
   const getAuthConfig = () => {
     const token = localStorage.getItem('klarke_token');
@@ -30,8 +37,11 @@ function Home() {
         ]);
         setStats({
           machines: m.data.length,
+          machinesOnline: m.data.filter(x => isOnline(x.last_seen)).length,
           cameras: c.data.length,
+          camerasOnline: c.data.filter(x => isOnline(x.last_seen)).length,
           network: n.data.length,
+          networkOnline: n.data.filter(x => isOnline(x.last_seen)).length,
           tasks: t.data.filter(x => !x.is_completed).length,
           users: u.data.length
         });
@@ -40,6 +50,8 @@ function Home() {
       }
     };
     fetchStats();
+    const interval = setInterval(fetchStats, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const downloadBackup = async () => {
@@ -109,56 +121,150 @@ function Home() {
     }
   ];
 
+  const downloadAgent = async () => {
+    try {
+      const response = await axios.get('/api/monitoring/agent-download', {
+        ...getAuthConfig(),
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'klarke-agent.js');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success('Agente baixado com sucesso!');
+    } catch (e) {
+      toast.error('Erro ao baixar agente');
+    }
+  };
+
   return (
     <div className="home-container">
+      {/* HEADER: GLOBAL HEALTH */}
       <div className="home-hero-sober">
         <div className="hero-content">
-          <h1>Central de Controle</h1>
-          <p>Infraestrutura Klarke sob monitoramento ativo.</p>
+          <h1>SISTEMA KLARKE</h1>
+          <p>Monitoramento ativo de infraestrutura e segurança industrial.</p>
         </div>
         
         <div className="quick-stats-row-sober">
-          <div className="stat-box-industrial">
-            <span className="stat-label">Status</span>
+          <div className="stat-box-industrial" style={{ minWidth: '200px' }}>
+            <span className="stat-label">SAÚDE GLOBAL</span>
             <div className="stat-value-row">
-              <div className="indicator-static-green"></div>
-              <span className="stat-value">ONLINE</span>
+              <div className="indicator-static-green" style={{ 
+                background: (stats.machinesOnline + stats.camerasOnline + stats.networkOnline) > 0 ? '#10b981' : '#ef4444',
+                boxShadow: '0 0 15px ' + ((stats.machinesOnline + stats.camerasOnline + stats.networkOnline) > 0 ? '#10b981' : '#ef4444') 
+              }}></div>
+              <span className="stat-value">
+                {Math.round(((stats.machinesOnline + stats.camerasOnline + stats.networkOnline) / (stats.machines + stats.cameras + stats.network || 1)) * 100)}%
+              </span>
             </div>
+            <span style={{fontSize: '0.65rem', opacity: 0.6, marginTop: '4px'}}>
+              {stats.machinesOnline + stats.camerasOnline + stats.networkOnline} de {stats.machines + stats.cameras + stats.network} dispositivos ativos
+            </span>
           </div>
 
-          <div className="stat-box-industrial" onClick={downloadBackup}>
-            <span className="stat-label">Database</span>
-            <span className="stat-value">BACKUP OK</span>
+          <div className="stat-box-industrial" style={{borderColor: 'var(--color-accent)'}}>
+            <span className="stat-label">ÚLTIMO BACKUP</span>
+            <div className="stat-value-row">
+              <Database size={16} color="var(--color-accent)" />
+              <span className="stat-value" style={{fontSize: '0.9rem', marginLeft: '8px'}}>STATUS: OK</span>
+            </div>
+            <button 
+              onClick={downloadBackup}
+              style={{background: 'none', border: 'none', color: 'var(--color-accent)', fontSize: '0.6rem', cursor: 'pointer', padding: 0, marginTop: '4px', fontWeight: 'bold'}}
+            >
+              BAIXAR CÓPIA AGORA
+            </button>
           </div>
         </div>
       </div>
 
+      {/* MODULES GRID */}
       <div className="selection-grid-industrial">
-        {modules.map((module, index) => (
-          <div 
-            key={index} 
-            className="card-industrial" 
-            onClick={() => navigate(module.path)}
-            style={{ '--accent-border': module.color }}
-          >
-            <div className="card-industrial-header">
-              <div className="industrial-icon" style={{ color: module.color }}>
-                {module.icon}
-              </div>
-              <div className="industrial-badge">
-                {module.count}
-              </div>
-            </div>
-            <div className="industrial-body">
-              <h3>{module.title}</h3>
-              <p>{module.desc}</p>
-            </div>
-            <div className="industrial-footer">
-              <span>GERENCIAR</span>
-              <ChevronRight size={14} />
+        <div className="card-industrial" onClick={() => navigate('/control/machines')}>
+          <div className="card-industrial-header">
+            <div className="industrial-icon" style={{ color: '#38bdf8' }}><Monitor size={24} /></div>
+            <div className="industrial-badge">{stats.machines}</div>
+          </div>
+          <div className="industrial-body">
+            <h3>Máquinas e Acessos</h3>
+            <p>Gerenciamento de PCs e acessos remotos.</p>
+            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <div style={{width: '6px', height: '6px', borderRadius: '50%', background: '#10b981'}}></div>
+              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>{stats.machinesOnline} Online agora</span>
             </div>
           </div>
-        ))}
+          <div className="industrial-footer"><span>GERENCIAR</span><ChevronRight size={14} /></div>
+        </div>
+
+        <div className="card-industrial" onClick={() => navigate('/control/cameras')}>
+          <div className="card-industrial-header">
+            <div className="industrial-icon" style={{ color: '#818cf8' }}><Camera size={24} /></div>
+            <div className="industrial-badge">{stats.cameras}</div>
+          </div>
+          <div className="industrial-body">
+            <h3>Sistema de Câmeras</h3>
+            <p>Visualização de snapshots e IPs de CFTV.</p>
+            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <div style={{width: '6px', height: '6px', borderRadius: '50%', background: '#10b981'}}></div>
+              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>{stats.camerasOnline} Com imagem ativa</span>
+            </div>
+          </div>
+          <div className="industrial-footer"><span>VER CÂMERAS</span><ChevronRight size={14} /></div>
+        </div>
+
+        <div className="card-industrial" onClick={() => navigate('/control/network')}>
+          <div className="card-industrial-header">
+            <div className="industrial-icon" style={{ color: '#94a3b8' }}><RouterIcon size={24} /></div>
+            <div className="industrial-badge">{stats.network}</div>
+          </div>
+          <div className="industrial-body">
+            <h3>Rede e Links</h3>
+            <p>Status de modems, switches e operadoras.</p>
+            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <div style={{width: '6px', height: '6px', borderRadius: '50%', background: '#10b981'}}></div>
+              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>{stats.networkOnline} Estáveis</span>
+            </div>
+          </div>
+          <div className="industrial-footer"><span>INFRAESTRUTURA</span><ChevronRight size={14} /></div>
+        </div>
+
+        <div className="card-industrial" onClick={() => navigate('/control/action-plan')}>
+          <div className="card-industrial-header">
+            <div className="industrial-icon" style={{ color: '#f59e0b' }}><ListTodo size={24} /></div>
+            <div className="industrial-badge" style={{background: '#f59e0b'}}>{stats.tasks}</div>
+          </div>
+          <div className="industrial-body">
+            <h3>Plano de Ação</h3>
+            <p>Checklist de tarefas e pendências técnicas.</p>
+            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <Activity size={12} color="#f59e0b" />
+              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Tarefas críticas pendentes</span>
+            </div>
+          </div>
+          <div className="industrial-footer"><span>TAREFAS</span><ChevronRight size={14} /></div>
+        </div>
+      </div>
+
+      {/* QUICK ACTIONS BAR */}
+      <div style={{marginTop: '32px', padding: '24px', background: 'rgba(30, 41, 59, 0.5)', borderRadius: '12px', border: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px'}}>
+        <div>
+          <h4 style={{margin: 0, fontSize: '1rem'}}>Suporte Técnico em Campo</h4>
+          <p style={{margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--color-text-muted)'}}>Baixe as ferramentas necessárias para os PCs dos clientes.</p>
+        </div>
+        <div style={{display: 'flex', gap: '12px'}}>
+          <button className="btn btn-primary" onClick={downloadAgent} style={{display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', background: '#334155'}}>
+            <Activity size={18} />
+            BAIXAR KLARKE AGENT (JS)
+          </button>
+          <button className="btn btn-primary" onClick={() => navigate('/control/users')} style={{display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px'}}>
+            <ShieldCheck size={18} />
+            GERENCIAR ACESSOS
+          </button>
+        </div>
       </div>
     </div>
   );
