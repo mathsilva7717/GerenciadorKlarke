@@ -478,25 +478,14 @@ body.dark .machine-card:hover {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #020617 0%, #0f172a 100%);
+  background-color: #0f172a;
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
   position: relative;
   overflow: hidden;
   padding: 20px;
-}
-
-/* Background image for login */
-.login-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: url('/Gemini_Generated_Image_ (3).png');
-  background-size: cover;
-  background-position: center;
-  opacity: 0.4;
-  z-index: 0;
 }
 
 .login-card {
@@ -1363,4 +1352,82 @@ body.dark .status-badge {
   color: var(--color-accent);
   padding-top: 16px;
   border-top: 1px solid #f1f5f9;
+}
+
+/* ================================
+   MOBILE RESPONSIVENESS
+================================ */
+@media (max-width: 768px) {
+  /* Layout Básico */
+  .main-content {
+    padding: 16px;
+    margin-left: 0;
+  }
+  
+  .top-nav {
+    left: 0;
+    padding: 0 16px;
+  }
+
+  /* Dashboard / Home */
+  .home-hero-sober {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  
+  .hero-content h1 {
+    font-size: 1.5rem;
+  }
+
+  .quick-stats-row-sober {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .stat-box-industrial {
+    width: 100%;
+  }
+
+  /* Grids de Máquinas, Redes e Câmeras */
+  .machines-grid, .selection-grid-industrial, .users-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .machine-card, .card-industrial {
+    padding: 16px;
+  }
+
+  .machine-details-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  /* Modais e Formulários */
+  .modal-content {
+    width: 95%;
+    padding: 20px;
+    margin: 20px auto;
+  }
+
+  .machine-details-grid-form {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  
+  /* Pesquisa */
+  .search-wrapper {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .search-container {
+    width: 100%;
+  }
+  
+  .btn-primary[title="Exportar CSV"] {
+    width: 100% !important;
+  }
 }
