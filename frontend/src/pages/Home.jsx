@@ -113,8 +113,8 @@ function Home() {
     <div className="home-container">
       <div className="home-hero-sober">
         <div className="hero-content">
-          <h1>Monitoramento Klarke Solutions</h1>
-          <p>Gestão centralizada de infraestrutura crítica.</p>
+          <h1>Central de Controle</h1>
+          <p>Infraestrutura Klarke sob monitoramento ativo.</p>
         </div>
         
         <div className="quick-stats-row-sober">

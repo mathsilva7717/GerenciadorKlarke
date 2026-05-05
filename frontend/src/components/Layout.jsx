@@ -7,8 +7,8 @@ function Layout() {
   const previousTaskCount = useRef(null);
 
   useEffect(() => {
-    // Pedir permissão para notificações
-    if (Notification.permission === 'default') {
+    // Pedir permissão para notificações apenas se for suportado
+    if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
 
@@ -23,7 +23,7 @@ function Layout() {
         
         // Se a contagem anterior for menor, significa que uma nova tarefa foi adicionada
         if (previousTaskCount.current !== null && currentTasksCount > previousTaskCount.current) {
-          if (Notification.permission === 'granted') {
+          if ('Notification' in window && Notification.permission === 'granted') {
             new Notification('Klarke Control: Nova Tarefa!', {
               body: 'Você recebeu um novo item no Plano de Ação.',
               icon: '/logo.png'

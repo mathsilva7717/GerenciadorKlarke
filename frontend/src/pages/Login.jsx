@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Lock, User } from 'lucide-react';
+import { Lock, User, ShieldCheck } from 'lucide-react';
 
 const API_URL = '/api/login';
 
@@ -10,6 +10,8 @@ function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [successData, setSuccessData] = useState(null);
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -21,14 +23,49 @@ function Login() {
       const response = await axios.post(API_URL, { username, password });
       if (response.data.token) {
         localStorage.setItem('klarke_token', response.data.token);
-        navigate('/control');
+        
+        const now = new Date();
+        const hour = now.getHours();
+        let greeting = 'BOM DIA';
+        if (hour >= 12 && hour < 18) greeting = 'BOA TARDE';
+        else if (hour >= 18) greeting = 'BOA NOITE';
+        
+        setSuccessData({
+          greeting,
+          user: username.toUpperCase(),
+          date: now.toLocaleDateString('pt-BR'),
+          time: now.toLocaleTimeString('pt-BR')
+        });
+        
+        setIsSuccess(true);
+        setTimeout(() => {
+          navigate('/control');
+        }, 3000);
       }
     } catch (err) {
       setError('Credenciais inválidas. Tente novamente.');
-    } finally {
       setIsLoading(false);
     }
   };
+
+  if (isSuccess && successData) {
+    return (
+      <div className="login-container">
+        <div className="fbi-success-screen">
+          <ShieldCheck size={80} className="fbi-icon" />
+          <h1 className="fbi-title">ACESSO CONCEDIDO</h1>
+          <div className="fbi-divider"></div>
+          <div className="fbi-details">
+            <p className="fbi-line"><span className="fbi-label">STATUS:</span> AUTENTICADO</p>
+            <p className="fbi-line"><span className="fbi-label">USUÁRIO:</span> {successData.user}</p>
+            <p className="fbi-line"><span className="fbi-label">MENSAGEM:</span> {successData.greeting}</p>
+            <p className="fbi-line"><span className="fbi-label">DATA/HORA:</span> {successData.date} {successData.time}</p>
+            <p className="fbi-line fbi-blink"><span className="fbi-label">AÇÃO:</span> INICIANDO SISTEMA...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="login-container">
