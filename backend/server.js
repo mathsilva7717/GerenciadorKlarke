@@ -129,7 +129,6 @@ const db = new sqlite3.Database(dbPath, (err) => {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    });
   }
 });
 
@@ -168,7 +167,10 @@ app.post('/api/login', (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     
     if (user && await bcrypt.compare(password, user.password)) {
-      try { logAction(username, 'LOGIN', 'Usuário entrou no sistema'); } catch (e) {}
+      try { 
+        // Log manual para o login, já que não temos o header x-user ainda
+        db.run("INSERT INTO audit_logs (user, action, details) VALUES (?, ?, ?)", [username, 'LOGIN', 'Usuário entrou no sistema']);
+      } catch (e) {}
       res.json({ 
         token: process.env.AUTH_TOKEN || 'klarke-admin-token-xyz',
         user: { username: user.username, role: user.role }
