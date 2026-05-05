@@ -39,11 +39,6 @@ function App() {
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-        <footer className="discreet-footer">
-          <div className="footer-content">
-            <span>Klarke Solutions © 2026 - Todos os direitos reservados</span>
-          </div>
-        </footer>
       </div>
     </Router>
   );

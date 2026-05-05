@@ -53,6 +53,11 @@ function Layout() {
       <div className="app-container">
         <Outlet />
       </div>
+      <footer className="discreet-footer">
+        <div className="footer-content">
+          <span>Klarke Solutions © 2026 - Todos os direitos reservados</span>
+        </div>
+      </footer>
     </div>
   );
 }

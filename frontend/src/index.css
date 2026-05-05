@@ -194,11 +194,13 @@ body {
 
 .discreet-footer {
   width: 100%;
-  padding: 32px 0;
-  margin-top: auto; /* Empurra para o fim do flex container */
+  padding: 24px 0;
+  margin-top: auto;
   display: flex;
   justify-content: center;
   z-index: 10;
+  background: var(--color-primary);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .footer-content {

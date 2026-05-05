@@ -142,6 +142,12 @@ const db = new sqlite3.Database(dbPath, (err) => {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    
+    // Migração: Garante que a coluna pabx_ip exista
+    db.run("ALTER TABLE voip_extensions ADD COLUMN pabx_ip TEXT", (err) => {
+      // Ignora erro se a coluna já existir
+    });
+    
     });
   }
 });
