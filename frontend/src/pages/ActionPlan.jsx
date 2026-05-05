@@ -44,9 +44,14 @@ function ActionPlan() {
 
   const toggleTask = async (id, currentStatus) => {
     try {
-      await axios.put(`${API_URL}/${id}`, { is_completed: !currentStatus }, getAuthConfig());
+      const user = localStorage.getItem('klarke_user') || 'Desconhecido';
+      await axios.put(`${API_URL}/${id}`, { 
+        is_completed: !currentStatus,
+        completed_by: user
+      }, getAuthConfig());
+      
       if (!currentStatus) {
-        toast.success('✅ Excelente! Tarefa concluída!');
+        toast.success(`✅ Concluído por ${user}!`);
       }
       fetchTasks();
     } catch (error) {
@@ -54,7 +59,17 @@ function ActionPlan() {
     }
   };
 
-  const deleteTask = async (id) => {
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    // Forçar interpretação como UTC se vier do banco sem Z, ou usar o valor direto
+    const d = new Date(dateStr.includes('Z') ? dateStr : dateStr + 'Z');
+    return d.toLocaleString('pt-BR', { 
+      day: '2-digit', month: '2-digit', year: '2-digit', 
+      hour: '2-digit', minute: '2-digit' 
+    });
+  };
+
+  const deleteStaticTask = async (id) => {
     if (window.confirm('Excluir esta tarefa?')) {
       try {
         await axios.delete(`${API_URL}/${id}`, getAuthConfig());
@@ -76,8 +91,8 @@ function ActionPlan() {
     <div className="action-plan-container">
       <div className="progress-section">
         <div className="progress-header">
-          <h2>Progresso da Equipe</h2>
-          <span>{progressPercent}% Concluído</span>
+          <h2>Monitor de Tarefas</h2>
+          <span className="progress-badge">{progressPercent}%</span>
         </div>
         <div className="progress-bar-bg">
           <div className="progress-bar-fill" style={{ width: `${progressPercent}%` }}></div>
@@ -88,17 +103,10 @@ function ActionPlan() {
         <form onSubmit={addTask} className="new-task-form">
           <input 
             type="text" 
-            placeholder="O que precisa ser feito?" 
+            placeholder="Nova tarefa..." 
             value={newTaskTitle} 
             onChange={e => setNewTaskTitle(e.target.value)} 
             required 
-            className="form-input"
-          />
-          <input 
-            type="text" 
-            placeholder="Detalhes (opcional)" 
-            value={newTaskDesc} 
-            onChange={e => setNewTaskDesc(e.target.value)} 
             className="form-input"
           />
           <button type="submit" className="btn btn-primary" style={{marginTop: 0, padding: '12px 24px', width: 'auto'}}>
@@ -110,7 +118,7 @@ function ActionPlan() {
       <div className="tasks-lists">
         <div className="task-list">
           <h3 className="task-list-title"><ListTodo size={18}/> Pendentes ({pendingTasks.length})</h3>
-          {pendingTasks.length === 0 && <p className="empty-tasks">Nenhuma tarefa pendente!</p>}
+          {pendingTasks.length === 0 && <div className="empty-tasks">Tudo em dia! ✅</div>}
           {pendingTasks.map(task => (
             <div key={task.id} className="task-item pending">
               <button className="task-check-btn" onClick={() => toggleTask(task.id, task.is_completed)}>
@@ -119,14 +127,13 @@ function ActionPlan() {
               <div className="task-content">
                 <span className="task-title">{task.title}</span>
                 <div style={{display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px'}}>
-                  {task.description && <span className="task-desc">{task.description}</span>}
-                  <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px'}}>
+                  <span style={{fontSize: '0.65rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px'}}>
                     <Calendar size={10} />
-                    {new Date(task.created_at).toLocaleString()}
+                    Criado: {formatDate(task.created_at)}
                   </span>
                 </div>
               </div>
-              <button className="delete-btn" onClick={() => deleteTask(task.id)} style={{background: 'transparent', padding: '8px'}}>
+              <button className="delete-btn" onClick={() => deleteStaticTask(task.id)} style={{background: 'transparent', padding: '8px'}}>
                 <Trash2 size={16} />
               </button>
             </div>
@@ -135,20 +142,25 @@ function ActionPlan() {
 
         {completedTasks.length > 0 && (
           <div className="task-list mt-24">
-            <h3 className="task-list-title">Concluídas ({completedTasks.length})</h3>
+            <h3 className="task-list-title">Histórico de Conclusão</h3>
             {completedTasks.map(task => (
               <div key={task.id} className="task-item completed">
                 <button className="task-check-btn" onClick={() => toggleTask(task.id, task.is_completed)}>
                   <CheckCircle2 size={24} color="#2ecc71" />
                 </button>
                 <div className="task-content">
-                  <span className="task-title">{task.title}</span>
-                  <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px'}}>
-                    <Calendar size={10} />
-                    {new Date(task.created_at).toLocaleString()}
-                  </span>
+                  <span className="task-title" style={{textDecoration: 'line-through', opacity: 0.6}}>{task.title}</span>
+                  <div style={{marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px'}}>
+                    <span style={{fontSize: '0.65rem', color: '#10b981', fontWeight: 'bold'}}>
+                      FEITO POR: {task.completed_by || 'Sistema'}
+                    </span>
+                    <span style={{fontSize: '0.65rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px'}}>
+                      <Calendar size={10} />
+                      Concluído em: {formatDate(task.completed_at || task.created_at)}
+                    </span>
+                  </div>
                 </div>
-                <button className="delete-btn" onClick={() => deleteTask(task.id)} style={{background: 'transparent', padding: '8px'}}>
+                <button className="delete-btn" onClick={() => deleteStaticTask(task.id)} style={{background: 'transparent', padding: '8px'}}>
                   <Trash2 size={16} />
                 </button>
               </div>

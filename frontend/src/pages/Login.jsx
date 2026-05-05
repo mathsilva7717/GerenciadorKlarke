@@ -23,6 +23,7 @@ function Login() {
       const response = await axios.post(API_URL, { username, password });
       if (response.data.token) {
         localStorage.setItem('klarke_token', response.data.token);
+        localStorage.setItem('klarke_user', username);
         
         const now = new Date();
         const hour = now.getHours();

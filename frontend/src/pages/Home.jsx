@@ -154,8 +154,7 @@ function Home() {
             <span className="stat-label">SAÚDE GLOBAL</span>
             <div className="stat-value-row">
               <div className="indicator-static-green" style={{ 
-                background: (stats.machinesOnline + stats.camerasOnline + stats.networkOnline) > 0 ? '#10b981' : '#ef4444',
-                boxShadow: '0 0 15px ' + ((stats.machinesOnline + stats.camerasOnline + stats.networkOnline) > 0 ? '#10b981' : '#ef4444') 
+                background: (stats.machinesOnline + stats.camerasOnline + stats.networkOnline) > 0 ? '#10b981' : '#ef4444'
               }}></div>
               <span className="stat-value">
                 {Math.round(((stats.machinesOnline + stats.camerasOnline + stats.networkOnline) / (stats.machines + stats.cameras + stats.network || 1)) * 100)}%
@@ -186,7 +185,7 @@ function Home() {
       <div className="selection-grid-industrial">
         <div className="card-industrial" onClick={() => navigate('/control/machines')}>
           <div className="card-industrial-header">
-            <div className="industrial-icon" style={{ color: '#38bdf8' }}><Monitor size={24} /></div>
+            <div className="industrial-icon"><Monitor size={24} /></div>
             <div className="industrial-badge">{stats.machines}</div>
           </div>
           <div className="industrial-body">
@@ -202,7 +201,7 @@ function Home() {
 
         <div className="card-industrial" onClick={() => navigate('/control/cameras')}>
           <div className="card-industrial-header">
-            <div className="industrial-icon" style={{ color: '#818cf8' }}><Camera size={24} /></div>
+            <div className="industrial-icon"><Camera size={24} /></div>
             <div className="industrial-badge">{stats.cameras}</div>
           </div>
           <div className="industrial-body">
@@ -218,7 +217,7 @@ function Home() {
 
         <div className="card-industrial" onClick={() => navigate('/control/network')}>
           <div className="card-industrial-header">
-            <div className="industrial-icon" style={{ color: '#94a3b8' }}><RouterIcon size={24} /></div>
+            <div className="industrial-icon"><RouterIcon size={24} /></div>
             <div className="industrial-badge">{stats.network}</div>
           </div>
           <div className="industrial-body">
@@ -234,14 +233,14 @@ function Home() {
 
         <div className="card-industrial" onClick={() => navigate('/control/action-plan')}>
           <div className="card-industrial-header">
-            <div className="industrial-icon" style={{ color: '#f59e0b' }}><ListTodo size={24} /></div>
-            <div className="industrial-badge" style={{background: '#f59e0b'}}>{stats.tasks}</div>
+            <div className="industrial-icon"><ListTodo size={24} /></div>
+            <div className="industrial-badge">{stats.tasks}</div>
           </div>
           <div className="industrial-body">
             <h3>Plano de Ação</h3>
             <p>Checklist de tarefas e pendências técnicas.</p>
             <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
-              <Activity size={12} color="#f59e0b" />
+              <Activity size={12} color="#64748b" />
               <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Tarefas críticas pendentes</span>
             </div>
           </div>

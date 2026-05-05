@@ -317,8 +317,7 @@ function Dashboard() {
                       width: '12px', 
                       height: '12px', 
                       borderRadius: '50%', 
-                      background: isOnline(machine.last_seen) ? '#10b981' : '#ef4444',
-                      boxShadow: isOnline(machine.last_seen) ? '0 0 8px #10b981' : 'none'
+                      background: isOnline(machine.last_seen) ? '#10b981' : '#ef4444'
                     }} 
                   />
                   <div>
@@ -409,15 +408,12 @@ function Dashboard() {
               
               <form onSubmit={saveMachine}>
                 {editingMachine && formData.serial_number && (
-                  <div style={{display: 'flex', justifyContent: 'center', marginBottom: '20px', background: '#fff', padding: '10px', borderRadius: '8px'}}>
-                    <div style={{textAlign: 'center'}}>
-                      <img 
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(formData.serial_number)}`} 
-                        alt="QR Code do Equipamento"
-                        style={{border: '4px solid #fff'}}
-                      />
-                      <p style={{fontSize: '0.7rem', color: '#64748b', marginTop: '4px'}}>QR Code de Identificação</p>
-                    </div>
+                  <div className="qr-container">
+                    <img 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(formData.serial_number)}`} 
+                      alt="QR Code do Equipamento"
+                    />
+                    <p className="qr-label">QR Code de Identificação</p>
                   </div>
                 )}
                 <div className="form-group">
