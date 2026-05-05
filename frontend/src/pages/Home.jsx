@@ -38,15 +38,15 @@ function Home() {
           axios.get('/api/audit-logs', getAuthConfig())
         ]);
         setStats({
-          machines: m.data.length,
-          machinesOnline: m.data.filter(x => isOnline(x.last_seen)).length,
-          cameras: c.data.length,
-          camerasOnline: c.data.filter(x => isOnline(x.last_seen)).length,
-          network: n.data.length,
-          networkOnline: n.data.filter(x => isOnline(x.last_seen)).length,
-          tasks: t.data.filter(x => !x.is_completed).length,
-          users: u.data.length,
-          logsToday: logs.data.filter(x => new Date(x.created_at).toDateString() === new Date().toDateString()).length
+          machines: m.data?.length || 0,
+          machinesOnline: (m.data || []).filter(x => isOnline(x.last_seen)).length,
+          cameras: c.data?.length || 0,
+          camerasOnline: (c.data || []).filter(x => isOnline(x.last_seen)).length,
+          network: n.data?.length || 0,
+          networkOnline: (n.data || []).filter(x => isOnline(x.last_seen)).length,
+          tasks: (t.data || []).filter(x => !x.is_completed).length,
+          users: u.data?.length || 0,
+          logsToday: (logs.data || []).filter(x => new Date(x.created_at).toDateString() === new Date().toDateString()).length
         });
       } catch (e) {
         console.error("Stats error", e);
