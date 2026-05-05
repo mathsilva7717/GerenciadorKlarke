@@ -1,12 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, Monitor, Camera, Router as RouterIcon, Moon, Sun, ListTodo, ArrowLeft, Home, Users, Activity, History, BookOpen } from 'lucide-react';
+import { 
+  LogOut, Monitor, Camera, Router as RouterIcon, Moon, Sun, 
+  ListTodo, ArrowLeft, Home, History, BookOpen, 
+  ChevronDown, Phone, Package, Key, ShieldCheck 
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isDark, setIsDark] = useState(() => localStorage.getItem('klarke_theme') === 'dark');
+  const [activeMenu, setActiveMenu] = useState(null);
 
   const isHome = location.pathname === '/control' || location.pathname === '/control/';
 
@@ -26,14 +31,43 @@ function Navbar() {
     navigate('/');
   };
 
-  const navItems = [
-    { icon: <Home size={20} />, label: 'Início', path: '/control' },
-    { icon: <Monitor size={20} />, label: 'Máquinas', path: '/control/machines' },
+  const navGroups = [
+    {
+      label: 'Infra',
+      icon: <RouterIcon size={18} />,
+      items: [
+        { icon: <Camera size={16} />, label: 'Câmeras', path: '/control/cameras' },
+        { icon: <RouterIcon size={16} />, label: 'Rede', path: '/control/network' },
+        { icon: <Phone size={16} />, label: 'VOIP', path: '/control/voip' },
+      ]
+    },
+    {
+      label: 'Ativos',
+      icon: <Monitor size={18} />,
+      items: [
+        { icon: <Monitor size={16} />, label: 'Máquinas', path: '/control/machines' },
+        { icon: <Package size={16} />, label: 'Estoque', path: '/control/inventory' },
+        { icon: <Key size={16} />, label: 'Senhas', path: '/control/key-keeper' },
+      ]
+    },
+    {
+      label: 'Operação',
+      icon: <ListTodo size={18} />,
+      items: [
+        { icon: <ListTodo size={16} />, label: 'Tarefas', path: '/control/action-plan' },
+        { icon: <BookOpen size={16} />, label: 'Vault', path: '/control/technical-docs' },
+        { icon: <History size={16} />, label: 'Audit Logs', path: '/control/audit-logs' },
+      ]
+    }
+  ];
+
+  // Mobile nav items (top 5 essential)
+  const mobileItems = [
+    { icon: <Home size={20} />, label: 'Home', path: '/control' },
+    { icon: <Monitor size={20} />, label: 'Ativos', path: '/control/machines' },
     { icon: <Camera size={20} />, label: 'Câmeras', path: '/control/cameras' },
-    { icon: <RouterIcon size={20} />, label: 'Rede', path: '/control/network' },
     { icon: <ListTodo size={20} />, label: 'Tarefas', path: '/control/action-plan' },
-    { icon: <BookOpen size={20} />, label: 'Vault', path: '/control/technical-docs' },
-    { icon: <History size={20} />, label: 'Logs', path: '/control/audit-logs' },
+    { icon: <Package size={20} />, label: 'Estoque', path: '/control/inventory' },
   ];
 
   return (
@@ -54,22 +88,46 @@ function Navbar() {
             <img src="/logo.png" alt="Klarke Logo" className="nav-logo" />
             <div className="nav-brand-text hide-mobile">
               <h1>Klarke Control</h1>
-              <span>Gestão de Infraestrutura</span>
+              <span>GESTÃO INDUSTRIAL</span>
             </div>
           </div>
         </div>
         
         <div className="nav-links hide-mobile">
-          {navItems.map(item => (
-            <NavLink 
-              key={item.path} 
-              to={item.path} 
-              className={({isActive}) => isActive ? 'nav-link active' : 'nav-link'}
-              end={item.path === '/control'}
+          <NavLink to="/control" className={({isActive}) => isActive ? 'nav-link active' : 'nav-link'} end>
+            <Home size={18} />
+            <span>Início</span>
+          </NavLink>
+
+          {navGroups.map((group, idx) => (
+            <div 
+              key={idx} 
+              className="nav-dropdown-container"
+              onMouseEnter={() => setActiveMenu(idx)}
+              onMouseLeave={() => setActiveMenu(null)}
             >
-              {item.icon}
-              <span>{item.label}</span>
-            </NavLink>
+              <div className={`nav-link ${activeMenu === idx ? 'active' : ''}`}>
+                {group.icon}
+                <span>{group.label}</span>
+                <ChevronDown size={14} style={{marginLeft: '4px', opacity: 0.5}} />
+              </div>
+              
+              {activeMenu === idx && (
+                <div className="nav-dropdown-menu">
+                  {group.items.map(item => (
+                    <NavLink 
+                      key={item.path} 
+                      to={item.path} 
+                      className="dropdown-item"
+                      onClick={() => setActiveMenu(null)}
+                    >
+                      {item.icon}
+                      <span>{item.label}</span>
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
           ))}
         </div>
 
@@ -87,7 +145,7 @@ function Navbar() {
 
       {/* Bottom Nav for Mobile */}
       <div className="bottom-nav show-mobile">
-        {navItems.map(item => (
+        {mobileItems.map(item => (
           <NavLink 
             key={item.path} 
             to={item.path} 
