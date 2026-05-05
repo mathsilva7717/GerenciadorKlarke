@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, Monitor, Camera, Router as RouterIcon, Moon, Sun, ListTodo } from 'lucide-react';
+import { LogOut, Monitor, Camera, Router as RouterIcon, Moon, Sun, ListTodo, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isDark, setIsDark] = useState(() => localStorage.getItem('klarke_theme') === 'dark');
+
+  const isHome = location.pathname === '/control' || location.pathname === '/control/';
 
   useEffect(() => {
     if (isDark) {
@@ -26,11 +28,23 @@ function Navbar() {
 
   return (
     <nav className="top-nav">
-      <div className="nav-brand" onClick={() => navigate('/control')} style={{cursor: 'pointer'}}>
-        <img src="/logo.png" alt="Klarke Logo" className="nav-logo" />
-        <div className="nav-brand-text hide-mobile">
-          <h1>Klarke Control</h1>
-          <span>Gestão de Infraestrutura</span>
+      <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+        {!isHome && (
+          <button 
+            className="logout-btn" 
+            onClick={() => navigate(-1)} 
+            style={{padding: '8px', background: 'rgba(255,255,255,0.1)'}}
+            title="Voltar"
+          >
+            <ArrowLeft size={20} />
+          </button>
+        )}
+        <div className="nav-brand" onClick={() => navigate('/control')} style={{cursor: 'pointer'}}>
+          <img src="/logo.png" alt="Klarke Logo" className="nav-logo" />
+          <div className="nav-brand-text hide-mobile">
+            <h1>Klarke Control</h1>
+            <span>Gestão de Infraestrutura</span>
+          </div>
         </div>
       </div>
       
