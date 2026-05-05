@@ -136,6 +136,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
         name TEXT,
         password TEXT,
         ip_address TEXT,
+        pabx_ip TEXT,
         status TEXT DEFAULT 'Ativo',
         notes TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -622,10 +623,10 @@ app.get('/api/voip', authenticate, (req, res) => {
 });
 
 app.post('/api/voip', authenticate, (req, res) => {
-  const { extension, name, password, ip_address, status, notes } = req.body;
+  const { extension, name, password, ip_address, pabx_ip, status, notes } = req.body;
   db.run(
-    "INSERT INTO voip_extensions (extension, name, password, ip_address, status, notes) VALUES (?, ?, ?, ?, ?, ?)",
-    [extension, name, password, ip_address, status || 'Ativo', notes],
+    "INSERT INTO voip_extensions (extension, name, password, ip_address, pabx_ip, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    [extension, name, password, ip_address, pabx_ip, status || 'Ativo', notes],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
       res.status(201).json({ id: this.lastID });
@@ -634,10 +635,10 @@ app.post('/api/voip', authenticate, (req, res) => {
 });
 
 app.put('/api/voip/:id', authenticate, (req, res) => {
-  const { extension, name, password, ip_address, status, notes } = req.body;
+  const { extension, name, password, ip_address, pabx_ip, status, notes } = req.body;
   db.run(
-    "UPDATE voip_extensions SET extension = ?, name = ?, password = ?, ip_address = ?, status = ?, notes = ? WHERE id = ?",
-    [extension, name, password, ip_address, status, notes, req.params.id],
+    "UPDATE voip_extensions SET extension = ?, name = ?, password = ?, ip_address = ?, pabx_ip = ?, status = ?, notes = ? WHERE id = ?",
+    [extension, name, password, ip_address, pabx_ip, status, notes, req.params.id],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
       logAction(req, 'EDIÇÃO', `Alterou ramal: ${extension}`);

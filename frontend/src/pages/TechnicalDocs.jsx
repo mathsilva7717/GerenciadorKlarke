@@ -160,14 +160,14 @@ function TechnicalDocs() {
 
   return (
     <div className="users-container">
-      <div className="page-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
+      <div className="page-header">
         <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
           <div className="industrial-icon" style={{background: 'var(--color-primary)', color: 'white', padding: '8px', borderRadius: '6px'}}>
             <BookOpen size={20} />
           </div>
           <div>
-            <h1 style={{fontSize: '1.5rem', margin: 0}}>Tech Vault</h1>
-            <p style={{fontSize: '0.8rem', margin: 0, opacity: 0.7}}>Documentação e investimentos técnicos.</p>
+            <h1>Tech Vault</h1>
+            <p>Documentação e acervo técnico.</p>
           </div>
         </div>
         <div style={{display: 'flex', gap: '8px'}}>

@@ -94,88 +94,6 @@ function Home() {
     }
   };
 
-  const modules = [
-    {
-      title: 'Máquinas e Acessos',
-      desc: 'Gestão de computadores, MACs e acessos remotos.',
-      icon: <Monitor size={28} />,
-      path: '/control/machines',
-      color: '#475569', // Slate 600
-      count: stats.machines,
-      label: 'Dispositivos'
-    },
-    {
-      title: 'Sistema de Câmeras',
-      desc: 'IPs de NVRs, DVRs e credenciais de CFTV.',
-      icon: <Camera size={28} />,
-      path: '/control/cameras',
-      color: '#64748b', // Slate 500
-      count: stats.cameras,
-      label: 'Câmeras'
-    },
-    {
-      title: 'Infraestrutura de Rede',
-      desc: 'Controle de modems, switches e operadoras.',
-      icon: <RouterIcon size={28} />,
-      path: '/control/network',
-      color: '#475569', // Slate 600
-      count: stats.network,
-      label: 'Equipamentos'
-    },
-    {
-      title: 'Plano de Ação',
-      desc: 'Checklist de tarefas e pendências técnicas.',
-      icon: <ListTodo size={28} />,
-      path: '/control/action-plan',
-      color: '#334155', // Slate 700
-      count: stats.tasks,
-      label: 'Pendentes'
-    },
-    {
-      icon: <ShieldCheck size={28} />,
-      path: '/control/users',
-      color: '#1e293b', // Slate 800
-      count: stats.users,
-      label: 'Usuários'
-    },
-    {
-      title: 'Tech Vault',
-      desc: 'Manuais, procedimentos e documentação de rede.',
-      icon: <BookOpen size={28} />,
-      path: '/control/technical-docs',
-      color: '#0f172a', // Slate 950
-      count: stats.docs || 0,
-      label: 'Arquivos'
-    },
-    {
-      title: 'VOIP & Telefonia',
-      desc: 'Ramais, contas SIP e IPs de ATAs.',
-      icon: <Phone size={28} />,
-      path: '/control/voip',
-      color: '#1e293b',
-      count: stats.voip || 0,
-      label: 'Ramais'
-    },
-    {
-      title: 'Inventory',
-      desc: 'Estoque de ativos, cabos e peças.',
-      icon: <Package size={28} />,
-      path: '/control/inventory',
-      color: '#334155',
-      count: stats.inventory || 0,
-      label: 'Itens'
-    },
-    {
-      title: 'Key Keeper',
-      desc: 'Cofre de senhas críticas e acessos.',
-      icon: <Key size={28} />,
-      path: '/control/key-keeper',
-      color: '#0f172a',
-      count: stats.credentials || 0,
-      label: 'Chaves'
-    }
-  ];
-
   const downloadAgent = async () => {
     try {
       const response = await axios.get('/api/monitoring/agent-download', {
@@ -200,12 +118,8 @@ function Home() {
       {/* HEADER: GLOBAL HEALTH */}
         <div className="home-hero-sober">
           <div className="hero-content">
-            <div className="status-pill">
-              <Activity size={14} className="pulse" />
-              <span>SISTEMA ONLINE • v3.5.0</span>
-            </div>
-            <h1>CENTRO OPERACIONAL</h1>
-            <p>Centro de Comando Unificado para Monitoramento, Gestão de Ativos e Inteligência Operacional.</p>
+            <h1>COMMAND CENTER</h1>
+            <p>Monitoramento de redes e gestão de ativos.</p>
           </div>
           <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
             <button 
@@ -217,7 +131,6 @@ function Home() {
               <RotateCw size={18} />
             </button>
           </div>
-          <p>Monitoramento de links, câmeras e acessos remotos.</p>
         </div>
         
         <div className="quick-stats-row-sober">
@@ -266,7 +179,7 @@ function Home() {
               <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>{stats.machinesOnline} Online agora</span>
             </div>
           </div>
-          <div className="industrial-footer"><span>GERENCIAR</span><ChevronRight size={14} /></div>
+          <div className="industrial-footer"><span>gerenciar</span><ChevronRight size={14} /></div>
         </div>
 
         <div className="card-industrial" onClick={() => navigate('/control/cameras')}>
@@ -282,7 +195,7 @@ function Home() {
               <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>{stats.camerasOnline} Com imagem ativa</span>
             </div>
           </div>
-          <div className="industrial-footer"><span>VER CÂMERAS</span><ChevronRight size={14} /></div>
+          <div className="industrial-footer"><span>ver câmeras</span><ChevronRight size={14} /></div>
         </div>
 
         <div className="card-industrial" onClick={() => navigate('/control/network')}>
@@ -295,10 +208,10 @@ function Home() {
             <p>Status de modems, switches e operadoras.</p>
             <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
               <div style={{width: '6px', height: '6px', borderRadius: '50%', background: '#10b981'}}></div>
-              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>{stats.networkOnline} Estáveis</span>
+              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>{stats.networkOnline} estáveis</span>
             </div>
           </div>
-          <div className="industrial-footer"><span>INFRAESTRUTURA</span><ChevronRight size={14} /></div>
+          <div className="industrial-footer"><span>infraestrutura de ti</span><ChevronRight size={14} /></div>
         </div>
 
         <div className="card-industrial" onClick={() => navigate('/control/action-plan')}>
@@ -314,7 +227,7 @@ function Home() {
               <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Tarefas críticas pendentes</span>
             </div>
           </div>
-          <div className="industrial-footer"><span>TAREFAS</span><ChevronRight size={14} /></div>
+          <div className="industrial-footer"><span>tarefas</span><ChevronRight size={14} /></div>
         </div>
 
         <div className="card-industrial" onClick={() => navigate('/control/audit-logs')}>
@@ -330,7 +243,7 @@ function Home() {
               <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Atividade em tempo real</span>
             </div>
           </div>
-          <div className="industrial-footer"><span>AUDITORIA</span><ChevronRight size={14} /></div>
+          <div className="industrial-footer"><span>auditoria</span><ChevronRight size={14} /></div>
         </div>
 
         <div className="card-industrial" onClick={() => navigate('/control/technical-docs')}>
@@ -346,7 +259,7 @@ function Home() {
               <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Central de documentação</span>
             </div>
           </div>
-          <div className="industrial-footer"><span>VER ACERVO</span><ChevronRight size={14} /></div>
+          <div className="industrial-footer"><span>ver acervo</span><ChevronRight size={14} /></div>
         </div>
 
         <div className="card-industrial" onClick={() => navigate('/control/voip')}>

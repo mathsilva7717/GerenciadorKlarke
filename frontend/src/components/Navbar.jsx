@@ -88,7 +88,7 @@ function Navbar() {
             <img src="/logo.png" alt="Klarke Logo" className="nav-logo" />
             <div className="nav-brand-text hide-mobile">
               <h1>Klarke Control</h1>
-              <span>ECOSSISTEMA OPERACIONAL</span>
+              <span>Gestão de infraestrutura</span>
             </div>
           </div>
         </div>

@@ -101,7 +101,7 @@ function KeyKeeper() {
 
   return (
     <div className="users-container">
-      <div className="page-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+      <div className="page-header">
         <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
           <div className="industrial-icon" style={{background: 'var(--color-primary)', color: 'white', padding: '10px', borderRadius: '8px'}}>
             <Key size={24} />
@@ -111,8 +111,8 @@ function KeyKeeper() {
             <p>Cofre de senhas críticas e acessos seguros.</p>
           </div>
         </div>
-        <button className="btn btn-primary" style={{width: 'auto'}} onClick={() => openModal()}>
-          <Plus size={20} /> <span className="hide-mobile">NOVA SENHA</span>
+        <button className="add-btn" onClick={() => openModal()}>
+          <Plus size={16} /> <span className="hide-mobile">NOVA SENHA</span>
         </button>
       </div>
 

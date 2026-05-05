@@ -99,7 +99,7 @@ function Inventory() {
 
   return (
     <div className="users-container">
-      <div className="page-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+      <div className="page-header">
         <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
           <div className="industrial-icon" style={{background: 'var(--color-primary)', color: 'white', padding: '10px', borderRadius: '8px'}}>
             <Package size={24} />
@@ -109,8 +109,8 @@ function Inventory() {
             <p>Controle de estoque técnico e ativos.</p>
           </div>
         </div>
-        <button className="btn btn-primary" style={{width: 'auto'}} onClick={() => openModal()}>
-          <Plus size={20} /> <span className="hide-mobile">ADICIONAR ITEM</span>
+        <button className="add-btn" onClick={() => openModal()}>
+          <Plus size={16} /> <span className="hide-mobile">ADICIONAR ITEM</span>
         </button>
       </div>
 

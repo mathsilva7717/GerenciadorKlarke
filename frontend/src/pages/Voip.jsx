@@ -14,6 +14,7 @@ function Voip() {
     name: '',
     password: '',
     ip_address: '',
+    pabx_ip: '',
     status: 'Ativo',
     notes: ''
   });
@@ -79,7 +80,7 @@ function Voip() {
       setFormData(ext);
     } else {
       setEditingExt(null);
-      setFormData({ extension: '', name: '', password: '', ip_address: '', status: 'Ativo', notes: '' });
+      setFormData({ extension: '', name: '', password: '', ip_address: '', pabx_ip: '', status: 'Ativo', notes: '' });
     }
     setIsModalOpen(true);
   };
@@ -97,7 +98,7 @@ function Voip() {
 
   return (
     <div className="users-container">
-      <div className="page-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+      <div className="page-header">
         <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
           <div className="industrial-icon" style={{background: 'var(--color-primary)', color: 'white', padding: '10px', borderRadius: '8px'}}>
             <Phone size={24} />
@@ -107,8 +108,8 @@ function Voip() {
             <p>Gerenciamento de ramais, ATAs e contas SIP.</p>
           </div>
         </div>
-        <button className="btn btn-primary" style={{width: 'auto'}} onClick={() => openModal()}>
-          <Plus size={20} /> <span className="hide-mobile">NOVO RAMAL</span>
+        <button className="add-btn" onClick={() => openModal()}>
+          <Plus size={16} /> <span className="hide-mobile">NOVO RAMAL</span>
         </button>
       </div>
 
@@ -164,6 +165,15 @@ function Voip() {
                     <span style={{fontFamily: 'monospace', fontWeight: 'bold'}}>{ext.password || '---'}</span>
                     <button className="copy-btn" onClick={() => copyToClipboard(ext.password, `pass-${ext.id}`)}>
                       {copiedField === `pass-${ext.id}` ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
+                    </button>
+                  </div>
+                </div>
+                <div className="detail-item">
+                  <span className="detail-label">IP do PABX</span>
+                  <div className="detail-value" style={{display: 'flex', justifyContent: 'space-between', width: '100%'}}>
+                    <span style={{fontWeight: 'bold'}}>{ext.pabx_ip || '---'}</span>
+                    <button className="copy-btn" onClick={() => copyToClipboard(ext.pabx_ip, `pabx-${ext.id}`)}>
+                      {copiedField === `pabx-${ext.id}` ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
                     </button>
                   </div>
                 </div>
@@ -245,6 +255,15 @@ function Voip() {
                     <option value="Manutenção">Manutenção</option>
                   </select>
                 </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Endereço IP do PABX / Servidor</label>
+                <input 
+                  type="text" className="form-input" 
+                  value={formData.pabx_ip} 
+                  onChange={e => setFormData({...formData, pabx_ip: e.target.value})}
+                  placeholder="Ex: 192.168.1.10 ou pabx.klarke.com"
+                />
               </div>
               <div className="form-group">
                 <label className="form-label">Endereço IP do Aparelho (Opcional)</label>
