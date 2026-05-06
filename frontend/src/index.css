@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+
 :root {
   --color-primary: #0f172a;
   --color-primary-light: #1e293b;
@@ -114,9 +116,11 @@ body {
 
 .header h1 {
   color: var(--color-primary);
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 600;
-  font-size: 1.8rem;
-  letter-spacing: -0.5px;
+  font-size: 1.4rem;
+  letter-spacing: -0.8px;
+  text-transform: none;
 }
 
 /* Search */
@@ -707,18 +711,20 @@ body.dark .machine-card:hover {
 }
 
 .login-header h1 {
-  color: #ffffff !important;
-  font-weight: 600; /* Mais leve e elegante */
+  color: #ffffff;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 600;
   margin-bottom: 8px;
   letter-spacing: -0.5px;
   font-size: 1.8rem;
-  text-transform: uppercase;
+  text-transform: none; /* Klarke Control - Elegante e moderno */
 }
 
 .login-header p {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.9rem;
-  font-weight: 500;
+  color: rgba(255, 255, 255, 0.45); /* Mais discreto */
+  font-size: 0.8rem; /* Menor */
+  font-weight: 400;
+  letter-spacing: 0.2px;
 }
 
 .login-form {
