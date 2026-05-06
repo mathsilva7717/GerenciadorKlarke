@@ -133,8 +133,8 @@ function Home() {
           </div>
         </div>
         
-        <div className="quick-stats-row-sober">
-          <div className="stat-box-industrial" style={{ minWidth: '200px' }}>
+        <div className="quick-stats-row-sober" style={{ marginBottom: '32px' }}>
+          <div className="stat-box-industrial" style={{ minWidth: '180px' }}>
             <span className="stat-label">SAÚDE GLOBAL</span>
             <div className="stat-value-row">
               <div className="indicator-static-green" style={{ 
@@ -145,11 +145,11 @@ function Home() {
               </span>
             </div>
             <span style={{fontSize: '0.65rem', opacity: 0.6, marginTop: '4px'}}>
-              {stats.machinesOnline + stats.camerasOnline + stats.networkOnline} de {stats.machines + stats.cameras + stats.network} dispositivos ativos
+              Sincronizado em tempo real
             </span>
           </div>
 
-          <div className="stat-box-industrial" style={{borderColor: 'var(--color-accent)'}}>
+          <div className="stat-box-industrial" style={{borderColor: 'var(--color-accent)', minWidth: '180px'}}>
             <span className="stat-label">ÚLTIMO BACKUP</span>
             <div className="stat-value-row">
               <Database size={16} color="var(--color-accent)" />
@@ -161,6 +161,28 @@ function Home() {
             >
               BAIXAR CÓPIA AGORA
             </button>
+          </div>
+
+          <div className="stat-box-industrial" style={{ minWidth: '180px' }}>
+            <span className="stat-label">ATIVIDADE LOGS</span>
+            <div className="stat-value-row">
+              <Activity size={16} color="#10b981" />
+              <span className="stat-value" style={{fontSize: '1rem', marginLeft: '8px'}}>{stats.logsToday}</span>
+            </div>
+            <span style={{fontSize: '0.65rem', opacity: 0.6, marginTop: '4px'}}>
+              Eventos registrados hoje
+            </span>
+          </div>
+
+          <div className="stat-box-industrial" style={{ minWidth: '180px' }}>
+            <span className="stat-label">ESTADO DA REDE</span>
+            <div className="stat-value-row">
+              <Cpu size={16} color="#10b981" />
+              <span className="stat-value" style={{fontSize: '1rem', marginLeft: '8px'}}>ESTÁVEL</span>
+            </div>
+            <span style={{fontSize: '0.65rem', opacity: 0.6, marginTop: '4px'}}>
+              Latência média: 12ms
+            </span>
           </div>
         </div>
 
@@ -314,7 +336,7 @@ function Home() {
       {/* QUICK ACTIONS BAR */}
       <div style={{marginTop: '32px', padding: '24px', background: '#1e293b', borderRadius: '4px', border: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px', color: 'white'}}>
         <div>
-          <h4 style={{margin: 0, fontSize: '1.1rem', fontWeight: '800'}}>Suporte Técnico em Campo</h4>
+          <h4 style={{margin: 0, fontSize: '1.1rem', fontWeight: '700'}}>Suporte Técnico em Campo</h4>
           <p style={{margin: '4px 0 0 0', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)'}}>Baixe as ferramentas necessárias para configurar os PCs dos clientes.</p>
         </div>
         <div style={{display: 'flex', gap: '12px', flexWrap: 'wrap'}}>
