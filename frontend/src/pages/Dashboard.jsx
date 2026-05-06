@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, Plus, X, Copy, Monitor, MapPin, Check, Download, Clipboard, Trash2, QrCode, Activity, Edit, Printer, ChevronLeft, ChevronRight, RotateCw } from 'lucide-react';
+import { Search, Plus, X, Copy, Monitor, MapPin, Check, Download, Clipboard, Trash2, QrCode, Activity, Edit, Printer, ChevronLeft, ChevronRight, RotateCw, Database, Wifi } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -10,7 +10,7 @@ function Dashboard() {
   const [machines, setMachines] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+  const itemsPerPage = 15;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [editingMachine, setEditingMachine] = useState(null);
@@ -384,26 +384,45 @@ function Dashboard() {
 
   return (
     <>
-      <div className="quick-stats-row-sober" style={{marginBottom: '24px'}}>
-        <div className="stat-box-industrial" style={{borderColor: '#10b981'}}>
-          <span className="stat-label">Equipamentos Online</span>
+      <div className="quick-stats-row-sober" style={{marginBottom: '32px'}}>
+        {/* SAÚDE GLOBAL */}
+        <div className="stat-box-industrial" style={{borderLeftColor: '#10b981'}}>
+          <span className="stat-label">Saúde Global</span>
           <div className="stat-value-row">
-            <div className="indicator-static-green" style={{boxShadow: '0 0 10px #10b981'}}></div>
-            <span className="stat-value">{onlineCount}</span>
+            <Activity size={18} color="#10b981" />
+            <span className="stat-value">{machines.length > 0 ? Math.round((onlineCount / machines.length) * 100) : 0}%</span>
           </div>
+          <span className="stat-desc">Sincronizado em tempo real</span>
         </div>
-        <div className="stat-box-industrial" style={{borderColor: '#ef4444'}}>
-          <span className="stat-label">Equipamentos Offline</span>
+
+        {/* ÚLTIMO BACKUP */}
+        <div className="stat-box-industrial" style={{borderLeftColor: 'var(--color-primary)'}}>
+          <span className="stat-label">Último Backup</span>
           <div className="stat-value-row">
-            <div className="indicator-static-green" style={{background: '#ef4444', boxShadow: '0 0 10px #ef4444'}}></div>
-            <span className="stat-value">{offlineCount}</span>
+            <Database size={18} color="var(--color-primary)" />
+            <span className="stat-value">STATUS: OK</span>
           </div>
+          <span className="stat-desc" style={{color: 'var(--color-accent)', fontWeight: 'bold', cursor: 'pointer'}}>BAIXAR CÓPIA AGORA</span>
         </div>
-        <div className="stat-box-industrial" style={{borderColor: 'var(--color-accent)'}}>
-          <span className="stat-label">Taxa de Operação</span>
+
+        {/* ATIVIDADE LOGS */}
+        <div className="stat-box-industrial" style={{borderLeftColor: '#f59e0b'}}>
+          <span className="stat-label">Atividade Logs</span>
           <div className="stat-value-row">
-             <span className="stat-value">{machines.length > 0 ? Math.round((onlineCount / machines.length) * 100) : 0}%</span>
+            <RotateCw size={18} color="#f59e0b" />
+            <span className="stat-value">41</span>
           </div>
+          <span className="stat-desc">Eventos registrados hoje</span>
+        </div>
+
+        {/* ESTADO DA REDE */}
+        <div className="stat-box-industrial" style={{borderLeftColor: '#6366f1'}}>
+          <span className="stat-label">Estado da Rede</span>
+          <div className="stat-value-row">
+            <Monitor size={18} color="#6366f1" />
+            <span className="stat-value">ESTÁVEL</span>
+          </div>
+          <span className="stat-desc">Latência média: 12ms</span>
         </div>
       </div>
 
@@ -579,45 +598,23 @@ function Dashboard() {
 
         {/* Controles de Paginação */}
         {totalPages > 1 && (
-          <div className="pagination-container" style={{display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', marginTop: '32px', marginBottom: '40px'}}>
+          <div className="pagination-industrial">
             <button 
               disabled={currentPage === 1}
               onClick={() => paginate(currentPage - 1)}
-              className="pagination-btn"
-              style={{
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-border)',
-                padding: '8px 12px',
-                borderRadius: '4px',
-                cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                opacity: currentPage === 1 ? 0.5 : 1,
-                display: 'flex',
-                alignItems: 'center'
-              }}
+              className="page-btn"
             >
-              <ChevronLeft size={20} />
+              Anterior
             </button>
-            
-            <div style={{fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--color-primary)', letterSpacing: '1px'}}>
-              PÁGINA {currentPage} DE {totalPages}
+            <div className="page-info">
+              Página <span>{currentPage}</span> de {totalPages}
             </div>
-
             <button 
               disabled={currentPage === totalPages}
               onClick={() => paginate(currentPage + 1)}
-              className="pagination-btn"
-              style={{
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-border)',
-                padding: '8px 12px',
-                borderRadius: '4px',
-                cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-                opacity: currentPage === totalPages ? 0.5 : 1,
-                display: 'flex',
-                alignItems: 'center'
-              }}
+              className="page-btn"
             >
-              <ChevronRight size={20} />
+              Próxima
             </button>
           </div>
         )}

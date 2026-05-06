@@ -90,11 +90,29 @@ function Voip() {
     setEditingExt(null);
   };
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
+
   const filtered = extensions.filter(e => 
     e.extension.toLowerCase().includes(searchTerm.toLowerCase()) ||
     e.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     e.ip_address?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Pagination Logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filtered.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+
+  const paginate = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   return (
     <div className="users-container">
@@ -127,82 +145,106 @@ function Voip() {
       </div>
 
       <div className="machines-grid">
-        {filtered.length === 0 ? (
+        {currentItems.length === 0 ? (
           <div className="empty-state">
             <Activity size={64} className="empty-icon" />
             <h2>Nenhum Ramal</h2>
             <p>Clique em "+ NOVO RAMAL" para começar a mapear sua telefonia.</p>
           </div>
         ) : (
-          filtered.map(ext => (
-            <div key={ext.id} className="machine-card" style={{cursor: 'default'}}>
-              <div className="machine-header">
-                <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
-                  <div style={{
-                    width: '32px', height: '32px', borderRadius: '50%', 
-                    background: ext.status === 'Ativo' ? '#ecfdf5' : '#fef2f2',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center'
-                  }}>
-                    <Phone size={16} color={ext.status === 'Ativo' ? '#10b981' : '#ef4444'} />
+          <>
+            {currentItems.map(ext => (
+              <div key={ext.id} className="machine-card" style={{cursor: 'default'}}>
+                <div className="machine-header">
+                  <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                    <div style={{
+                      width: '32px', height: '32px', borderRadius: '50%', 
+                      background: ext.status === 'Ativo' ? '#ecfdf5' : '#fef2f2',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}>
+                      <Phone size={16} color={ext.status === 'Ativo' ? '#10b981' : '#ef4444'} />
+                    </div>
+                    <div>
+                      <span className="machine-title" style={{fontSize: '1.2rem', fontWeight: '900'}}>{ext.extension}</span>
+                      <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block'}}>
+                        {ext.name} • {ext.status}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="machine-title" style={{fontSize: '1.2rem', fontWeight: '900'}}>{ext.extension}</span>
-                    <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block'}}>
-                      {ext.name} • {ext.status}
-                    </span>
-                  </div>
-                </div>
-                <div style={{display: 'flex', gap: '8px'}}>
-                  <button className="copy-btn" onClick={() => openModal(ext)} title="Editar"><Edit size={16} /></button>
-                  <button className="delete-btn" onClick={() => deleteExt(ext.id)} title="Excluir"><Trash2 size={16} /></button>
-                </div>
-              </div>
-
-              <div style={{marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '10px'}}>
-                <div className="detail-item">
-                  <span className="detail-label">Senha SIP</span>
-                  <div className="detail-value" style={{display: 'flex', justifyContent: 'space-between', width: '100%'}}>
-                    <span style={{fontFamily: 'monospace', fontWeight: 'bold'}}>{ext.password || '---'}</span>
-                    <button className="copy-btn" onClick={() => copyToClipboard(ext.password, `pass-${ext.id}`)}>
-                      {copiedField === `pass-${ext.id}` ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
-                    </button>
-                  </div>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">IP do PABX</span>
-                  <div className="detail-value" style={{display: 'flex', justifyContent: 'space-between', width: '100%'}}>
-                    <span style={{fontWeight: 'bold'}}>{ext.pabx_ip || '---'}</span>
-                    <button className="copy-btn" onClick={() => copyToClipboard(ext.pabx_ip, `pabx-${ext.id}`)}>
-                      {copiedField === `pabx-${ext.id}` ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
-                    </button>
+                  <div style={{display: 'flex', gap: '8px'}}>
+                    <button className="copy-btn" onClick={() => openModal(ext)} title="Editar"><Edit size={16} /></button>
+                    <button className="delete-btn" onClick={() => deleteExt(ext.id)} title="Excluir"><Trash2 size={16} /></button>
                   </div>
                 </div>
 
-                <div className="detail-item">
-                  <span className="detail-label">IP do Dispositivo</span>
-                  <div className="detail-value" style={{display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center'}}>
-                    <span>{ext.ip_address || '---'}</span>
-                    <div style={{display: 'flex', gap: '8px'}}>
-                      {ext.ip_address && (
-                        <a href={`http://${ext.ip_address}`} target="_blank" rel="noreferrer" className="copy-btn">
-                          <ExternalLink size={14} />
-                        </a>
-                      )}
-                      <button className="copy-btn" onClick={() => copyToClipboard(ext.ip_address, `ip-${ext.id}`)}>
-                        {copiedField === `ip-${ext.id}` ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
+                <div style={{marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '10px'}}>
+                  <div className="detail-item">
+                    <span className="detail-label">Senha SIP</span>
+                    <div className="detail-value" style={{display: 'flex', justifyContent: 'space-between', width: '100%'}}>
+                      <span style={{fontFamily: 'monospace', fontWeight: 'bold'}}>{ext.password || '---'}</span>
+                      <button className="copy-btn" onClick={() => copyToClipboard(ext.password, `pass-${ext.id}`)}>
+                        {copiedField === `pass-${ext.id}` ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
                       </button>
                     </div>
                   </div>
-                </div>
-
-                {ext.notes && (
-                  <div style={{marginTop: '6px', padding: '10px', background: 'rgba(0,0,0,0.02)', borderRadius: '6px', fontSize: '0.8rem', color: '#64748b'}}>
-                    <strong>Notas:</strong> {ext.notes}
+                  <div className="detail-item">
+                    <span className="detail-label">IP do PABX</span>
+                    <div className="detail-value" style={{display: 'flex', justifyContent: 'space-between', width: '100%'}}>
+                      <span style={{fontWeight: 'bold'}}>{ext.pabx_ip || '---'}</span>
+                      <button className="copy-btn" onClick={() => copyToClipboard(ext.pabx_ip, `pabx-${ext.id}`)}>
+                        {copiedField === `pabx-${ext.id}` ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
+                      </button>
+                    </div>
                   </div>
-                )}
+
+                  <div className="detail-item">
+                    <span className="detail-label">IP do Dispositivo</span>
+                    <div className="detail-value" style={{display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center'}}>
+                      <span>{ext.ip_address || '---'}</span>
+                      <div style={{display: 'flex', gap: '8px'}}>
+                        {ext.ip_address && (
+                          <a href={`http://${ext.ip_address}`} target="_blank" rel="noreferrer" className="copy-btn">
+                            <ExternalLink size={14} />
+                          </a>
+                        )}
+                        <button className="copy-btn" onClick={() => copyToClipboard(ext.ip_address, `ip-${ext.id}`)}>
+                          {copiedField === `ip-${ext.id}` ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {ext.notes && (
+                    <div style={{marginTop: '6px', padding: '10px', background: 'rgba(0,0,0,0.02)', borderRadius: '6px', fontSize: '0.8rem', color: '#64748b'}}>
+                      <strong>Notas:</strong> {ext.notes}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))
+            ))}
+
+            {totalPages > 1 && (
+              <div className="pagination-industrial">
+                <button 
+                  disabled={currentPage === 1}
+                  onClick={() => paginate(currentPage - 1)}
+                  className="page-btn"
+                >
+                  Anterior
+                </button>
+                <div className="page-info">
+                  Página <span>{currentPage}</span> de {totalPages}
+                </div>
+                <button 
+                  disabled={currentPage === totalPages}
+                  onClick={() => paginate(currentPage + 1)}
+                  className="page-btn"
+                >
+                  Próxima
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 

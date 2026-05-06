@@ -93,11 +93,29 @@ function KeyKeeper() {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
+
   const filtered = credentials.filter(c => 
     c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Pagination Logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filtered.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+
+  const paginate = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   return (
     <div className="users-container">
@@ -130,73 +148,97 @@ function KeyKeeper() {
       </div>
 
       <div className="machines-grid">
-        {filtered.length === 0 ? (
+        {currentItems.length === 0 ? (
           <div className="empty-state">
             <Lock size={64} className="empty-icon" />
             <h2>Cofre Vazio</h2>
             <p>Clique em "+ NOVA SENHA" para começar.</p>
           </div>
         ) : (
-          filtered.map(cred => (
-            <div key={cred.id} className="machine-card" style={{cursor: 'default'}}>
-              <div className="machine-header">
-                <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
-                  <ShieldCheck size={20} color="var(--color-accent)" />
-                  <div>
-                    <span className="machine-title" style={{fontSize: '1.1rem'}}>{cred.title}</span>
-                    <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block'}}>
-                      {cred.category} • {new Date(cred.created_at).toLocaleDateString()}
-                    </span>
+          <>
+            {currentItems.map(cred => (
+              <div key={cred.id} className="machine-card" style={{cursor: 'default'}}>
+                <div className="machine-header">
+                  <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                    <ShieldCheck size={20} color="var(--color-accent)" />
+                    <div>
+                      <span className="machine-title" style={{fontSize: '1.1rem'}}>{cred.title}</span>
+                      <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block'}}>
+                        {cred.category} • {new Date(cred.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <div style={{display: 'flex', gap: '8px'}}>
-                  <button className="copy-btn" onClick={() => openModal(cred)} title="Editar"><Edit size={16} /></button>
-                  <button className="delete-btn" onClick={() => deleteCred(cred.id)} title="Excluir"><Trash2 size={16} /></button>
-                </div>
-              </div>
-
-              <div style={{marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px'}}>
-                <div className="detail-item">
-                  <span className="detail-label">Usuário</span>
-                  <div className="detail-value" style={{display: 'flex', justifyContent: 'space-between', width: '100%'}}>
-                    <span>{cred.username}</span>
-                    <button 
-                      className="copy-btn" 
-                      onClick={() => copyToClipboard(cred.username, `user-${cred.id}`)}
-                    >
-                      {copiedField === `user-${cred.id}` ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
-                    </button>
+                  <div style={{display: 'flex', gap: '8px'}}>
+                    <button className="copy-btn" onClick={() => openModal(cred)} title="Editar"><Edit size={16} /></button>
+                    <button className="delete-btn" onClick={() => deleteCred(cred.id)} title="Excluir"><Trash2 size={16} /></button>
                   </div>
                 </div>
 
-                <div className="detail-item">
-                  <span className="detail-label">Senha</span>
-                  <div className="detail-value" style={{display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center'}}>
-                    <span style={{fontFamily: showPassMap[cred.id] ? 'monospace' : 'password', fontSize: showPassMap[cred.id] ? '1rem' : '1.2rem', letterSpacing: showPassMap[cred.id] ? '0' : '2px'}}>
-                      {showPassMap[cred.id] ? cred.password : '••••••••'}
-                    </span>
-                    <div style={{display: 'flex', gap: '8px'}}>
-                      <button className="copy-btn" onClick={() => toggleShow(cred.id)}>
-                        {showPassMap[cred.id] ? <EyeOff size={14} /> : <Eye size={14} />}
-                      </button>
+                <div style={{marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px'}}>
+                  <div className="detail-item">
+                    <span className="detail-label">Usuário</span>
+                    <div className="detail-value" style={{display: 'flex', justifyContent: 'space-between', width: '100%'}}>
+                      <span>{cred.username}</span>
                       <button 
                         className="copy-btn" 
-                        onClick={() => copyToClipboard(cred.password, `pass-${cred.id}`)}
+                        onClick={() => copyToClipboard(cred.username, `user-${cred.id}`)}
                       >
-                        {copiedField === `pass-${cred.id}` ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
+                        {copiedField === `user-${cred.id}` ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
                       </button>
                     </div>
                   </div>
-                </div>
 
-                {cred.notes && (
-                  <div style={{marginTop: '8px', padding: '10px', background: 'rgba(0,0,0,0.02)', borderRadius: '6px', fontSize: '0.8rem', color: '#64748b'}}>
-                    <strong>Notas:</strong> {cred.notes}
+                  <div className="detail-item">
+                    <span className="detail-label">Senha</span>
+                    <div className="detail-value" style={{display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center'}}>
+                      <span style={{fontFamily: showPassMap[cred.id] ? 'monospace' : 'password', fontSize: showPassMap[cred.id] ? '1rem' : '1.2rem', letterSpacing: showPassMap[cred.id] ? '0' : '2px'}}>
+                        {showPassMap[cred.id] ? cred.password : '••••••••'}
+                      </span>
+                      <div style={{display: 'flex', gap: '8px'}}>
+                        <button className="copy-btn" onClick={() => toggleShow(cred.id)}>
+                          {showPassMap[cred.id] ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                        <button 
+                          className="copy-btn" 
+                          onClick={() => copyToClipboard(cred.password, `pass-${cred.id}`)}
+                        >
+                          {copiedField === `pass-${cred.id}` ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                )}
+
+                  {cred.notes && (
+                    <div style={{marginTop: '8px', padding: '10px', background: 'rgba(0,0,0,0.02)', borderRadius: '6px', fontSize: '0.8rem', color: '#64748b'}}>
+                      <strong>Notas:</strong> {cred.notes}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))
+            ))}
+
+            {totalPages > 1 && (
+              <div className="pagination-industrial">
+                <button 
+                  disabled={currentPage === 1}
+                  onClick={() => paginate(currentPage - 1)}
+                  className="page-btn"
+                >
+                  Anterior
+                </button>
+                <div className="page-info">
+                  Página <span>{currentPage}</span> de {totalPages}
+                </div>
+                <button 
+                  disabled={currentPage === totalPages}
+                  onClick={() => paginate(currentPage + 1)}
+                  className="page-btn"
+                >
+                  Próxima
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 

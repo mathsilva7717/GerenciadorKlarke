@@ -91,11 +91,29 @@ function Inventory() {
     setEditingItem(null);
   };
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
+
   const filtered = items.filter(i => 
     i.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     i.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
     i.location.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Pagination Logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filtered.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+
+  const paginate = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   return (
     <div className="users-container">
@@ -128,68 +146,92 @@ function Inventory() {
       </div>
 
       <div className="machines-grid">
-        {filtered.length === 0 ? (
+        {currentItems.length === 0 ? (
           <div className="empty-state">
             <Box size={64} className="empty-icon" />
             <h2>Estoque Vazio</h2>
             <p>Clique em "+ ADICIONAR ITEM" para começar.</p>
           </div>
         ) : (
-          filtered.map(item => (
-            <div key={item.id} className="machine-card" style={{cursor: 'default', borderLeft: item.quantity === 0 ? '4px solid #ef4444' : '4px solid var(--color-accent)'}}>
-              <div className="machine-header">
-                <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
-                  <Box size={20} color={item.quantity === 0 ? '#ef4444' : 'var(--color-accent)'} />
-                  <div>
-                    <span className="machine-title" style={{fontSize: '1.1rem'}}>{item.name}</span>
-                    <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block'}}>
-                      {item.category} • {item.location}
-                    </span>
+          <>
+            {currentItems.map(item => (
+              <div key={item.id} className="machine-card" style={{cursor: 'default', borderLeft: item.quantity === 0 ? '4px solid #ef4444' : '4px solid var(--color-accent)'}}>
+                <div className="machine-header">
+                  <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                    <Box size={20} color={item.quantity === 0 ? '#ef4444' : 'var(--color-accent)'} />
+                    <div>
+                      <span className="machine-title" style={{fontSize: '1.1rem'}}>{item.name}</span>
+                      <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block'}}>
+                        {item.category} • {item.location}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{display: 'flex', gap: '8px'}}>
+                    <button className="copy-btn" onClick={() => openModal(item)} title="Editar"><Edit size={16} /></button>
+                    <button className="delete-btn" onClick={() => deleteItem(item.id)} title="Excluir"><Trash2 size={16} /></button>
                   </div>
                 </div>
-                <div style={{display: 'flex', gap: '8px'}}>
-                  <button className="copy-btn" onClick={() => openModal(item)} title="Editar"><Edit size={16} /></button>
-                  <button className="delete-btn" onClick={() => deleteItem(item.id)} title="Excluir"><Trash2 size={16} /></button>
-                </div>
-              </div>
 
-              <div style={{marginTop: '20px', background: 'rgba(0,0,0,0.02)', padding: '15px', borderRadius: '8px', textAlign: 'center'}}>
-                <div style={{fontSize: '0.7rem', color: 'var(--color-text-muted)', marginBottom: '8px', fontWeight: 'bold', textTransform: 'uppercase'}}>Quantidade em Mãos</div>
-                <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px'}}>
-                  <button 
-                    className="copy-btn" 
-                    style={{padding: '8px', background: '#f1f5f9', borderRadius: '50%'}}
-                    onClick={() => updateQuantity(item, -1)}
-                  >
-                    <Minus size={18} />
-                  </button>
-                  
-                  <div style={{textAlign: 'center'}}>
-                    <span style={{fontSize: '2.5rem', fontWeight: '900', color: item.quantity === 0 ? '#ef4444' : 'var(--color-primary)', lineHeight: 1}}>
-                      {item.quantity}
-                    </span>
-                    <span style={{display: 'block', fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 'bold'}}>
-                      {item.unit.toUpperCase()}
-                    </span>
+                <div style={{marginTop: '20px', background: 'rgba(0,0,0,0.02)', padding: '15px', borderRadius: '8px', textAlign: 'center'}}>
+                  <div style={{fontSize: '0.7rem', color: 'var(--color-text-muted)', marginBottom: '8px', fontWeight: 'bold', textTransform: 'uppercase'}}>Quantidade em Mãos</div>
+                  <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px'}}>
+                    <button 
+                      className="copy-btn" 
+                      style={{padding: '8px', background: '#f1f5f9', borderRadius: '50%'}}
+                      onClick={() => updateQuantity(item, -1)}
+                    >
+                      <Minus size={18} />
+                    </button>
+                    
+                    <div style={{textAlign: 'center'}}>
+                      <span style={{fontSize: '2.5rem', fontWeight: '900', color: item.quantity === 0 ? '#ef4444' : 'var(--color-primary)', lineHeight: 1}}>
+                        {item.quantity}
+                      </span>
+                      <span style={{display: 'block', fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 'bold'}}>
+                        {item.unit.toUpperCase()}
+                      </span>
+                    </div>
+
+                    <button 
+                      className="copy-btn" 
+                      style={{padding: '8px', background: '#f1f5f9', borderRadius: '50%'}}
+                      onClick={() => updateQuantity(item, 1)}
+                    >
+                      <PlusCircle size={18} />
+                    </button>
                   </div>
-
-                  <button 
-                    className="copy-btn" 
-                    style={{padding: '8px', background: '#f1f5f9', borderRadius: '50%'}}
-                    onClick={() => updateQuantity(item, 1)}
-                  >
-                    <PlusCircle size={18} />
-                  </button>
                 </div>
+
+                {item.notes && (
+                  <div style={{marginTop: '12px', fontSize: '0.8rem', color: '#64748b', display: 'flex', gap: '4px'}}>
+                    <strong>Obs:</strong> {item.notes}
+                  </div>
+                )}
               </div>
+            ))}
 
-              {item.notes && (
-                <div style={{marginTop: '12px', fontSize: '0.8rem', color: '#64748b', display: 'flex', gap: '4px'}}>
-                  <strong>Obs:</strong> {item.notes}
+            {totalPages > 1 && (
+              <div className="pagination-industrial">
+                <button 
+                  disabled={currentPage === 1}
+                  onClick={() => paginate(currentPage - 1)}
+                  className="page-btn"
+                >
+                  Anterior
+                </button>
+                <div className="page-info">
+                  Página <span>{currentPage}</span> de {totalPages}
                 </div>
-              )}
-            </div>
-          ))
+                <button 
+                  disabled={currentPage === totalPages}
+                  onClick={() => paginate(currentPage + 1)}
+                  className="page-btn"
+                >
+                  Próxima
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 

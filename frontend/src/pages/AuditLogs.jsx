@@ -19,6 +19,9 @@ const AuditLogs = () => {
     fetchLogs();
   }, []);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
+
   const fetchLogs = async () => {
     try {
       const response = await axios.get(API_URL, getAuthConfig());
@@ -32,7 +35,6 @@ const AuditLogs = () => {
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
-    // Garante que o JS entenda que a data do banco é UTC (adicionando o Z se necessário)
     const normalizedDate = dateStr.includes('Z') ? dateStr : dateStr.replace(' ', 'T') + 'Z';
     const d = new Date(normalizedDate);
     return d.toLocaleString('pt-BR');
@@ -43,6 +45,21 @@ const AuditLogs = () => {
     (log.action?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
     (log.details?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
+
+  // Pagination Logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentLogs = filteredLogs.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
+
+  const paginate = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   const getBadgeClass = (action) => {
     const a = action?.toLowerCase() || '';
@@ -71,32 +88,56 @@ const AuditLogs = () => {
       <div className="logs-list">
         {loading ? (
           <div className="loading-spinner">Carregando histórico...</div>
-        ) : filteredLogs.length === 0 ? (
+        ) : currentLogs.length === 0 ? (
           <div className="empty-state">
             <History size={48} className="empty-icon" />
             <p>Nenhuma atividade registrada ainda.</p>
           </div>
         ) : (
-          filteredLogs.map(log => (
-            <div key={log.id} className="log-item">
-              <div className="log-icon-wrapper">
-                <Clock size={16} color="var(--color-text-muted)" />
-              </div>
-              <div className="log-content">
-                <div className="log-header">
-                  <span className="log-user">
-                    <User size={14} style={{marginRight: '6px'}} />
-                    {log.user?.toUpperCase()}
-                  </span>
-                  <span className="log-date">{formatDate(log.created_at)}</span>
+          <>
+            {currentLogs.map(log => (
+              <div key={log.id} className="log-item">
+                <div className="log-icon-wrapper">
+                  <Clock size={16} color="var(--color-text-muted)" />
                 </div>
-                <div className="log-action-row">
-                  <span className={`log-badge ${getBadgeClass(log.action)}`}>{log.action}</span>
-                  <span className="log-details">{log.details}</span>
+                <div className="log-content">
+                  <div className="log-header">
+                    <span className="log-user">
+                      <User size={14} style={{marginRight: '6px'}} />
+                      {log.user?.toUpperCase()}
+                    </span>
+                    <span className="log-date">{formatDate(log.created_at)}</span>
+                  </div>
+                  <div className="log-action-row">
+                    <span className={`log-badge ${getBadgeClass(log.action)}`}>{log.action}</span>
+                    <span className="log-details">{log.details}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            ))}
+
+            {totalPages > 1 && (
+              <div className="pagination-industrial">
+                <button 
+                  disabled={currentPage === 1}
+                  onClick={() => paginate(currentPage - 1)}
+                  className="page-btn"
+                >
+                  Anterior
+                </button>
+                <div className="page-info">
+                  Página <span>{currentPage}</span> de {totalPages}
+                </div>
+                <button 
+                  disabled={currentPage === totalPages}
+                  onClick={() => paginate(currentPage + 1)}
+                  className="page-btn"
+                >
+                  Próxima
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 

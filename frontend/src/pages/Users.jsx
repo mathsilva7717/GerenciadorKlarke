@@ -14,6 +14,9 @@ const Users = () => {
     fetchUsers();
   }, []);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('klarke_token');
@@ -26,6 +29,16 @@ const Users = () => {
       console.error('Erro ao buscar usuários:', error);
       setLoading(false);
     }
+  };
+
+  // Pagination Logic
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentUsers = users.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(users.length / itemsPerPage);
+
+  const paginate = (pageNumber) => {
+    setCurrentPage(pageNumber);
   };
 
   const handleCreateUser = async (e) => {
@@ -136,7 +149,7 @@ const Users = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((user) => (
+                  {currentUsers.map((user) => (
                     <tr key={user.id}>
                       <td>
                         <div className="user-info">
@@ -167,6 +180,28 @@ const Users = () => {
                   ))}
                 </tbody>
               </table>
+              
+              {totalPages > 1 && (
+                <div className="pagination-industrial" style={{marginTop: '16px', borderTop: 'none', padding: '10px'}}>
+                  <button 
+                    disabled={currentPage === 1}
+                    onClick={() => paginate(currentPage - 1)}
+                    className="page-btn"
+                  >
+                    Anterior
+                  </button>
+                  <div className="page-info">
+                    <span>{currentPage}</span> / {totalPages}
+                  </div>
+                  <button 
+                    disabled={currentPage === totalPages}
+                    onClick={() => paginate(currentPage + 1)}
+                    className="page-btn"
+                  >
+                    Próxima
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

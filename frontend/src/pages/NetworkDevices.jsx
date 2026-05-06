@@ -10,7 +10,7 @@ function NetworkDevices() {
   const [devices, setDevices] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+  const itemsPerPage = 15;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [editingDevice, setEditingDevice] = useState(null);
@@ -404,43 +404,23 @@ function NetworkDevices() {
 
       {/* Controles de Paginação */}
       {totalPages > 1 && (
-        <div className="pagination-container" style={{display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', marginTop: '32px', marginBottom: '40px'}}>
+        <div className="pagination-industrial">
           <button 
             disabled={currentPage === 1}
             onClick={() => paginate(currentPage - 1)}
-            style={{
-              background: 'var(--color-surface)',
-              border: '1px solid var(--color-border)',
-              padding: '8px 12px',
-              borderRadius: '4px',
-              cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-              opacity: currentPage === 1 ? 0.5 : 1,
-              display: 'flex',
-              alignItems: 'center'
-            }}
+            className="page-btn"
           >
-            <ChevronLeft size={20} />
+            Anterior
           </button>
-          
-          <div style={{fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--color-primary)', letterSpacing: '1px'}}>
-            PÁGINA {currentPage} DE {totalPages}
+          <div className="page-info">
+            Página <span>{currentPage}</span> de {totalPages}
           </div>
-
           <button 
             disabled={currentPage === totalPages}
             onClick={() => paginate(currentPage + 1)}
-            style={{
-              background: 'var(--color-surface)',
-              border: '1px solid var(--color-border)',
-              padding: '8px 12px',
-              borderRadius: '4px',
-              cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-              opacity: currentPage === totalPages ? 0.5 : 1,
-              display: 'flex',
-              alignItems: 'center'
-            }}
+            className="page-btn"
           >
-            <ChevronRight size={20} />
+            Próxima
           </button>
         </div>
       )}
