@@ -180,9 +180,9 @@ function TechnicalDocs() {
         </div>
       </div>
 
-      <div style={{display: 'grid', gridTemplateColumns: '250px 1fr', gap: '24px'}}>
+      <div className="vault-grid">
         {/* SIDEBAR DE PASTAS */}
-        <div className="folders-sidebar hide-mobile">
+        <div className="folders-sidebar">
           <div 
             className={`folder-item ${!currentFolder ? 'active' : ''}`}
             onClick={() => setCurrentFolder(null)}
@@ -190,7 +190,7 @@ function TechnicalDocs() {
             <Folder size={18} />
             <span>Raiz do Acervo</span>
           </div>
-          <div style={{marginTop: '12px', marginBottom: '8px', fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--color-text-muted)', textTransform: 'uppercase'}}>
+          <div className="sidebar-label">
             Pastas
           </div>
           {folders.map(folder => (
@@ -200,7 +200,7 @@ function TechnicalDocs() {
               onClick={() => setCurrentFolder(folder)}
             >
               <div style={{display: 'flex', alignItems: 'center', gap: '8px', flex: 1}}>
-                <Folder size={18} fill={currentFolder?.id === folder.id ? 'white' : 'transparent'} />
+                <Folder size={18} fill={currentFolder?.id === folder.id ? 'var(--color-accent)' : 'transparent'} />
                 <span>{folder.name}</span>
               </div>
               <button className="folder-delete-small" onClick={(e) => { e.stopPropagation(); deleteFolder(folder.id); }}>
@@ -211,28 +211,29 @@ function TechnicalDocs() {
         </div>
 
         <div className="vault-content">
-          <div className="search-wrapper" style={{marginBottom: '24px'}}>
-            <div className="search-container">
-              <Search className="search-icon" size={20} />
-              <input 
-                type="text" 
-                className="search-input" 
-                placeholder="Buscar no acervo..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+          <div className="search-container" style={{marginBottom: '24px'}}>
+            <Search className="search-icon" size={20} color="#94a3b8" />
+            <input 
+              type="text" 
+              className="search-input" 
+              placeholder="Buscar no acervo..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ border: 'none', background: 'transparent', width: '100%', padding: '12px', outline: 'none' }}
+            />
           </div>
 
           {/* Breadcrumb / Mobile Selector */}
-          <div className="vault-breadcrumb" style={{marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--color-text-muted)'}}>
-            <span onClick={() => setCurrentFolder(null)} style={{cursor: 'pointer', fontWeight: !currentFolder ? 'bold' : 'normal'}}>Raiz</span>
-            {currentFolder && (
-              <>
-                <ChevronRight size={14} />
-                <span style={{fontWeight: 'bold', color: 'var(--color-text)'}}>{currentFolder.name}</span>
-              </>
-            )}
+          <div style={{marginBottom: '20px'}}>
+            <div className="vault-breadcrumb">
+              <span onClick={() => setCurrentFolder(null)} style={{fontWeight: !currentFolder ? 'bold' : 'normal'}}>Raiz do Acervo</span>
+              {currentFolder && (
+                <>
+                  <ChevronRight size={14} />
+                  <span style={{fontWeight: 'bold', color: 'var(--color-primary)'}}>{currentFolder.name}</span>
+                </>
+              )}
+            </div>
           </div>
 
           <div className="machines-grid">
@@ -441,44 +442,129 @@ function TechnicalDocs() {
         </div>
       )}
 
-      {/* ESTILOS INTERNOS PARA SIDEBAR */}
       <style>{`
+        .vault-grid {
+          display: grid;
+          grid-template-columns: 280px 1fr;
+          gap: 32px;
+          align-items: start;
+        }
+
+        .folders-sidebar {
+          background: white;
+          border-radius: 12px;
+          padding: 20px;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+          height: fit-content;
+          position: sticky;
+          top: 20px;
+        }
+
         .folder-item {
           display: flex;
           align-items: center;
           gap: 12px;
-          padding: 10px 14px;
+          padding: 12px 16px;
           border-radius: 8px;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
           color: #475569;
-          font-weight: 500;
-          font-size: 0.9rem;
+          font-weight: 600;
+          font-size: 0.85rem;
+          margin-bottom: 4px;
+          border: 1px solid transparent;
         }
+
         .folder-item:hover {
-          background: rgba(15, 23, 42, 0.05);
+          background: #f8fafc;
           color: var(--color-primary);
+          border-color: #e2e8f0;
         }
+
         .folder-item.active {
-          background: var(--color-primary);
+          background: #0f172a;
           color: white;
-          box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+          box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
         }
+
+        .folder-item.active svg {
+          color: var(--color-accent);
+        }
+
+        .sidebar-label {
+          font-size: 0.65rem;
+          font-weight: 900;
+          color: #94a3b8;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          margin: 24px 0 12px 16px;
+        }
+
         .folder-delete-small {
           background: transparent;
           border: none;
           color: inherit;
-          opacity: 0.5;
+          opacity: 0.3;
           cursor: pointer;
-          padding: 4px;
+          padding: 6px;
+          display: flex;
+          align-items: center;
+          transition: opacity 0.2s;
         }
+
+        .folder-item:hover .folder-delete-small {
+          opacity: 0.7;
+        }
+
         .folder-delete-small:hover {
-          opacity: 1;
+          opacity: 1 !important;
           color: #ef4444;
         }
+
+        .vault-content {
+          min-width: 0;
+        }
+
+        .search-container {
+          background: white;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          padding: 4px 16px;
+          display: flex;
+          align-items: center;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+          transition: all 0.2s;
+        }
+
+        .search-container:focus-within {
+          border-color: var(--color-primary);
+          box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.1);
+        }
+
+        .vault-breadcrumb {
+          background: #f8fafc;
+          padding: 8px 16px;
+          border-radius: 6px;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 0.8rem;
+        }
+
         .vault-breadcrumb span:hover {
           color: var(--color-primary);
           text-decoration: underline;
+          cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+          .vault-grid {
+            grid-template-columns: 1fr;
+          }
+          .folders-sidebar {
+            display: none;
+          }
         }
       `}</style>
     </div>
