@@ -22,132 +22,94 @@ const db = new sqlite3.Database(dbPath, (err) => {
   } else {
     console.log('Conectado ao banco de dados SQLite.');
     db.serialize(() => {
-      console.log('Iniciando Super Migração de banco de dados...');
-      
-      const handleMigrate = (table, column, err) => {
-        if (err && !err.message.includes('duplicate column name')) {
-          console.error(`Erro ao adicionar ${column} em ${table}:`, err.message);
-        } else if (!err) {
-          console.log(`Coluna ${column} verificada/adicionada em ${table}.`);
-        }
-      };
+      // Tabelas principais com todas as colunas necessárias
+      db.run(`CREATE TABLE IF NOT EXISTS machines (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, 
+        name TEXT, mac TEXT, ip TEXT, location TEXT, 
+        rustdesk_id TEXT, anydesk_id TEXT, password TEXT, 
+        serial_number TEXT, last_seen TEXT, created_by TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`);
 
-      // Máquinas - Garantir TODAS as colunas
-      db.run(`CREATE TABLE IF NOT EXISTS machines (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`);
-      const mCols = ['mac', 'ip', 'location', 'rustdesk_id', 'anydesk_id', 'password', 'serial_number', 'last_seen', 'created_by'];
-      mCols.forEach(col => db.run(`ALTER TABLE machines ADD COLUMN ${col} TEXT`, (err) => handleMigrate('machines', col, err)));
+      db.run(`CREATE TABLE IF NOT EXISTS cameras (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, 
+        name TEXT, ip TEXT, port TEXT, username TEXT, password TEXT, 
+        location TEXT, serial_number TEXT, last_seen TEXT, last_snapshot TEXT, 
+        rtsp_link TEXT, created_by TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`);
 
-      // Câmeras - Garantir TODAS as colunas
-      db.run(`CREATE TABLE IF NOT EXISTS cameras (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`);
-      const cCols = ['ip', 'port', 'username', 'password', 'location', 'serial_number', 'last_seen', 'last_snapshot', 'rtsp_link', 'created_by'];
-      cCols.forEach(col => db.run(`ALTER TABLE cameras ADD COLUMN ${col} TEXT`, (err) => handleMigrate('cameras', col, err)));
+      db.run(`CREATE TABLE IF NOT EXISTS network_devices (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, 
+        name TEXT, type TEXT, ip TEXT, username TEXT, password TEXT, 
+        location TEXT, isp TEXT, serial_number TEXT, last_seen TEXT, created_by TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`);
 
-      // Rede - Garantir TODAS as colunas
-      db.run(`CREATE TABLE IF NOT EXISTS network_devices (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)`);
-      const nCols = ['type', 'ip', 'username', 'password', 'location', 'isp', 'serial_number', 'last_seen', 'created_by'];
-      nCols.forEach(col => db.run(`ALTER TABLE network_devices ADD COLUMN ${col} TEXT`, (err) => handleMigrate('network_devices', col, err)));
+      db.run(`CREATE TABLE IF NOT EXISTS tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, 
+        title TEXT, description TEXT, is_completed INTEGER DEFAULT 0, 
+        completed_by TEXT, completed_at TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`);
 
-      // Tarefas
-      db.run(`CREATE TABLE IF NOT EXISTS tasks (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT)`);
-      const tCols = ['description', 'is_completed', 'completed_by', 'completed_at'];
-      tCols.forEach(col => db.run(`ALTER TABLE tasks ADD COLUMN ${col} TEXT`, (err) => handleMigrate('tasks', col, err)));
-
-    db.run(`
-      CREATE TABLE IF NOT EXISTS users (
+      db.run(`CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE,
         password TEXT,
         role TEXT DEFAULT 'user',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `, () => {
-      // Criar usuário padrão se não existir (Criptografado)
+      )`);
+
+      db.run(`CREATE TABLE IF NOT EXISTS audit_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user TEXT,
+        action TEXT,
+        details TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`);
+
+      db.run(`CREATE TABLE IF NOT EXISTS vault_folders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        parent_id INTEGER DEFAULT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`);
+
+      db.run(`CREATE TABLE IF NOT EXISTS technical_docs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT, type TEXT, content TEXT, file_path TEXT, 
+        file_size TEXT, amount REAL, folder_id INTEGER DEFAULT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`);
+
+      db.run(`CREATE TABLE IF NOT EXISTS credentials (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT, username TEXT, password TEXT, category TEXT, notes TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`);
+
+      db.run(`CREATE TABLE IF NOT EXISTS inventory (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT, quantity INTEGER DEFAULT 0, unit TEXT DEFAULT 'un', 
+        category TEXT, location TEXT, notes TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`);
+
+      db.run(`CREATE TABLE IF NOT EXISTS voip_extensions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        extension TEXT, name TEXT, password TEXT, ip_address TEXT, 
+        pabx_ip TEXT, status TEXT DEFAULT 'Ativo', notes TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`);
+
+      // Criar usuário padrão se não existir
       db.get("SELECT * FROM users WHERE username = 'admin'", async (err, row) => {
         if (!row) {
           const hashedAdmin = await bcrypt.hash('admin123', 10);
           db.run("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", ['admin', hashedAdmin, 'admin']);
         }
       });
-    });
-
-    db.run(`
-      CREATE TABLE IF NOT EXISTS audit_logs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user TEXT,
-        action TEXT,
-        details TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    db.run(`
-      CREATE TABLE IF NOT EXISTS vault_folders (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        parent_id INTEGER DEFAULT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    db.run(`
-      CREATE TABLE IF NOT EXISTS technical_docs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT,
-        type TEXT,
-        content TEXT,
-        file_path TEXT,
-        file_size TEXT,
-        amount REAL,
-        folder_id INTEGER DEFAULT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `, () => {
-      // Migrações para bancos existentes
-      db.run("ALTER TABLE technical_docs ADD COLUMN amount REAL", () => {});
-      db.run("ALTER TABLE technical_docs ADD COLUMN folder_id INTEGER DEFAULT NULL", () => {});
-    });
-    db.run(`
-      CREATE TABLE IF NOT EXISTS credentials (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT,
-        username TEXT,
-        password TEXT,
-        category TEXT,
-        notes TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    db.run(`
-      CREATE TABLE IF NOT EXISTS inventory (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        quantity INTEGER DEFAULT 0,
-        unit TEXT DEFAULT 'un',
-        category TEXT,
-        location TEXT,
-        notes TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    db.run(`
-      CREATE TABLE IF NOT EXISTS voip_extensions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        extension TEXT,
-        name TEXT,
-        password TEXT,
-        ip_address TEXT,
-        pabx_ip TEXT,
-        status TEXT DEFAULT 'Ativo',
-        notes TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    
-    // Migração: Garante que a coluna pabx_ip exista
-    db.run("ALTER TABLE voip_extensions ADD COLUMN pabx_ip TEXT", (err) => {
-      // Ignora erro se a coluna já existir
-    });
-    
     });
   }
 });
