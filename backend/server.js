@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const sqlite3 = require('sqlite3').verbose();
+const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
@@ -18,105 +18,82 @@ app.use(express.json({ limit: '10mb' }));
 
 // Database setup
 const dbPath = path.join(__dirname, 'database.sqlite');
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('Erro ao conectar ao banco de dados:', err.message);
-  } else {
-    console.log('Conectado ao banco de dados SQLite.');
-    db.serialize(() => {
-      // Tabelas principais com todas as colunas necessárias
-      db.run(`CREATE TABLE IF NOT EXISTS machines (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, 
-        name TEXT, mac TEXT, ip TEXT, location TEXT, 
-        rustdesk_id TEXT, anydesk_id TEXT, password TEXT, 
-        serial_number TEXT, last_seen TEXT, created_by TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`);
+const _db = new Database(dbPath);
+console.log('Conectado ao banco de dados SQLite (Better).');
 
-      db.run(`CREATE TABLE IF NOT EXISTS cameras (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, 
-        name TEXT, ip TEXT, port TEXT, username TEXT, password TEXT, 
-        location TEXT, serial_number TEXT, last_seen TEXT, last_snapshot TEXT, 
-        rtsp_link TEXT, created_by TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`);
+// Adaptador de compatibilidade para não quebrar o código legado
+const db = {
+  run: (sql, params, callback) => {
+    try {
+      if (typeof params === 'function') { callback = params; params = []; }
+      const stmt = _db.prepare(sql);
+      const info = stmt.run(params);
+      if (callback) callback.call({ lastID: info.lastInsertRowid, changes: info.changes }, null);
+    } catch (err) {
+      if (callback) callback(err);
+    }
+  },
+  get: (sql, params, callback) => {
+    try {
+      if (typeof params === 'function') { callback = params; params = []; }
+      const row = _db.prepare(sql).get(params);
+      if (callback) callback(null, row);
+    } catch (err) {
+      if (callback) callback(err);
+    }
+  },
+  all: (sql, params, callback) => {
+    try {
+      if (typeof params === 'function') { callback = params; params = []; }
+      const rows = _db.prepare(sql).all(params);
+      if (callback) callback(null, rows);
+    } catch (err) {
+      if (callback) callback(err);
+    }
+  },
+  exec: (sql) => _db.exec(sql),
+  prepare: (sql) => _db.prepare(sql)
+};
 
-      db.run(`CREATE TABLE IF NOT EXISTS network_devices (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, 
-        name TEXT, type TEXT, ip TEXT, username TEXT, password TEXT, 
-        location TEXT, isp TEXT, serial_number TEXT, last_seen TEXT, created_by TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`);
+// Criar tabelas se não existirem
+db.exec(`
+  CREATE TABLE IF NOT EXISTS machines (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, 
+    name TEXT, mac TEXT, ip TEXT, location TEXT, 
+    rustdesk_id TEXT, anydesk_id TEXT, password TEXT, 
+    serial_number TEXT, last_seen TEXT, created_by TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE TABLE IF NOT EXISTS cameras (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, 
+    name TEXT, ip TEXT, port TEXT, username TEXT, password TEXT, 
+    location TEXT, serial_number TEXT, last_seen TEXT, last_snapshot TEXT, 
+    rtsp_link TEXT, created_by TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE,
+    password TEXT,
+    role TEXT DEFAULT 'user',
+    must_change_password INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE TABLE IF NOT EXISTS audit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user TEXT, action TEXT, details TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+`);
 
-      db.run(`CREATE TABLE IF NOT EXISTS tasks (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, 
-        title TEXT, description TEXT, is_completed INTEGER DEFAULT 0, 
-        completed_by TEXT, completed_at TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`);
+// Migration rápida para a coluna nova
+try { db.exec("ALTER TABLE users ADD COLUMN must_change_password INTEGER DEFAULT 0"); } catch(e) {}
 
-      db.run(`CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE,
-        password TEXT,
-        role TEXT DEFAULT 'user',
-        must_change_password INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`, (err) => {
-        if (err) console.error("Erro na tabela users:", err.message);
-        db.run("ALTER TABLE users ADD COLUMN must_change_password INTEGER DEFAULT 0", () => {});
-      });
-
-      db.run(`CREATE TABLE IF NOT EXISTS audit_logs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user TEXT,
-        action TEXT,
-        details TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`);
-
-      db.run(`CREATE TABLE IF NOT EXISTS vault_folders (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        parent_id INTEGER DEFAULT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`);
-
-      db.run(`CREATE TABLE IF NOT EXISTS technical_docs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT, type TEXT, content TEXT, file_path TEXT, 
-        file_size TEXT, amount REAL, folder_id INTEGER DEFAULT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`);
-
-      db.run(`CREATE TABLE IF NOT EXISTS credentials (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT, username TEXT, password TEXT, category TEXT, notes TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`);
-
-      db.run(`CREATE TABLE IF NOT EXISTS inventory (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT, quantity INTEGER DEFAULT 0, unit TEXT DEFAULT 'un', 
-        category TEXT, location TEXT, notes TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`);
-
-      db.run(`CREATE TABLE IF NOT EXISTS voip_extensions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        extension TEXT, name TEXT, password TEXT, ip_address TEXT, 
-        pabx_ip TEXT, status TEXT DEFAULT 'Ativo', notes TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`);
-
-      // Criar usuário padrão se não existir
-      db.get("SELECT * FROM users WHERE username = 'admin'", async (err, row) => {
-        if (!row) {
-          const hashedAdmin = await bcrypt.hash('admin123', 10);
-          db.run("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", ['admin', hashedAdmin, 'admin']);
-        }
-      });
-    });
+// Criar admin se não existir
+db.get("SELECT * FROM users WHERE username = 'admin'", (err, row) => {
+  if (!row) {
+    const hashedAdmin = bcrypt.hashSync('admin123', 10);
+    db.run("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", ['admin', hashedAdmin, 'admin']);
   }
 });
 
