@@ -10,7 +10,7 @@ require('dotenv').config();
 
 const SECRET_KEY = process.env.SECRET_KEY || 'klarke-secret-key-2024';
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors());
