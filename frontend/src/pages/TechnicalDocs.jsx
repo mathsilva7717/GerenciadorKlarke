@@ -160,15 +160,15 @@ function TechnicalDocs() {
 
   return (
     <div className="users-container">
-      <div className="page-header">
+      <div className="page-header" style={{marginBottom: '32px'}}>
         <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
           <div className="industrial-icon" style={{background: 'var(--color-primary)', color: 'white', padding: '8px', borderRadius: '6px'}}>
             <BookOpen size={20} />
           </div>
-          <div>
-            <h1>Tech Vault</h1>
-            <p>Documentação e acervo técnico.</p>
-          </div>
+          <header className="page-header" style={{marginBottom: '32px'}}>
+        <h1 style={{marginBottom: '8px'}}>Acervo Técnico & Procedimentos</h1>
+        <p>Documentação centralizada para consulta rápida em campo.</p>
+      </header>
         </div>
         <div style={{display: 'flex', gap: '8px'}}>
           <button className="add-btn" onClick={() => setIsFolderModalOpen(true)} style={{background: 'var(--color-accent)'}}>

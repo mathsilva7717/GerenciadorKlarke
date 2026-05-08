@@ -72,6 +72,18 @@ const AuditLogs = () => {
 
   return (
     <div className="audit-container">
+      <header className="page-header" style={{marginBottom: '32px'}}>
+        <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+          <div className="industrial-icon" style={{background: 'var(--color-primary)', color: 'white', padding: '8px', borderRadius: '6px'}}>
+            <History size={20} />
+          </div>
+          <div>
+            <h1 style={{marginBottom: '4px'}}>Auditoria do Ecossistema</h1>
+            <p style={{fontSize: '0.9rem', color: 'var(--color-text-muted)'}}>Histórico completo de acessos e eventos técnicos.</p>
+          </div>
+        </div>
+      </header>
+
       <div className="search-wrapper">
         <div className="search-container" style={{maxWidth: '100%', marginBottom: '32px'}}>
           <Search className="search-icon" size={20} color="#94a3b8" />

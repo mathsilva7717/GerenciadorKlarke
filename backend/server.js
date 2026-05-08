@@ -775,6 +775,24 @@ app.use((req, res) => {
 });
 
 // Start server
+// Rota de status do sistema (Disco e Latência)
+const { exec } = require('child_process');
+app.get('/api/system-status', authenticateToken, (req, res) => {
+  exec('df -h / | tail -1', (err, stdout) => {
+    let disk = { size: '0', used: '0', avail: '0', percent: '0%' };
+    if (!err) {
+      const parts = stdout.trim().split(/\s+/);
+      disk = { size: parts[1], used: parts[2], avail: parts[3], percent: parts[4] };
+    }
+    
+    const start = Date.now();
+    exec('ping -c 1 8.8.8.8', (pErr) => {
+      const latency = !pErr ? (Date.now() - start) : 0;
+      res.json({ disk, latency });
+    });
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });

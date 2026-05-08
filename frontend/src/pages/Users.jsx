@@ -45,7 +45,11 @@ const Users = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('klarke_token');
-      await axios.post(`${API_URL}/api/users`, newUser, {
+      const finalUser = {
+        ...newUser,
+        username: newUser.username.includes('@klarke') ? newUser.username : `${newUser.username}@klarke`
+      };
+      await axios.post(`${API_URL}/api/users`, finalUser, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setNewUser({ username: '', password: '', role: 'user' });
@@ -74,8 +78,8 @@ const Users = () => {
 
   return (
     <div className="users-container">
-      <header className="page-header">
-        <h1 className="text-3xl font-bold text-slate-900">Gerenciamento de Usuários</h1>
+      <header className="page-header" style={{marginBottom: '32px'}}>
+        <h1 className="text-3xl font-bold text-slate-900" style={{marginBottom: '8px'}}>Gerenciamento de Usuários</h1>
         <p className="text-slate-500">Controle quem tem acesso ao painel Klarke.</p>
       </header>
 
@@ -88,14 +92,18 @@ const Users = () => {
           <form onSubmit={handleCreateUser} className="space-y-4">
             <div className="form-group">
               <label className="form-label">Nome de Usuário / Email</label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="ex: matheus@klarke"
-                value={newUser.username}
-                onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
-                required
-              />
+              <div style={{display: 'flex', alignItems: 'center', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '4px'}}>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="ex: matheus"
+                  value={newUser.username}
+                  onChange={(e) => setNewUser({ ...newUser, username: e.target.value.replace('@klarke', '') })}
+                  required
+                  style={{border: 'none', flex: 1}}
+                />
+                <span style={{padding: '0 12px', color: 'var(--color-text-muted)', fontSize: '0.9rem', borderLeft: '1px solid var(--color-border)', background: 'rgba(0,0,0,0.02)', height: '100%', display: 'flex', alignItems: 'center'}}>@klarke</span>
+              </div>
             </div>
             <div className="form-group">
               <label className="form-label">Senha</label>

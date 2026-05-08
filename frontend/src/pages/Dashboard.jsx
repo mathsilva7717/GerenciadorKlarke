@@ -17,6 +17,7 @@ function Dashboard() {
   const [copiedField, setCopiedField] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [logsCount, setLogsCount] = useState(0);
+  const [systemStatus, setSystemStatus] = useState({ disk: { percent: '0%', avail: '0' }, latency: 0 });
   const navigate = useNavigate();
 
   // Form State
@@ -92,6 +93,10 @@ function Dashboard() {
       // Busca contagem total de logs
       const logsRes = await axios.get('/api/audit-logs', getAuthConfig()).catch(() => ({ data: [] }));
       setLogsCount(logsRes.data?.length || 0);
+      
+      // Busca status do sistema
+      const sysRes = await axios.get('/api/system-status', getAuthConfig()).catch(() => ({ data: { disk: { percent: '0%', avail: '0' }, latency: 0 } }));
+      setSystemStatus(sysRes.data);
 
       if (manual) toast.success('Lista atualizada!');
     } catch (error) {
@@ -122,13 +127,16 @@ function Dashboard() {
 
     if (name === 'ip') {
       formattedValue = value.replace(/[^0-9.]/g, '');
+      const parts = formattedValue.split('.');
+      if (parts.length > 4) formattedValue = parts.slice(0, 4).join('.');
     }
 
     if (name === 'anydesk_id' || name === 'rustdesk_id') {
       formattedValue = value.replace(/[^0-9]/g, '');
     }
 
-    setFormData({ ...formData, [name]: formattedValue });
+    // Tudo em maiúsculo para máquinas
+    setFormData({ ...formData, [name]: formattedValue.toUpperCase() });
   };
 
   const openModal = (machine = null) => {
@@ -422,16 +430,30 @@ function Dashboard() {
         </div>
 
         {/* ESTADO DA REDE */}
-        <div className="stat-box-industrial" style={{borderLeftColor: '#6366f1'}}>
+        <div className="stat-box-industrial" style={{borderLeftColor: '#10b981'}}>
           <span className="stat-label">Estado da Rede</span>
           <div className="stat-value-row">
-            <Monitor size={18} color="#6366f1" />
-            <span className="stat-value">ESTÁVEL</span>
+            <Globe size={18} color="#10b981" />
+            <span className="stat-value">{systemStatus.latency > 0 ? 'ESTÁVEL' : 'OFFLINE'}</span>
           </div>
-          <span className="stat-desc">Latência média: 12ms</span>
+          <span className="stat-desc">Latência média: {systemStatus.latency}ms</span>
+        </div>
+
+        {/* ARMAZENAMENTO */}
+        <div className="stat-box-industrial" style={{borderLeftColor: '#ef4444'}}>
+          <span className="stat-label">Armazenamento VPS</span>
+          <div className="stat-value-row">
+            <Database size={18} color="#ef4444" />
+            <span className="stat-value">{systemStatus.disk.percent}</span>
+          </div>
+          <span className="stat-desc">{systemStatus.disk.avail} disponíveis no HD</span>
         </div>
       </div>
 
+      <header className="page-header" style={{marginBottom: '32px'}}>
+        <h1 style={{marginBottom: '8px'}}>Gerenciamento de Máquinas</h1>
+        <p>Controle de inventário e acessos remotos.</p>
+      </header>
       <div className="search-wrapper">
         <div className="search-container">
           <Search className="search-icon" size={20} />
@@ -662,44 +684,44 @@ function Dashboard() {
                 )}
                 <div className="form-group">
                   <label className="form-label">Nome da Máquina</label>
-                  <input required type="text" className="form-input" name="name" value={formData.name} onChange={handleInputChange} placeholder="Ex: PC Recepção" />
+                  <input required type="text" className="form-input" name="name" value={formData.name} onChange={handleInputChange} placeholder="Ex: PC RECEPÇÃO" style={{textTransform: 'uppercase'}} />
                 </div>
 
                 <div className="form-group">
                   <label className="form-label">Número de Série / Patrimônio</label>
-                  <input type="text" className="form-input" name="serial_number" value={formData.serial_number} onChange={handleInputChange} placeholder="Ex: K001" />
+                  <input type="text" className="form-input" name="serial_number" value={formData.serial_number} onChange={handleInputChange} placeholder="Ex: K001" style={{textTransform: 'uppercase'}} />
                 </div>
                 
                 <div className="machine-details-grid-form">
                   <div className="form-group" style={{marginBottom: 0}}>
                     <label className="form-label">IP</label>
-                    <input type="text" className="form-input" name="ip" value={formData.ip} onChange={handleInputChange} placeholder="192.168.0.x" />
+                    <input type="text" className="form-input" name="ip" value={formData.ip} onChange={handleInputChange} placeholder="192.168.0.X" style={{textTransform: 'uppercase'}} />
                   </div>
                   <div className="form-group" style={{marginBottom: 0}}>
                     <label className="form-label">MAC Address</label>
-                    <input type="text" className="form-input" name="mac" value={formData.mac} onChange={handleInputChange} placeholder="00:00:00:00:00:00" />
+                    <input type="text" className="form-input" name="mac" value={formData.mac} onChange={handleInputChange} placeholder="00:00:00:00:00:00" style={{textTransform: 'uppercase'}} />
                   </div>
                 </div>
 
                 <div className="form-group">
                   <label className="form-label">Localização / Setor</label>
-                  <input type="text" className="form-input" name="location" value={formData.location} onChange={handleInputChange} placeholder="Ex: Matriz - RH" />
+                  <input type="text" className="form-input" name="location" value={formData.location} onChange={handleInputChange} placeholder="Ex: MATRIZ - RH" style={{textTransform: 'uppercase'}} />
                 </div>
 
                 <div className="machine-details-grid-form">
                   <div className="form-group" style={{marginBottom: 0}}>
                     <label className="form-label">AnyDesk ID</label>
-                    <input type="text" className="form-input" name="anydesk_id" value={formData.anydesk_id} onChange={handleInputChange} placeholder="123 456 789" />
+                    <input type="text" className="form-input" name="anydesk_id" value={formData.anydesk_id} onChange={handleInputChange} placeholder="123 456 789" style={{textTransform: 'uppercase'}} />
                   </div>
                   <div className="form-group" style={{marginBottom: 0}}>
                     <label className="form-label">RustDesk ID</label>
-                    <input type="text" className="form-input" name="rustdesk_id" value={formData.rustdesk_id} onChange={handleInputChange} placeholder="123 456 789" />
+                    <input type="text" className="form-input" name="rustdesk_id" value={formData.rustdesk_id} onChange={handleInputChange} placeholder="123 456 789" style={{textTransform: 'uppercase'}} />
                   </div>
                 </div>
 
                 <div className="form-group">
                   <label className="form-label">Senha de Acesso Remoto</label>
-                  <input type="text" className="form-input" name="password" value={formData.password} onChange={handleInputChange} placeholder="Senha" />
+                  <input type="text" className="form-input" name="password" value={formData.password} onChange={handleInputChange} placeholder="SENHA" style={{textTransform: 'uppercase'}} />
                 </div>
 
                 <div style={{display: 'grid', gridTemplateColumns: editingMachine ? '1fr 1fr' : '1fr', gap: '10px', marginTop: '20px'}}>

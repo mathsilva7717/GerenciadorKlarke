@@ -16,6 +16,7 @@ function Home() {
     logsTotal: 0
   });
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [systemStatus, setSystemStatus] = useState({ disk: { percent: '0%', avail: '0' }, latency: 0 });
 
   const isOnline = (lastSeen) => {
     if (!lastSeen) return false;
@@ -33,7 +34,7 @@ function Home() {
   const fetchStats = async (manual = false) => {
     if (manual) setIsRefreshing(true);
     try {
-      const [m, c, n, t, u, logs, creds, inv, voip, docs] = await Promise.all([
+      const [m, c, n, t, u, logs, creds, inv, voip, docs, sys] = await Promise.all([
         axios.get('/api/machines', getAuthConfig()).catch(() => ({ data: [] })),
         axios.get('/api/cameras', getAuthConfig()).catch(() => ({ data: [] })),
         axios.get('/api/network-devices', getAuthConfig()).catch(() => ({ data: [] })),
@@ -43,8 +44,11 @@ function Home() {
         axios.get('/api/credentials', getAuthConfig()).catch(() => ({ data: [] })),
         axios.get('/api/inventory', getAuthConfig()).catch(() => ({ data: [] })),
         axios.get('/api/voip', getAuthConfig()).catch(() => ({ data: [] })),
-        axios.get('/api/technical-docs', getAuthConfig()).catch(() => ({ data: [] }))
+        axios.get('/api/technical-docs', getAuthConfig()).catch(() => ({ data: [] })),
+        axios.get('/api/system-status', getAuthConfig()).catch(() => ({ data: { disk: { percent: '0%', avail: '0' }, latency: 0 } }))
       ]);
+      
+      setSystemStatus(sys.data);
       setStats({
         machines: m.data?.length || 0,
         machinesOnline: (m.data || []).filter(x => isOnline(x.last_seen)).length,
@@ -174,14 +178,25 @@ function Home() {
             </span>
           </div>
 
-          <div className="stat-box-industrial" style={{ minWidth: '180px' }}>
+          <div className="stat-box-industrial" style={{ minWidth: '180px', borderLeft: '4px solid #10b981' }}>
             <span className="stat-label">ESTADO DA REDE</span>
             <div className="stat-value-row">
-              <Cpu size={16} color="#10b981" />
-              <span className="stat-value" style={{fontSize: '1rem', marginLeft: '8px'}}>ESTÁVEL</span>
+              <Globe size={16} color="#10b981" />
+              <span className="stat-value" style={{fontSize: '1rem', marginLeft: '8px'}}>{systemStatus.latency > 0 ? 'ESTÁVEL' : 'OFFLINE'}</span>
             </div>
             <span style={{fontSize: '0.65rem', opacity: 0.6, marginTop: '4px'}}>
-              Latência média: 12ms
+              Latência média: {systemStatus.latency}ms
+            </span>
+          </div>
+
+          <div className="stat-box-industrial" style={{ minWidth: '180px', borderLeft: '4px solid #ef4444' }}>
+            <span className="stat-label">ARMAZENAMENTO</span>
+            <div className="stat-value-row">
+              <Database size={16} color="#ef4444" />
+              <span className="stat-value" style={{fontSize: '1rem', marginLeft: '8px'}}>{systemStatus.disk.percent}</span>
+            </div>
+            <span style={{fontSize: '0.65rem', opacity: 0.6, marginTop: '4px'}}>
+              {systemStatus.disk.avail} disponíveis no HD
             </span>
           </div>
         </div>
