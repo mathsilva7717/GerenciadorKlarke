@@ -16,6 +16,7 @@ function Dashboard() {
   const [editingMachine, setEditingMachine] = useState(null);
   const [copiedField, setCopiedField] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [logsCount, setLogsCount] = useState(0);
   const navigate = useNavigate();
 
   // Form State
@@ -87,6 +88,11 @@ function Dashboard() {
     try {
       const response = await axios.get(API_URL, getAuthConfig());
       setMachines(response.data);
+      
+      // Busca contagem total de logs
+      const logsRes = await axios.get('/api/audit-logs', getAuthConfig());
+      setLogsCount(logsRes.data?.length || 0);
+
       if (manual) toast.success('Lista atualizada!');
     } catch (error) {
       console.error('Erro ao buscar máquinas:', error);
@@ -410,9 +416,9 @@ function Dashboard() {
           <span className="stat-label">Atividade Logs</span>
           <div className="stat-value-row">
             <RotateCw size={18} color="#f59e0b" />
-            <span className="stat-value">41</span>
+            <span className="stat-value">{logsCount}</span>
           </div>
-          <span className="stat-desc">Eventos registrados hoje</span>
+          <span className="stat-desc">Total de eventos registrados</span>
         </div>
 
         {/* ESTADO DA REDE */}

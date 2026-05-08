@@ -54,7 +54,7 @@ function Home() {
         networkOnline: (n.data || []).filter(x => isOnline(x.last_seen)).length,
         tasks: (t.data || []).filter(x => !x.is_completed).length,
         users: u.data?.length || 0,
-        logsToday: (logs.data || []).filter(x => new Date(x.created_at).toDateString() === new Date().toDateString()).length,
+        logsTotal: logs.data?.length || 0,
         credentials: creds.data?.length || 0,
         inventory: inv.data?.length || 0,
         voip: voip.data?.length || 0,
@@ -167,10 +167,10 @@ function Home() {
             <span className="stat-label">ATIVIDADE LOGS</span>
             <div className="stat-value-row">
               <Activity size={16} color="#10b981" />
-              <span className="stat-value" style={{fontSize: '1rem', marginLeft: '8px'}}>{stats.logsToday}</span>
+              <span className="stat-value" style={{fontSize: '1rem', marginLeft: '8px'}}>{stats.logsTotal}</span>
             </div>
             <span style={{fontSize: '0.65rem', opacity: 0.6, marginTop: '4px'}}>
-              Eventos registrados hoje
+              Total de eventos registrados
             </span>
           </div>
 
@@ -255,7 +255,7 @@ function Home() {
         <div className="card-industrial" onClick={() => navigate('/control/audit-logs')}>
           <div className="card-industrial-header">
             <div className="industrial-icon"><ShieldCheck size={22} /></div>
-            <div className="industrial-badge">{stats.logsToday}</div>
+            <div className="industrial-badge">{stats.logsTotal}</div>
           </div>
           <div className="industrial-body">
             <h3>Histórico e Logs</h3>

@@ -73,14 +73,15 @@ const AuditLogs = () => {
   return (
     <div className="audit-container">
       <div className="search-wrapper">
-        <div className="search-container">
-          <Search className="search-icon" size={20} />
+        <div className="search-container" style={{maxWidth: '100%', marginBottom: '32px'}}>
+          <Search className="search-icon" size={20} color="#94a3b8" />
           <input 
             type="text" 
             className="search-input" 
             placeholder="Buscar por usuário, ação ou detalhe..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ border: 'none', background: 'transparent', width: '100%', padding: '12px 12px 12px 40px', outline: 'none' }}
           />
         </div>
       </div>
@@ -143,15 +144,15 @@ const AuditLogs = () => {
 
       <style dangerouslySetInnerHTML={{ __html: `
         .audit-container {
-          max-width: 1000px;
+          max-width: 1300px;
           margin: 0 auto;
         }
         .log-item {
           background: var(--color-surface);
           border: 1px solid var(--color-border);
           border-radius: var(--border-radius);
-          padding: 16px;
-          margin-bottom: 12px;
+          padding: 20px 24px;
+          margin-bottom: 16px;
           display: flex;
           gap: 16px;
           align-items: flex-start;
@@ -169,7 +170,7 @@ const AuditLogs = () => {
         .log-header {
           display: flex;
           justify-content: space-between;
-          margin-bottom: 8px;
+          margin-bottom: 12px;
         }
         .log-user {
           font-size: 0.8rem;

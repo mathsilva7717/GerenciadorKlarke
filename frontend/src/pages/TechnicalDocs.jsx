@@ -219,7 +219,7 @@ function TechnicalDocs() {
               placeholder="Buscar no acervo..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ border: 'none', background: 'transparent', width: '100%', padding: '12px', outline: 'none' }}
+              style={{ border: 'none', background: 'transparent', width: '100%', padding: '12px 12px 12px 35px', outline: 'none' }}
             />
           </div>
 
