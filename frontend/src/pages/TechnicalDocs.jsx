@@ -171,10 +171,10 @@ function TechnicalDocs() {
       </header>
         </div>
         <div style={{display: 'flex', gap: '8px'}}>
-          <button className="add-btn" onClick={() => setIsFolderModalOpen(true)} style={{background: 'var(--color-accent)'}}>
+          <button className="add-btn" onClick={() => setIsFolderModalOpen(true)} style={{background: 'var(--color-accent)', color: 'white'}}>
             <FolderPlus size={16} /> <span className="hide-mobile">PASTA</span>
           </button>
-          <button className="add-btn" onClick={() => openModal()}>
+          <button className="add-btn" onClick={() => openModal()} style={{background: 'var(--color-primary)', color: 'white'}}>
             <Plus size={16} /> <span className="hide-mobile">NOVO ITEM</span>
           </button>
         </div>
@@ -238,7 +238,7 @@ function TechnicalDocs() {
 
           <div className="machines-grid">
             {filtered.length === 0 && (
-              <div style={{textAlign: 'center', padding: '40px', background: 'rgba(255,255,255,0.5)', borderRadius: '12px', border: '2px dashed #ddd'}}>
+              <div style={{textAlign: 'center', padding: '40px', background: 'var(--color-surface)', borderRadius: '12px', border: '2px dashed var(--color-border)'}}>
                 <BookOpen size={40} style={{opacity: 0.2, marginBottom: '12px'}} />
                 <p style={{margin: 0, opacity: 0.5}}>Nenhum item encontrado nesta pasta.</p>
               </div>
@@ -287,10 +287,10 @@ function TechnicalDocs() {
                   <div style={{
                     marginTop: '12px', 
                     padding: '12px', 
-                    background: '#f8fafc', 
+                    background: 'var(--color-primary-light)', 
                     borderRadius: '6px', 
                     fontSize: '0.9rem', 
-                    color: '#334155',
+                    color: 'var(--color-text)',
                     whiteSpace: 'pre-wrap',
                     borderLeft: '4px solid var(--color-accent)'
                   }}>
@@ -453,11 +453,11 @@ function TechnicalDocs() {
         }
 
         .folders-sidebar {
-          background: white;
+          background: var(--color-surface);
           border-radius: 12px;
           padding: 20px;
-          border: 1px solid #e2e8f0;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+          border: 1px solid var(--color-border);
+          box-shadow: var(--box-shadow);
           height: fit-content;
           position: sticky;
           top: 20px;
@@ -529,8 +529,8 @@ function TechnicalDocs() {
         }
 
         .search-container {
-          background: white;
-          border: 1px solid #e2e8f0;
+          background: var(--color-surface);
+          border: 1px solid var(--color-border);
           border-radius: 12px;
           padding: 4px 16px;
           display: flex;
@@ -545,7 +545,7 @@ function TechnicalDocs() {
         }
 
         .vault-breadcrumb {
-          background: #f8fafc;
+          background: var(--color-primary-light);
           padding: 8px 16px;
           border-radius: 6px;
           display: inline-flex;

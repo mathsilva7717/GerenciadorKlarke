@@ -100,25 +100,27 @@ function Login() {
           {error && <div className="login-error">{error}</div>}
           <form onSubmit={handleChangePassword} className="login-form">
             <div className="form-group-login">
+              <label>NOVA SENHA</label>
               <input
                 type="password"
-                placeholder="Nova Senha"
+                placeholder="Digite a nova senha"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
               />
             </div>
             <div className="form-group-login">
+              <label>CONFIRMAR SENHA</label>
               <input
                 type="password"
-                placeholder="Confirme a Nova Senha"
+                placeholder="Repita a nova senha"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
               />
             </div>
-            <button type="submit" className="btn btn-primary btn-block" disabled={isLoading}>
-              {isLoading ? 'Atualizando...' : 'ATUALIZAR SENHA'}
+            <button type="submit" className="login-button" disabled={isLoading} style={{width: '100%', marginTop: '10px'}}>
+              {isLoading ? 'ATUALIZANDO...' : 'ATUALIZAR SENHA'}
             </button>
           </form>
         </div>

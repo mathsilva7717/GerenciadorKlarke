@@ -126,7 +126,8 @@ function Dashboard() {
     }
 
     if (name === 'ip') {
-      formattedValue = value.replace(/[^0-9.]/g, '');
+      formattedValue = value.replace(/[^0-9.]/g, ''); // Apenas números e pontos
+      formattedValue = formattedValue.replace(/\.\./g, '.'); // Evita pontos duplos
       const parts = formattedValue.split('.');
       if (parts.length > 4) formattedValue = parts.slice(0, 4).join('.');
     }
@@ -400,7 +401,7 @@ function Dashboard() {
     <>
       <div className="quick-stats-row-sober" style={{marginBottom: '32px'}}>
         {/* SAÚDE GLOBAL */}
-        <div className="stat-box-industrial" style={{borderLeftColor: '#10b981'}}>
+        <div className="stat-box-industrial" style={{borderLeft: '4px solid #10b981', background: 'var(--color-surface)', backdropFilter: 'blur(8px)'}}>
           <span className="stat-label">Saúde Global</span>
           <div className="stat-value-row">
             <Activity size={18} color="#10b981" />
@@ -410,17 +411,21 @@ function Dashboard() {
         </div>
 
         {/* ÚLTIMO BACKUP */}
-        <div className="stat-box-industrial" style={{borderLeftColor: 'var(--color-primary)'}}>
+        <div className="stat-box-industrial" style={{borderLeft: '4px solid var(--color-accent)', background: 'var(--color-surface)', backdropFilter: 'blur(8px)'}}>
           <span className="stat-label">Último Backup</span>
           <div className="stat-value-row">
-            <Database size={18} color="var(--color-primary)" />
+            <Database size={18} color="var(--color-accent)" />
             <span className="stat-value">STATUS: OK</span>
           </div>
-          <span className="stat-desc" style={{color: 'var(--color-accent)', fontWeight: 'bold', cursor: 'pointer'}}>BAIXAR CÓPIA AGORA</span>
+          <div style={{marginTop: '8px'}}>
+             <span className="action-chip" style={{display: 'inline-flex', background: 'var(--color-accent)', color: 'white', border: 'none'}} onClick={() => navigate('/api/backup')}>
+               BAIXAR CÓPIA AGORA
+             </span>
+          </div>
         </div>
 
         {/* ATIVIDADE LOGS */}
-        <div className="stat-box-industrial" style={{borderLeftColor: '#f59e0b'}}>
+        <div className="stat-box-industrial" style={{borderLeft: '4px solid #f59e0b', background: 'var(--color-surface)', backdropFilter: 'blur(8px)'}}>
           <span className="stat-label">Atividade Logs</span>
           <div className="stat-value-row">
             <RotateCw size={18} color="#f59e0b" />
@@ -430,7 +435,7 @@ function Dashboard() {
         </div>
 
         {/* ESTADO DA REDE */}
-        <div className="stat-box-industrial" style={{borderLeftColor: '#10b981'}}>
+        <div className="stat-box-industrial" style={{borderLeft: '4px solid #10b981', background: 'var(--color-surface)', backdropFilter: 'blur(8px)'}}>
           <span className="stat-label">Estado da Rede</span>
           <div className="stat-value-row">
             <Globe size={18} color="#10b981" />
@@ -440,7 +445,7 @@ function Dashboard() {
         </div>
 
         {/* ARMAZENAMENTO */}
-        <div className="stat-box-industrial" style={{borderLeftColor: '#ef4444'}}>
+        <div className="stat-box-industrial" style={{borderLeft: '4px solid #ef4444', background: 'var(--color-surface)', backdropFilter: 'blur(8px)'}}>
           <span className="stat-label">Armazenamento VPS</span>
           <div className="stat-value-row">
             <Database size={18} color="#ef4444" />

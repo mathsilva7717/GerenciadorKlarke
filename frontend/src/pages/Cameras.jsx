@@ -93,7 +93,8 @@ function Cameras() {
     let formattedValue = value;
 
     if (name === 'ip') {
-      formattedValue = value.replace(/[^0-9.]/g, '');
+      formattedValue = value.replace(/[^0-9.]/g, ''); // Apenas números e pontos
+      formattedValue = formattedValue.replace(/\.\./g, '.'); // Evita pontos duplos
     }
 
     if (name === 'port') {

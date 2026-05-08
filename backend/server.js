@@ -16,21 +16,10 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
-console.log('--- DIAGNÓSTICO DE INICIALIZAÇÃO ---');
-console.log('1. Dependências carregadas.');
-
-process.on('uncaughtException', (err) => {
-  console.error('ERRO FATAL NÃO TRATADO:', err);
-});
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('REJEIÇÃO NÃO TRATADA:', promise, 'razão:', reason);
-});
-
 // Database setup
 const dbPath = path.join(__dirname, 'database.sqlite');
-console.log('2. Tentando conectar ao banco em:', dbPath);
 const _db = new Database(dbPath);
-console.log('3. Conectado ao banco de dados SQLite (Better).');
+console.log('Conectado ao banco de dados SQLite (Better).');
 
 // Adaptador de compatibilidade para não quebrar o código legado
 const db = {
@@ -66,7 +55,7 @@ const db = {
   prepare: (sql) => _db.prepare(sql)
 };
 
-console.log('4. Criando tabelas...');
+// Criar tabelas se não existirem
 db.exec(`
   CREATE TABLE IF NOT EXISTS machines (
     id INTEGER PRIMARY KEY AUTOINCREMENT, 
@@ -96,11 +85,9 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 `);
-console.log('5. Tabelas OK.');
 
 // Migration rápida para a coluna nova
 try { db.exec("ALTER TABLE users ADD COLUMN must_change_password INTEGER DEFAULT 0"); } catch(e) {}
-console.log('6. Migrations OK.');
 
 // Criar admin se não existir
 db.get("SELECT * FROM users WHERE username = 'admin'", (err, row) => {

@@ -123,8 +123,8 @@ function Inventory() {
             <Package size={24} />
           </div>
           <div>
-            <h1>Inventory</h1>
-            <p>Controle de estoque técnico e ativos.</p>
+            <h1>Controle de Estoque</h1>
+            <p>Gerenciamento de insumos e ativos técnicos.</p>
           </div>
         </div>
         <button className="add-btn" onClick={() => openModal()}>
@@ -172,29 +172,29 @@ function Inventory() {
                   </div>
                 </div>
 
-                <div style={{marginTop: '20px', background: 'rgba(0,0,0,0.02)', padding: '15px', borderRadius: '8px', textAlign: 'center'}}>
+                <div style={{marginTop: '20px', background: 'var(--color-primary-light)', padding: '15px', borderRadius: '8px', textAlign: 'center'}}>
                   <div style={{fontSize: '0.7rem', color: 'var(--color-text-muted)', marginBottom: '8px', fontWeight: 'bold', textTransform: 'uppercase'}}>Quantidade em Mãos</div>
                   <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px'}}>
                     <button 
                       className="copy-btn" 
-                      style={{padding: '8px', background: '#f1f5f9', borderRadius: '50%'}}
+                      style={{padding: '8px', background: 'var(--color-surface)', borderRadius: '50%', color: 'var(--color-error)'}}
                       onClick={() => updateQuantity(item, -1)}
                     >
                       <Minus size={18} />
                     </button>
                     
                     <div style={{textAlign: 'center'}}>
-                      <span style={{fontSize: '2.5rem', fontWeight: '900', color: item.quantity === 0 ? '#ef4444' : 'var(--color-primary)', lineHeight: 1}}>
+                      <span style={{fontSize: '2.5rem', fontWeight: '900', color: item.quantity === 0 ? 'var(--color-error)' : 'var(--color-text)', lineHeight: 1}}>
                         {item.quantity}
                       </span>
-                      <span style={{display: 'block', fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 'bold'}}>
+                      <span style={{display: 'block', fontSize: '0.8rem', color: 'var(--color-accent)', fontWeight: 'bold'}}>
                         {item.unit.toUpperCase()}
                       </span>
                     </div>
 
                     <button 
                       className="copy-btn" 
-                      style={{padding: '8px', background: '#f1f5f9', borderRadius: '50%'}}
+                      style={{padding: '8px', background: 'var(--color-surface)', borderRadius: '50%', color: 'var(--color-success)'}}
                       onClick={() => updateQuantity(item, 1)}
                     >
                       <PlusCircle size={18} />

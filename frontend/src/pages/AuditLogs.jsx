@@ -171,7 +171,8 @@ const AuditLogs = () => {
           transition: var(--transition);
         }
         .log-item:hover {
-          background: rgba(255, 255, 255, 0.9);
+          background: var(--color-primary-light);
+          border-color: var(--color-accent);
         }
         .log-icon-wrapper {
           padding-top: 4px;
@@ -187,7 +188,7 @@ const AuditLogs = () => {
         .log-user {
           font-size: 0.8rem;
           font-weight: 800;
-          color: var(--color-primary);
+          color: var(--color-accent);
           display: flex;
           align-items: center;
         }

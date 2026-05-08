@@ -18,7 +18,17 @@ function Voip() {
     status: 'Ativo',
     notes: ''
   });
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    let formattedValue = value;
 
+    if (name === 'pabx_ip' || name === 'ip_address') {
+      formattedValue = value.replace(/[^0-9.]/g, ''); // Apenas números e pontos
+      formattedValue = formattedValue.replace(/\.\./g, '.'); // Evita pontos duplos
+    }
+
+    setFormData({ ...formData, [name]: formattedValue });
+  };
   const getAuthConfig = () => {
     const token = localStorage.getItem('klarke_token');
     const user = localStorage.getItem('klarke_user') || 'Sistema';
@@ -302,17 +312,19 @@ function Voip() {
                 <label className="form-label">Endereço IP do PABX / Servidor</label>
                 <input 
                   type="text" className="form-input" 
+                  name="pabx_ip"
                   value={formData.pabx_ip} 
-                  onChange={e => setFormData({...formData, pabx_ip: e.target.value})}
-                  placeholder="Ex: 192.168.1.10 ou pabx.klarke.com"
+                  onChange={handleInputChange}
+                  placeholder="Ex: 192.168.1.10"
                 />
               </div>
               <div className="form-group">
                 <label className="form-label">Endereço IP do Aparelho (Opcional)</label>
                 <input 
                   type="text" className="form-input" 
+                  name="ip_address"
                   value={formData.ip_address} 
-                  onChange={e => setFormData({...formData, ip_address: e.target.value})}
+                  onChange={handleInputChange}
                   placeholder="Ex: 192.168.1.50"
                 />
               </div>
