@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, Plus, X, Copy, Monitor, MapPin, Check, Download, Clipboard, Trash2, QrCode, Activity, Edit, Printer, ChevronLeft, ChevronRight, RotateCw, Database, Wifi } from 'lucide-react';
+import { Search, Plus, X, Copy, Monitor, MapPin, Check, Download, Clipboard, Trash2, QrCode, Activity, Edit, Printer, ChevronLeft, ChevronRight, RotateCw, Database, Wifi, Globe } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
