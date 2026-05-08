@@ -799,16 +799,9 @@ pause`;
   res.send(batContent);
 });
 
-// Catch-all para rotas do React (SPA)
-app.use((req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
-});
-
-// Start server
 // Rota de status do sistema (Disco e Latência)
 const { exec } = require('child_process');
 app.get('/api/system-status', authenticate, (req, res) => {
-  // Comando df mais robusto para pegar apenas a linha da partição raiz
   exec('df -h / --output=size,used,avail,pcent | tail -1', (err, stdout) => {
     let disk = { size: '0', used: '0', avail: '0', percent: '0%' };
     if (!err) {
@@ -817,13 +810,17 @@ app.get('/api/system-status', authenticate, (req, res) => {
         disk = { size: parts[0], used: parts[1], avail: parts[2], percent: parts[3] };
       }
     }
-    
     const start = Date.now();
     exec('ping -c 1 8.8.8.8', (pErr) => {
       const latency = !pErr ? (Date.now() - start) : 0;
       res.json({ disk, latency });
     });
   });
+});
+
+// Catch-all para rotas do React (SPA)
+app.use((req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
 app.listen(PORT, () => {
