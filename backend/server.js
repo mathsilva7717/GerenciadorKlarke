@@ -799,11 +799,14 @@ app.use((req, res) => {
 // Rota de status do sistema (Disco e Latência)
 const { exec } = require('child_process');
 app.get('/api/system-status', authenticate, (req, res) => {
-  exec('df -h / | tail -1', (err, stdout) => {
+  // Comando df mais robusto para pegar apenas a linha da partição raiz
+  exec('df -h / --output=size,used,avail,pcent | tail -1', (err, stdout) => {
     let disk = { size: '0', used: '0', avail: '0', percent: '0%' };
     if (!err) {
-      const parts = stdout.trim().split(/\s+/);
-      disk = { size: parts[1], used: parts[2], avail: parts[3], percent: parts[4] };
+      const parts = stdout.trim().split(/\s+/).filter(Boolean);
+      if (parts.length >= 4) {
+        disk = { size: parts[0], used: parts[1], avail: parts[2], percent: parts[3] };
+      }
     }
     
     const start = Date.now();
