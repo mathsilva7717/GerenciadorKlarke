@@ -238,10 +238,7 @@ function Inventory() {
                 </button>
               </div>
             )}
-            )}
           </>
-        )}
-      </div>
         )}
       </div>
 

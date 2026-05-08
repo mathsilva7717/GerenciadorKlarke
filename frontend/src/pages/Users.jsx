@@ -251,7 +251,6 @@ const Users = () => {
           )}
         </div>
       </div>
-      </div>
       {confirmDialog.open && (
         <div className="confirm-modal-overlay" onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}>
           <div className="confirm-modal-content" onClick={e => e.stopPropagation()}>
