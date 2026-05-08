@@ -54,7 +54,8 @@ function Login() {
         }, 6000);
       }
     } catch (err) {
-      setError('Credenciais inválidas. Tente novamente.');
+      const msg = err.response?.data?.error || err.message || 'Erro de conexão';
+      setError(msg === 'Network Error' ? 'Erro 502: Servidor inacessível' : msg);
       setIsLoading(false);
     }
   };
