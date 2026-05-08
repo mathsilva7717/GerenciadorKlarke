@@ -5,8 +5,10 @@ const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const multer = require('multer');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
+const SECRET_KEY = process.env.SECRET_KEY || 'klarke-secret-key-2024';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -122,8 +124,15 @@ const db = new sqlite3.Database(dbPath, (err) => {
 const authenticate = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) return res.status(401).json({ error: 'Não autorizado' });
+  
   const token = authHeader.split(' ')[1];
   
+  // Suporte temporário ao token antigo para não quebrar o site durante a transição
+  if (token === 'klarke-admin-token-xyz') {
+    req.user = { username: 'admin', role: 'admin' };
+    return next();
+  }
+
   jwt.verify(token, SECRET_KEY, (err, user) => {
     if (err) return res.status(403).json({ error: 'Token inválido' });
     req.user = user;
