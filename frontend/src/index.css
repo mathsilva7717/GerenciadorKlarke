@@ -803,15 +803,23 @@ body.dark .machine-card:hover {
   background-color: rgba(15, 23, 42, 0.8) !important;
 }
 
-.btn-block {
-  width: 100%;
+.login-button {
+  background-color: var(--color-accent);
+  color: #ffffff;
+  border: none;
   padding: 16px;
-  font-size: 1rem;
-  border-radius: 0px;
-  margin-top: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
+  font-weight: 900;
   letter-spacing: 1px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  text-transform: uppercase;
+}
+.login-button:hover {
+  opacity: 0.9;
+}
+.login-button:disabled {
+  background-color: var(--color-text-muted);
+  cursor: not-allowed;
 }
 
 .login-error {
