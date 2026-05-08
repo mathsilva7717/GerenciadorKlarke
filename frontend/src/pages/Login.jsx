@@ -13,6 +13,9 @@ function Login() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [successData, setSuccessData] = useState(null);
+  const [mustChange, setMustChange] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -26,6 +29,12 @@ function Login() {
         localStorage.setItem('klarke_token', response.data.token);
         localStorage.setItem('klarke_user', username);
         
+        if (response.data.user.mustChangePassword === 1) {
+          setMustChange(true);
+          setIsLoading(false);
+          return;
+        }
+
         const now = new Date();
         const hour = now.getHours();
         let greeting = 'BOM DIA';
@@ -49,6 +58,72 @@ function Login() {
       setIsLoading(false);
     }
   };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      setError('As senhas não coincidem');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem('klarke_token');
+      await axios.post('/api/change-password', { newPassword }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMustChange(false);
+      setIsSuccess(true);
+      const now = new Date();
+      setSuccessData({
+        greeting: 'SENHA ATUALIZADA',
+        user: username.toUpperCase(),
+        date: now.toLocaleDateString('pt-BR'),
+        time: now.toLocaleTimeString('pt-BR')
+      });
+      setTimeout(() => navigate('/control'), 3000);
+    } catch (err) {
+      setError('Erro ao atualizar senha.');
+      setIsLoading(false);
+    }
+  };
+
+  if (mustChange) {
+    return (
+      <div className="login-container">
+        <div className="login-card">
+          <div className="login-header">
+            <Lock size={48} color="var(--color-accent)" style={{marginBottom: '16px'}} />
+            <h1>Troca de Senha Obrigatória</h1>
+            <p>Este é seu primeiro acesso. Por segurança, escolha uma nova senha.</p>
+          </div>
+          {error && <div className="login-error">{error}</div>}
+          <form onSubmit={handleChangePassword} className="login-form">
+            <div className="form-group-login">
+              <input
+                type="password"
+                placeholder="Nova Senha"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+              />
+            </div>
+            <div className="form-group-login">
+              <input
+                type="password"
+                placeholder="Confirme a Nova Senha"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+            </div>
+            <button type="submit" className="btn btn-primary btn-block" disabled={isLoading}>
+              {isLoading ? 'Atualizando...' : 'ATUALIZAR SENHA'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   if (isSuccess && successData) {
     return (

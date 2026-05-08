@@ -182,10 +182,10 @@ function Home() {
             <span className="stat-label">ESTADO DA REDE</span>
             <div className="stat-value-row">
               <Globe size={16} color="#10b981" />
-              <span className="stat-value" style={{fontSize: '1rem', marginLeft: '8px'}}>{systemStatus.latency > 0 ? 'ESTÁVEL' : 'OFFLINE'}</span>
+              <span className="stat-value" style={{fontSize: '1rem', marginLeft: '8px'}}>{systemStatus?.latency > 0 ? 'ESTÁVEL' : 'OFFLINE'}</span>
             </div>
             <span style={{fontSize: '0.65rem', opacity: 0.6, marginTop: '4px'}}>
-              Latência média: {systemStatus.latency}ms
+              Latência média: {systemStatus?.latency || 0}ms
             </span>
           </div>
 
@@ -193,10 +193,10 @@ function Home() {
             <span className="stat-label">ARMAZENAMENTO</span>
             <div className="stat-value-row">
               <Database size={16} color="#ef4444" />
-              <span className="stat-value" style={{fontSize: '1rem', marginLeft: '8px'}}>{systemStatus.disk.percent}</span>
+              <span className="stat-value" style={{fontSize: '1rem', marginLeft: '8px'}}>{systemStatus?.disk?.percent || '0%'}</span>
             </div>
             <span style={{fontSize: '0.65rem', opacity: 0.6, marginTop: '4px'}}>
-              {systemStatus.disk.avail} disponíveis no HD
+              {systemStatus?.disk?.avail || '0'} disponíveis no HD
             </span>
           </div>
         </div>

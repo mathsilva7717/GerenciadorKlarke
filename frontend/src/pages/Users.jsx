@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { UserPlus, Trash2, Shield, User } from 'lucide-react';
+import { UserPlus, Trash2, Shield, User, RotateCcw } from 'lucide-react';
 
 const Users = () => {
   const [users, setUsers] = useState([]);
@@ -64,6 +64,16 @@ const Users = () => {
     const token = localStorage.getItem('klarke_token');
     const user = localStorage.getItem('klarke_user') || 'Sistema';
     return { headers: { Authorization: `Bearer ${token}`, 'X-User': user } };
+  };
+
+  const handleResetPassword = async (id) => {
+    if (!window.confirm('Resetar senha para 123456? O usuário deverá trocar no próximo login.')) return;
+    try {
+      await axios.post(`${API_URL}/api/users/${id}/reset-password`, {}, getAuthConfig());
+      alert('Senha resetada com sucesso!');
+    } catch (error) {
+      alert('Erro ao resetar senha.');
+    }
   };
 
   const handleDeleteUser = async (id) => {
@@ -174,14 +184,25 @@ const Users = () => {
                           {user.role}
                         </span>
                       </td>
-                      <td style={{textAlign: 'right'}}>
+                      <td style={{textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '8px'}}>
                         {user.username !== 'admin' && (
-                          <button
-                            onClick={() => handleDeleteUser(user.id)}
-                            className="delete-btn"
-                          >
-                            <Trash2 size={18} />
-                          </button>
+                          <>
+                            <button
+                              onClick={() => handleResetPassword(user.id)}
+                              className="action-chip"
+                              title="Resetar Senha"
+                              style={{padding: '4px 8px'}}
+                            >
+                              <RotateCcw size={16} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteUser(user.id)}
+                              className="delete-btn"
+                              title="Remover Usuário"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </>
                         )}
                       </td>
                     </tr>

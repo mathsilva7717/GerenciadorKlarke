@@ -434,9 +434,9 @@ function Dashboard() {
           <span className="stat-label">Estado da Rede</span>
           <div className="stat-value-row">
             <Globe size={18} color="#10b981" />
-            <span className="stat-value">{systemStatus.latency > 0 ? 'ESTÁVEL' : 'OFFLINE'}</span>
+            <span className="stat-value">{systemStatus?.latency > 0 ? 'ESTÁVEL' : 'OFFLINE'}</span>
           </div>
-          <span className="stat-desc">Latência média: {systemStatus.latency}ms</span>
+          <span className="stat-desc">Latência média: {systemStatus?.latency || 0}ms</span>
         </div>
 
         {/* ARMAZENAMENTO */}
@@ -444,9 +444,9 @@ function Dashboard() {
           <span className="stat-label">Armazenamento VPS</span>
           <div className="stat-value-row">
             <Database size={18} color="#ef4444" />
-            <span className="stat-value">{systemStatus.disk.percent}</span>
+            <span className="stat-value">{systemStatus?.disk?.percent || '0%'}</span>
           </div>
-          <span className="stat-desc">{systemStatus.disk.avail} disponíveis no HD</span>
+          <span className="stat-desc">{systemStatus?.disk?.avail || '0'} disponíveis no HD</span>
         </div>
       </div>
 

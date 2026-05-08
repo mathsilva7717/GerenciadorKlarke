@@ -58,8 +58,12 @@ const db = new sqlite3.Database(dbPath, (err) => {
         username TEXT UNIQUE,
         password TEXT,
         role TEXT DEFAULT 'user',
+        must_change_password INTEGER DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`);
+      )`, (err) => {
+        if (err) console.error("Erro na tabela users:", err.message);
+        db.run("ALTER TABLE users ADD COLUMN must_change_password INTEGER DEFAULT 0", () => {});
+      });
 
       db.run(`CREATE TABLE IF NOT EXISTS audit_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -117,13 +121,14 @@ const db = new sqlite3.Database(dbPath, (err) => {
 // Middleware de Autenticação
 const authenticate = (req, res, next) => {
   const authHeader = req.headers.authorization;
-  const secretToken = process.env.AUTH_TOKEN || 'klarke-admin-token-xyz';
+  if (!authHeader) return res.status(401).json({ error: 'Não autorizado' });
+  const token = authHeader.split(' ')[1];
   
-  if (authHeader === `Bearer ${secretToken}`) {
+  jwt.verify(token, SECRET_KEY, (err, user) => {
+    if (err) return res.status(403).json({ error: 'Token inválido' });
+    req.user = user;
     next();
-  } else {
-    res.status(401).json({ error: 'Não autorizado' });
-  }
+  });
 };
 
 // Helper: Registrar ação no log de auditoria
@@ -149,14 +154,14 @@ app.post('/api/login', (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     
     if (user && await bcrypt.compare(password, user.password)) {
-      try { 
-        // Log manual para o login, já que não temos o header x-user ainda
-        db.run("INSERT INTO audit_logs (user, action, details) VALUES (?, ?, ?)", [username, 'LOGIN', 'Usuário entrou no sistema']);
-      } catch (e) {}
-      res.json({ 
-        token: process.env.AUTH_TOKEN || 'klarke-admin-token-xyz',
-        user: { username: user.username, role: user.role }
-      });
+      db.run("INSERT INTO audit_logs (user, action, details) VALUES (?, ?, ?)", [username, 'LOGIN', 'Usuário entrou no sistema']);
+      
+      const token = jwt.sign(
+        { id: user.id, username: user.username, role: user.role },
+        SECRET_KEY,
+        { expiresIn: '24h' }
+      );
+      res.json({ token, user: { username: user.username, role: user.role, mustChangePassword: user.must_change_password } });
     } else {
       res.status(401).json({ error: 'Usuário ou senha inválidos' });
     }
@@ -174,11 +179,14 @@ app.get('/api/users', authenticate, (req, res) => {
 app.post('/api/users', authenticate, async (req, res) => {
   const { username, password, role } = req.body;
   const hashedPassword = await bcrypt.hash(password, 10);
-  
-  db.run("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", [username, hashedPassword, role || 'user'], function(err) {
-    if (err) return res.status(500).json({ error: 'Usuário já existe ou erro no banco' });
-    res.status(201).json({ id: this.lastID, username, role });
-  });
+    db.run(
+      'INSERT INTO users (username, password, role, must_change_password) VALUES (?, ?, ?, ?)',
+      [username, hashedPassword, role || 'user', 1],
+      function(err) {
+        if (err) return res.status(400).json({ error: 'Usuário já existe' });
+        res.status(201).json({ id: this.lastID, message: 'Usuário criado com sucesso' });
+      }
+    );
 });
 
 app.delete('/api/users/:id', authenticate, (req, res) => {
@@ -191,6 +199,19 @@ app.delete('/api/users/:id', authenticate, (req, res) => {
       res.json({ message: 'Usuário deletado com sucesso' });
     });
   });
+});
+
+app.post('/api/users/:id/reset-password', authenticate, async (req, res) => {
+  const hashedPassword = await bcrypt.hash('123456', 10);
+  db.run(
+    "UPDATE users SET password = ?, must_change_password = 1 WHERE id = ?",
+    [hashedPassword, req.params.id],
+    function(err) {
+      if (err) return res.status(500).json({ error: 'Erro ao resetar senha' });
+      db.run("INSERT INTO audit_logs (user, action, details) VALUES (?, ?, ?)", [req.headers['x-user'] || 'Sistema', 'RESET_PASSWORD', `Resetou senha do ID ${req.params.id}`]);
+      res.json({ message: 'Senha resetada para 123456' });
+    }
+  );
 });
 
 
@@ -777,7 +798,7 @@ app.use((req, res) => {
 // Start server
 // Rota de status do sistema (Disco e Latência)
 const { exec } = require('child_process');
-app.get('/api/system-status', authenticateToken, (req, res) => {
+app.get('/api/system-status', authenticate, (req, res) => {
   exec('df -h / | tail -1', (err, stdout) => {
     let disk = { size: '0', used: '0', avail: '0', percent: '0%' };
     if (!err) {
