@@ -13,7 +13,7 @@ function Home() {
     tasks: 0,
     users: 0,
     docs: 0,
-    logsToday: 0
+    logsTotal: 0
   });
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -34,16 +34,16 @@ function Home() {
     if (manual) setIsRefreshing(true);
     try {
       const [m, c, n, t, u, logs, creds, inv, voip, docs] = await Promise.all([
-        axios.get('/api/machines', getAuthConfig()),
-        axios.get('/api/cameras', getAuthConfig()),
-        axios.get('/api/network-devices', getAuthConfig()),
-        axios.get('/api/tasks', getAuthConfig()),
-        axios.get('/api/users', getAuthConfig()),
-        axios.get('/api/audit-logs', getAuthConfig()),
-        axios.get('/api/credentials', getAuthConfig()),
-        axios.get('/api/inventory', getAuthConfig()),
-        axios.get('/api/voip', getAuthConfig()),
-        axios.get('/api/technical-docs', getAuthConfig())
+        axios.get('/api/machines', getAuthConfig()).catch(() => ({ data: [] })),
+        axios.get('/api/cameras', getAuthConfig()).catch(() => ({ data: [] })),
+        axios.get('/api/network-devices', getAuthConfig()).catch(() => ({ data: [] })),
+        axios.get('/api/tasks', getAuthConfig()).catch(() => ({ data: [] })),
+        axios.get('/api/users', getAuthConfig()).catch(() => ({ data: [] })),
+        axios.get('/api/audit-logs', getAuthConfig()).catch(() => ({ data: [] })),
+        axios.get('/api/credentials', getAuthConfig()).catch(() => ({ data: [] })),
+        axios.get('/api/inventory', getAuthConfig()).catch(() => ({ data: [] })),
+        axios.get('/api/voip', getAuthConfig()).catch(() => ({ data: [] })),
+        axios.get('/api/technical-docs', getAuthConfig()).catch(() => ({ data: [] }))
       ]);
       setStats({
         machines: m.data?.length || 0,

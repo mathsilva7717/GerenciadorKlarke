@@ -219,7 +219,7 @@ function TechnicalDocs() {
               placeholder="Buscar no acervo..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ border: 'none', background: 'transparent', width: '100%', padding: '12px 12px 12px 35px', outline: 'none' }}
+              style={{ border: 'none', background: 'transparent', width: '100%', padding: '12px 12px 12px 40px', outline: 'none' }}
             />
           </div>
 
@@ -448,6 +448,8 @@ function TechnicalDocs() {
           grid-template-columns: 280px 1fr;
           gap: 32px;
           align-items: start;
+          max-width: 1400px;
+          margin: 0 auto;
         }
 
         .folders-sidebar {

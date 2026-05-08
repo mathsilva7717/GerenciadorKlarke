@@ -90,7 +90,7 @@ function Dashboard() {
       setMachines(response.data);
       
       // Busca contagem total de logs
-      const logsRes = await axios.get('/api/audit-logs', getAuthConfig());
+      const logsRes = await axios.get('/api/audit-logs', getAuthConfig()).catch(() => ({ data: [] }));
       setLogsCount(logsRes.data?.length || 0);
 
       if (manual) toast.success('Lista atualizada!');
