@@ -191,6 +191,18 @@ const Users = () => {
                             <User size={18} />
                           </div>
                           <span className="font-medium text-slate-700">{user.username}</span>
+                          {user.must_change_password === 1 && (
+                            <span style={{ 
+                              marginLeft: '8px', 
+                              fontSize: '0.6rem', 
+                              background: 'rgba(234, 179, 8, 0.1)', 
+                              color: '#eab308', 
+                              padding: '2px 6px',
+                              border: '1px solid rgba(234, 179, 8, 0.3)',
+                              borderRadius: '4px',
+                              fontWeight: '600'
+                            }}>SENHA PENDENTE</span>
+                          )}
                         </div>
                       </td>
                       <td>

@@ -14,16 +14,38 @@ import TechnicalDocs from './pages/TechnicalDocs';
 import Voip from './pages/Voip';
 import Inventory from './pages/Inventory';
 import KeyKeeper from './pages/KeyKeeper';
+import ResetPassword from './pages/ResetPassword';
 
 function App() {
+  const ProtectedRoute = ({ children }) => {
+    const token = localStorage.getItem('klarke_token');
+    if (!token) return <Navigate to="/" replace />;
+
+    const userData = localStorage.getItem('klarke_user');
+    let user = {};
+    try {
+      user = JSON.parse(userData || '{}');
+      if (typeof user === 'string') user = { username: user };
+    } catch (e) {
+      user = { username: userData };
+    }
+
+    if (user.mustChangePassword && window.location.pathname !== '/reset-password') {
+      return <Navigate to="/reset-password" replace />;
+    }
+
+    return children;
+  };
+
   return (
     <Router>
       <div className="dashboard-layout">
         <Toaster position="top-right" />
         <Routes>
           <Route path="/" element={<Login />} />
+          <Route path="/reset-password" element={<ProtectedRoute><ResetPassword /></ProtectedRoute>} />
           
-          <Route path="/control" element={<Layout />}>
+          <Route path="/control" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route index element={<Home />} />
             <Route path="machines" element={<Dashboard />} />
             <Route path="cameras" element={<Cameras />} />

@@ -13,9 +13,6 @@ function Login() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [successData, setSuccessData] = useState(null);
-  const [mustChange, setMustChange] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -27,11 +24,10 @@ function Login() {
       const response = await axios.post(API_URL, { username, password });
       if (response.data.token) {
         localStorage.setItem('klarke_token', response.data.token);
-        localStorage.setItem('klarke_user', username);
+        localStorage.setItem('klarke_user', JSON.stringify(response.data.user));
         
         if (response.data.user.mustChangePassword === 1) {
-          setMustChange(true);
-          setIsLoading(false);
+          navigate('/reset-password');
           return;
         }
 
@@ -60,79 +56,7 @@ function Login() {
     }
   };
 
-  const handleChangePassword = async (e) => {
-    e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      setError('As senhas não coincidem');
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const token = localStorage.getItem('klarke_token');
-      await axios.post('/api/change-password', { newPassword }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setMustChange(false);
-      setIsSuccess(true);
-      const now = new Date();
-      setSuccessData({
-        greeting: 'SENHA ATUALIZADA',
-        user: username.toUpperCase(),
-        date: now.toLocaleDateString('pt-BR'),
-        time: now.toLocaleTimeString('pt-BR')
-      });
-      setTimeout(() => navigate('/control'), 3000);
-    } catch (err) {
-      setError('Erro ao atualizar senha.');
-      setIsLoading(false);
-    }
-  };
 
-  if (mustChange) {
-    return (
-      <div className="login-container">
-        <div className="login-card">
-          <div className="login-header">
-            <Lock size={48} color="#64748b" style={{marginBottom: '16px'}} />
-            <h1>Troca de Senha Obrigatória</h1>
-            <p>Este é seu primeiro acesso. Por segurança, escolha uma nova senha.</p>
-          </div>
-          {error && <div className="login-error">{error}</div>}
-          <form onSubmit={handleChangePassword} className="login-form">
-            <div className="form-group-login">
-              <label>NOVA SENHA</label>
-              <div className="input-icon-wrapper">
-                <input
-                  type="password"
-                  placeholder="Digite a nova senha"
-                  className="password-input-asterisk"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-            <div className="form-group-login">
-              <label>CONFIRMAR SENHA</label>
-              <div className="input-icon-wrapper">
-                <input
-                  type="password"
-                  placeholder="Repita a nova senha"
-                  className="password-input-asterisk"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-            <button type="submit" className="login-button" disabled={isLoading} style={{width: '100%', marginTop: '10px'}}>
-              {isLoading ? 'ATUALIZANDO...' : 'ATUALIZAR SENHA'}
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
 
   if (isSuccess && successData) {
     return (

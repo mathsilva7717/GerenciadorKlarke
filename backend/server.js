@@ -154,9 +154,26 @@ app.post('/api/login', (req, res) => {
   });
 });
 
+// Route: Change Password
+app.post('/api/change-password', authenticate, async (req, res) => {
+  const { newPassword } = req.body;
+  const username = req.user.username;
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  
+  db.run(
+    "UPDATE users SET password = ?, must_change_password = 0 WHERE username = ?",
+    [hashedPassword, username],
+    function(err) {
+      if (err) return res.status(500).json({ error: 'Erro ao atualizar senha' });
+      db.run("INSERT INTO audit_logs (user, action, details) VALUES (?, ?, ?)", [username, 'TROCA_SENHA', 'Alterou a senha no primeiro acesso']);
+      res.json({ message: 'Senha alterada com sucesso' });
+    }
+  );
+});
+
 // User Management
 app.get('/api/users', authenticate, (req, res) => {
-  db.all('SELECT id, username, role, created_at FROM users', [], (err, rows) => {
+  db.all('SELECT id, username, role, must_change_password, created_at FROM users', [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
