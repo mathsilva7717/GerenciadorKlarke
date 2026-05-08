@@ -7,6 +7,7 @@ const Users = () => {
   const [loading, setLoading] = useState(true);
   const [newUser, setNewUser] = useState({ username: '', password: '', role: 'user' });
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', message: '', onConfirm: null });
 
   const API_URL = '';
 
@@ -67,23 +68,38 @@ const Users = () => {
   };
 
   const handleResetPassword = async (id) => {
-    if (!window.confirm('Resetar senha para 123456? O usuário deverá trocar no próximo login.')) return;
-    try {
-      await axios.post(`${API_URL}/api/users/${id}/reset-password`, {}, getAuthConfig());
-      alert('Senha resetada com sucesso!');
-    } catch (error) {
-      alert('Erro ao resetar senha.');
-    }
+    setConfirmDialog({
+      open: true,
+      title: 'Resetar Senha',
+      message: 'A senha será resetada para 123456. O usuário será forçado a trocá-la no próximo acesso. Confirmar?',
+      onConfirm: async () => {
+        try {
+          await axios.post(`${API_URL}/api/users/${id}/reset-password`, {}, getAuthConfig());
+          setMessage({ type: 'success', text: 'Senha resetada com sucesso!' });
+        } catch (error) {
+          setMessage({ type: 'error', text: 'Erro ao resetar senha.' });
+        }
+        setConfirmDialog({ ...confirmDialog, open: false });
+      }
+    });
   };
 
   const handleDeleteUser = async (id) => {
-    if (!window.confirm('Tem certeza que deseja remover este usuário?')) return;
-    try {
-      await axios.delete(`${API_URL}/api/users/${id}`, getAuthConfig());
-      fetchUsers();
-    } catch (error) {
-      alert('Erro ao remover usuário.');
-    }
+    setConfirmDialog({
+      open: true,
+      title: 'Remover Usuário',
+      message: 'Tem certeza que deseja revogar permanentemente o acesso deste usuário?',
+      onConfirm: async () => {
+        try {
+          await axios.delete(`${API_URL}/api/users/${id}`, getAuthConfig());
+          fetchUsers();
+          setMessage({ type: 'success', text: 'Usuário removido!' });
+        } catch (error) {
+          setMessage({ type: 'error', text: 'Erro ao remover usuário.' });
+        }
+        setConfirmDialog({ ...confirmDialog, open: false });
+      }
+    });
   };
 
   return (
@@ -235,6 +251,23 @@ const Users = () => {
           )}
         </div>
       </div>
+      </div>
+      {confirmDialog.open && (
+        <div className="confirm-modal-overlay" onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}>
+          <div className="confirm-modal-content" onClick={e => e.stopPropagation()}>
+            <h3 className="confirm-modal-title">{confirmDialog.title}</h3>
+            <p className="confirm-modal-text">{confirmDialog.message}</p>
+            <div className="confirm-modal-actions">
+              <button className="btn-confirm-cancel" onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}>
+                CANCELAR
+              </button>
+              <button className="btn-confirm-danger" onClick={confirmDialog.onConfirm}>
+                CONFIRMAR AÇÃO
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

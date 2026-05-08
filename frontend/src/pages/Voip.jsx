@@ -9,6 +9,7 @@ function Voip() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingExt, setEditingExt] = useState(null);
   const [copiedField, setCopiedField] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', message: '', onConfirm: null });
   const [formData, setFormData] = useState({
     extension: '',
     name: '',
@@ -66,15 +67,21 @@ function Voip() {
   };
 
   const deleteExt = async (id) => {
-    if (window.confirm('Excluir este ramal permanentemente?')) {
-      try {
-        await axios.delete(`/api/voip/${id}`, getAuthConfig());
-        toast.success('Removido');
-        fetchExtensions();
-      } catch (e) {
-        toast.error('Erro ao excluir');
+    setConfirmDialog({
+      open: true,
+      title: 'Remover Ramal',
+      message: 'Esta ação excluirá permanentemente o ramal. Confirmar?',
+      onConfirm: async () => {
+        try {
+          await axios.delete(`/api/voip/${id}`, getAuthConfig());
+          toast.success('Removido');
+          fetchExtensions();
+        } catch (e) {
+          toast.error('Erro ao excluir');
+        }
+        setConfirmDialog({ ...confirmDialog, open: false });
       }
-    }
+    });
   };
 
   const copyToClipboard = (text, fieldId) => {
@@ -341,6 +348,22 @@ function Voip() {
                 {editingExt ? 'ATUALIZAR' : 'SALVAR RAMAL'}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+      {confirmDialog.open && (
+        <div className="confirm-modal-overlay" onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}>
+          <div className="confirm-modal-content" onClick={e => e.stopPropagation()}>
+            <h3 className="confirm-modal-title">{confirmDialog.title}</h3>
+            <p className="confirm-modal-text">{confirmDialog.message}</p>
+            <div className="confirm-modal-actions">
+              <button className="btn-confirm-cancel" onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}>
+                CANCELAR
+              </button>
+              <button className="btn-confirm-danger" onClick={confirmDialog.onConfirm}>
+                CONFIRMAR EXCLUSÃO
+              </button>
+            </div>
           </div>
         </div>
       )}

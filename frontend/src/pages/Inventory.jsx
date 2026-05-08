@@ -7,6 +7,7 @@ function Inventory() {
   const [items, setItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', message: '', onConfirm: null });
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -64,15 +65,21 @@ function Inventory() {
   };
 
   const deleteItem = async (id) => {
-    if (window.confirm('Excluir este item do estoque?')) {
-      try {
-        await axios.delete(`/api/inventory/${id}`, getAuthConfig());
-        toast.success('Removido');
-        fetchItems();
-      } catch (e) {
-        toast.error('Erro ao excluir');
+    setConfirmDialog({
+      open: true,
+      title: 'Remover do Estoque',
+      message: 'Tem certeza que deseja excluir este item permanentemente?',
+      onConfirm: async () => {
+        try {
+          await axios.delete(`/api/inventory/${id}`, getAuthConfig());
+          toast.success('Removido');
+          fetchItems();
+        } catch (e) {
+          toast.error('Erro ao excluir');
+        }
+        setConfirmDialog({ ...confirmDialog, open: false });
       }
-    }
+    });
   };
 
   const openModal = (item = null) => {
@@ -231,7 +238,10 @@ function Inventory() {
                 </button>
               </div>
             )}
+            )}
           </>
+        )}
+      </div>
         )}
       </div>
 
@@ -313,6 +323,22 @@ function Inventory() {
                 {editingItem ? 'ATUALIZAR' : 'SALVAR NO ESTOQUE'}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+      {confirmDialog.open && (
+        <div className="confirm-modal-overlay" onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}>
+          <div className="confirm-modal-content" onClick={e => e.stopPropagation()}>
+            <h3 className="confirm-modal-title">{confirmDialog.title}</h3>
+            <p className="confirm-modal-text">{confirmDialog.message}</p>
+            <div className="confirm-modal-actions">
+              <button className="btn-confirm-cancel" onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}>
+                CANCELAR
+              </button>
+              <button className="btn-confirm-danger" onClick={confirmDialog.onConfirm}>
+                CONFIRMAR EXCLUSÃO
+              </button>
+            </div>
           </div>
         </div>
       )}

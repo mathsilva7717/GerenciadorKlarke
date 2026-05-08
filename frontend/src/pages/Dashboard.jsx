@@ -18,6 +18,7 @@ function Dashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [logsCount, setLogsCount] = useState(0);
   const [systemStatus, setSystemStatus] = useState({ disk: { percent: '0%', avail: '0' }, latency: 0 });
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', message: '', onConfirm: null });
   const navigate = useNavigate();
 
   // Form State
@@ -176,16 +177,22 @@ function Dashboard() {
   };
 
   const deleteMachine = async (id) => {
-    if (window.confirm('Tem certeza que deseja excluir esta máquina?')) {
-      try {
-        await axios.delete(`${API_URL}/${id}`, getAuthConfig());
-        toast.success('Máquina excluída!');
-        fetchMachines();
-        closeModal();
-      } catch (error) {
-        toast.error('Erro ao excluir máquina.');
+    setConfirmDialog({
+      open: true,
+      title: 'Excluir Equipamento',
+      message: 'Esta ação é irreversível. Deseja realmente remover este item do inventário?',
+      onConfirm: async () => {
+        try {
+          await axios.delete(`${API_URL}/${id}`, getAuthConfig());
+          toast.success('Máquina excluída!');
+          fetchMachines();
+          closeModal();
+        } catch (error) {
+          toast.error('Erro ao excluir máquina.');
+        }
+        setConfirmDialog({ ...confirmDialog, open: false });
       }
-    }
+    });
   };
 
   const copyToClipboard = (text, fieldId) => {
@@ -746,6 +753,22 @@ function Dashboard() {
                   </button>
                 )}
               </form>
+            </div>
+          </div>
+        )}
+        {confirmDialog.open && (
+          <div className="confirm-modal-overlay" onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}>
+            <div className="confirm-modal-content" onClick={e => e.stopPropagation()}>
+              <h3 className="confirm-modal-title">{confirmDialog.title}</h3>
+              <p className="confirm-modal-text">{confirmDialog.message}</p>
+              <div className="confirm-modal-actions">
+                <button className="btn-confirm-cancel" onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}>
+                  CANCELAR
+                </button>
+                <button className="btn-confirm-danger" onClick={confirmDialog.onConfirm}>
+                  CONFIRMAR EXCLUSÃO
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -16,6 +16,7 @@ function Cameras() {
   const [editingCamera, setEditingCamera] = useState(null);
   const [copiedField, setCopiedField] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', message: '', onConfirm: null });
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -139,12 +140,22 @@ function Cameras() {
   };
 
   const deleteCamera = async (id) => {
-    if (window.confirm('Excluir câmera?')) {
-      await axios.delete(`${API_URL}/${id}`, getAuthConfig());
-      toast.success('Câmera excluída!');
-      fetchCameras();
-      closeModal();
-    }
+    setConfirmDialog({
+      open: true,
+      title: 'Excluir Câmera',
+      message: 'Tem certeza que deseja remover esta câmera do sistema?',
+      onConfirm: async () => {
+        try {
+          await axios.delete(`${API_URL}/${id}`, getAuthConfig());
+          toast.success('Câmera excluída!');
+          fetchCameras();
+          closeModal();
+        } catch (error) {
+          toast.error('Erro ao excluir câmera.');
+        }
+        setConfirmDialog({ ...confirmDialog, open: false });
+      }
+    });
   };
 
   const copyToClipboard = (text, fieldId) => {
@@ -527,6 +538,22 @@ function Cameras() {
                 </button>
               )}
             </form>
+          </div>
+        </div>
+      )}
+      {confirmDialog.open && (
+        <div className="confirm-modal-overlay" onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}>
+          <div className="confirm-modal-content" onClick={e => e.stopPropagation()}>
+            <h3 className="confirm-modal-title">{confirmDialog.title}</h3>
+            <p className="confirm-modal-text">{confirmDialog.message}</p>
+            <div className="confirm-modal-actions">
+              <button className="btn-confirm-cancel" onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}>
+                CANCELAR
+              </button>
+              <button className="btn-confirm-danger" onClick={confirmDialog.onConfirm}>
+                CONFIRMAR EXCLUSÃO
+              </button>
+            </div>
           </div>
         </div>
       )}

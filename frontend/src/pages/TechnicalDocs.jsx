@@ -18,6 +18,7 @@ function TechnicalDocs() {
   const [newFolderName, setNewFolderName] = useState('');
   const [formData, setFormData] = useState({ title: '', type: 'Nota', content: '', amount: '', folder_id: null });
   const [editingDoc, setEditingDoc] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', message: '', onConfirm: null });
   const [selectedFile, setSelectedFile] = useState(null);
 
   const getAuthConfig = () => {
@@ -140,15 +141,21 @@ function TechnicalDocs() {
   };
 
   const deleteDoc = async (id) => {
-    if (window.confirm('Excluir este item do acervo?')) {
-      try {
-        await axios.delete(`/api/technical-docs/${id}`, getAuthConfig());
-        toast.success('Removido');
-        fetchDocs();
-      } catch (e) {
-        toast.error('Erro ao excluir');
+    setConfirmDialog({
+      open: true,
+      title: 'Excluir Item do Acervo',
+      message: 'Esta ação removerá o documento ou arquivo permanentemente. Confirmar?',
+      onConfirm: async () => {
+        try {
+          await axios.delete(`/api/technical-docs/${id}`, getAuthConfig());
+          toast.success('Removido');
+          fetchDocs();
+        } catch (e) {
+          toast.error('Erro ao excluir');
+        }
+        setConfirmDialog({ ...confirmDialog, open: false });
       }
-    }
+    });
   };
 
   const filtered = docs.filter(d => {
@@ -569,6 +576,22 @@ function TechnicalDocs() {
           }
         }
       `}</style>
+      {confirmDialog.open && (
+        <div className="confirm-modal-overlay" onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}>
+          <div className="confirm-modal-content" onClick={e => e.stopPropagation()}>
+            <h3 className="confirm-modal-title">{confirmDialog.title}</h3>
+            <p className="confirm-modal-text">{confirmDialog.message}</p>
+            <div className="confirm-modal-actions">
+              <button className="btn-confirm-cancel" onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}>
+                CANCELAR
+              </button>
+              <button className="btn-confirm-danger" onClick={confirmDialog.onConfirm}>
+                CONFIRMAR EXCLUSÃO
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
