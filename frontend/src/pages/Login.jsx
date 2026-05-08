@@ -93,7 +93,7 @@ function Login() {
       <div className="login-container">
         <div className="login-card">
           <div className="login-header">
-            <Lock size={48} color="var(--color-accent)" style={{marginBottom: '16px'}} />
+            <Lock size={48} color="#64748b" style={{marginBottom: '16px'}} />
             <h1>Troca de Senha Obrigatória</h1>
             <p>Este é seu primeiro acesso. Por segurança, escolha uma nova senha.</p>
           </div>
