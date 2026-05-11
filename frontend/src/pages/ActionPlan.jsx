@@ -21,7 +21,7 @@ function ActionPlan() {
       const res = await axios.get(API_URL, getAuthConfig());
       setTasks(res.data);
     } catch (error) {
-      console.error(error);
+      console.error('[API ERROR] Falha ao buscar tarefas:', error.response?.data || error.message);
     }
   };
 
@@ -42,6 +42,7 @@ function ActionPlan() {
       toast.success('Nova tarefa enviada!');
       fetchTasks();
     } catch (error) {
+      console.error('[API ERROR] Falha ao criar tarefa:', error.response?.data || error.message);
       toast.error('Erro ao criar tarefa');
     }
   };
