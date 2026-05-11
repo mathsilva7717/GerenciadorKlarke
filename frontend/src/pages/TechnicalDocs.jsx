@@ -559,11 +559,17 @@ function TechnicalDocs() {
           align-items: center;
           gap: 8px;
           font-size: 0.8rem;
+          color: rgba(255, 255, 255, 0.9);
+          white-space: nowrap;
+        }
+
+        .vault-breadcrumb span {
+          color: rgba(255, 255, 255, 0.7);
+          transition: color 0.2s;
         }
 
         .vault-breadcrumb span:hover {
-          color: var(--color-primary);
-          text-decoration: underline;
+          color: #fff;
           cursor: pointer;
         }
 
