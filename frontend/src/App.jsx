@@ -8,9 +8,12 @@ axios.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
+      toast.error('Sessão expirada. Por favor, faça login novamente.', { id: 'auth-error' });
       localStorage.removeItem('klarke_token');
       localStorage.removeItem('klarke_user');
-      window.location.href = '/';
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1500);
     }
     return Promise.reject(error);
   }

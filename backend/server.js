@@ -145,7 +145,7 @@ app.post('/api/login', (req, res) => {
       const token = jwt.sign(
         { id: user.id, username: user.username, role: user.role },
         SECRET_KEY,
-        { expiresIn: '24h' }
+        { expiresIn: '8h' }
       );
       res.json({ token, user: { username: user.username, role: user.role, mustChangePassword: user.must_change_password } });
     } else {
