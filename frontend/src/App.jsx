@@ -1,6 +1,20 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import axios from 'axios';
+
+// Interceptor global para tratar expiração de token (401)
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem('klarke_token');
+      localStorage.removeItem('klarke_user');
+      window.location.href = '/';
+    }
+    return Promise.reject(error);
+  }
+);
 import Login from './pages/Login';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';

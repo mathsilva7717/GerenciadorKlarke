@@ -555,6 +555,7 @@ app.post('/api/credentials', authenticate, (req, res) => {
     [title, username, password, category || 'Geral', notes],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
+      logAction(req, 'CREDENCIAIS', `Adicionou nova credencial: ${title}`);
       res.status(201).json({ id: this.lastID });
     }
   );
@@ -588,6 +589,7 @@ app.post('/api/inventory', authenticate, (req, res) => {
     [name, quantity || 0, unit || 'un', category || 'Geral', location, notes],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
+      logAction(req, 'ESTOQUE', `Adicionou item: ${name} (${quantity} ${unit})`);
       res.status(201).json({ id: this.lastID });
     }
   );
@@ -621,6 +623,7 @@ app.post('/api/voip', authenticate, (req, res) => {
     [extension, name, password, ip_address, pabx_ip, status || 'Ativo', notes],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
+      logAction(req, 'VOIP', `Cadastrou ramal: ${extension} - ${name}`);
       res.status(201).json({ id: this.lastID });
     }
   );

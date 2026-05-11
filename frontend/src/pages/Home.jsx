@@ -138,12 +138,10 @@ function Home() {
         </div>
         
         <div className="quick-stats-row-sober" style={{ marginBottom: '32px' }}>
-          <div className="stat-box-industrial" style={{ minWidth: '180px' }}>
+          <div className="stat-box-industrial" style={{ minWidth: '180px', background: 'linear-gradient(180deg, rgba(16, 185, 129, 0.05) 0%, transparent 100%)' }}>
             <span className="stat-label">SAÚDE GLOBAL</span>
             <div className="stat-value-row">
-              <div className="indicator-static-green" style={{ 
-                background: (stats.machinesOnline + stats.camerasOnline + stats.networkOnline) > 0 ? '#10b981' : '#ef4444'
-              }}></div>
+              <div className={`indicator-pulse-${(stats.machinesOnline + stats.camerasOnline + stats.networkOnline) > 0 ? 'green' : 'red'}`}></div>
               <span className="stat-value">
                 {Math.round(((stats.machinesOnline + stats.camerasOnline + stats.networkOnline) / (stats.machines + stats.cameras + stats.network || 1)) * 100)}%
               </span>
@@ -189,14 +187,18 @@ function Home() {
             </span>
           </div>
 
-          <div className="stat-box-industrial" style={{ minWidth: '180px', borderLeft: '4px solid #ef4444' }}>
+          <div className="stat-box-industrial" style={{ 
+            minWidth: '180px', 
+            borderLeft: '4px solid #ef4444',
+            background: parseInt(systemStatus?.disk?.percent) > 90 ? 'linear-gradient(180deg, rgba(239, 68, 68, 0.1) 0%, transparent 100%)' : 'transparent'
+          }}>
             <span className="stat-label">ARMAZENAMENTO</span>
             <div className="stat-value-row">
-              <Database size={16} color="#ef4444" />
+              <Database size={16} color="#ef4444" className={parseInt(systemStatus?.disk?.percent) > 90 ? 'pulse-icon' : ''} />
               <span className="stat-value" style={{fontSize: '1rem', marginLeft: '8px'}}>{systemStatus?.disk?.percent || '0%'}</span>
             </div>
-            <span style={{fontSize: '0.65rem', opacity: 0.6, marginTop: '4px'}}>
-              {systemStatus?.disk?.avail || '0'} disponíveis no HD
+            <span style={{fontSize: '0.65rem', opacity: 0.6, marginTop: '4px', color: parseInt(systemStatus?.disk?.percent) > 90 ? '#ef4444' : 'inherit'}}>
+              {parseInt(systemStatus?.disk?.percent) > 90 ? 'CRÍTICO: DISCO CHEIO' : `${systemStatus?.disk?.avail || '0'} disponíveis`}
             </span>
           </div>
         </div>
