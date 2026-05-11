@@ -82,7 +82,7 @@ function Login() {
       <div className="login-card">
         <div className="login-header">
           <img src="/logo.png" alt="Klarke Logo" className="login-logo" />
-          <h1>Klarke Control</h1>
+          <h1 style={{ fontWeight: '500', fontSize: '1.8rem', letterSpacing: '-0.02em', textTransform: 'none' }}>Klarke Control</h1>
           <p>Acesse o painel de gerenciamento de infraestrutura.</p>
         </div>
 
