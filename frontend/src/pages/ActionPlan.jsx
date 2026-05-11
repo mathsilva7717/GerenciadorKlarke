@@ -98,8 +98,8 @@ function ActionPlan() {
   const completedCount = tasks.filter(t => t.is_completed).length;
   const progressPercent = tasks.length === 0 ? 0 : Math.round((completedCount / tasks.length) * 100);
 
-  const pendingTasks = tasks.filter(t => !t.is_completed);
-  const completedTasks = tasks.filter(t => t.is_completed);
+  const pendingTasks = tasks.filter(t => Number(t.is_completed) === 0);
+  const completedTasks = tasks.filter(t => Number(t.is_completed) === 1);
 
   return (
     <div className="action-plan-container">
