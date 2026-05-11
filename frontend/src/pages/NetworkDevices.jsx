@@ -25,7 +25,14 @@ function NetworkDevices() {
 
   const getAuthConfig = () => {
     const token = localStorage.getItem('klarke_token');
-    const user = localStorage.getItem('klarke_user') || 'Sistema';
+    const userData = localStorage.getItem('klarke_user');
+    let user = 'Sistema';
+    try {
+      const parsed = JSON.parse(userData);
+      user = parsed.username || userData;
+    } catch (e) {
+      user = userData || 'Sistema';
+    }
     return { headers: { Authorization: `Bearer ${token}`, 'X-User': user } };
   };
 
@@ -120,7 +127,15 @@ function NetworkDevices() {
   const saveDevice = async (e) => {
     e.preventDefault();
     try {
-      const user = localStorage.getItem('klarke_user') || 'Desconhecido';
+      const userData = localStorage.getItem('klarke_user');
+      let user = 'Desconhecido';
+      try {
+        const parsed = JSON.parse(userData);
+        user = parsed.username || userData;
+      } catch (e) {
+        user = userData || 'Desconhecido';
+      }
+
       if (editingDevice) {
         await axios.put(`${API_URL}/${editingDevice.id}`, formData, getAuthConfig());
         toast.success('Equipamento atualizado!');

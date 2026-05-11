@@ -1,7 +1,30 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+import { Toaster, toast } from 'react-hot-toast';
 import axios from 'axios';
+
+// Interceptor global para injetar headers em todas as requisições
+axios.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('klarke_token');
+    const userData = localStorage.getItem('klarke_user');
+    
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        config.headers['X-User'] = user.username || userData;
+      } catch (e) {
+        config.headers['X-User'] = userData;
+      }
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 // Interceptor global para tratar expiração de token (401)
 axios.interceptors.response.use(

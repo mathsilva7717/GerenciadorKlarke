@@ -117,7 +117,14 @@ const AuditLogs = () => {
                   <div className="log-header">
                     <span className="log-user">
                       <User size={14} style={{marginRight: '6px'}} />
-                      {log.user?.toUpperCase()}
+                      {(() => {
+                        try {
+                          const u = JSON.parse(log.user);
+                          return (u.username || log.user).toUpperCase();
+                        } catch(e) {
+                          return log.user?.toUpperCase();
+                        }
+                      })()}
                     </span>
                     <span className="log-date">{formatDate(log.created_at)}</span>
                   </div>

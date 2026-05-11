@@ -49,7 +49,15 @@ function ActionPlan() {
 
   const toggleTask = async (id, currentStatus) => {
     try {
-      const user = localStorage.getItem('klarke_user') || 'Desconhecido';
+      const userData = localStorage.getItem('klarke_user');
+      let user = 'Desconhecido';
+      try {
+        const parsed = JSON.parse(userData);
+        user = parsed.username || userData;
+      } catch (e) {
+        user = userData || 'Desconhecido';
+      }
+
       await axios.put(`${API_URL}/${id}`, { 
         is_completed: !currentStatus,
         completed_by: user

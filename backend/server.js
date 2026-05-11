@@ -83,6 +83,13 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
+  CREATE TABLE IF NOT EXISTS network_devices (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, 
+    name TEXT, type TEXT, ip TEXT, username TEXT, password TEXT, 
+    location TEXT, isp TEXT, serial_number TEXT, created_by TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE,
@@ -97,10 +104,80 @@ db.exec(`
     user TEXT, action TEXT, details TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT, 
+    description TEXT, 
+    is_completed INTEGER DEFAULT 0,
+    completed_by TEXT,
+    completed_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS technical_docs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT,
+    type TEXT,
+    content TEXT,
+    file_path TEXT,
+    file_size TEXT,
+    amount REAL,
+    folder_id INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS vault_folders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    parent_id INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS credentials (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT,
+    username TEXT,
+    password TEXT,
+    category TEXT,
+    notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS inventory (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    quantity REAL,
+    unit TEXT,
+    category TEXT,
+    location TEXT,
+    notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS voip_extensions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    extension TEXT,
+    name TEXT,
+    password TEXT,
+    ip_address TEXT,
+    pabx_ip TEXT,
+    status TEXT,
+    notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
-// Migration rápida para a coluna nova
+// Migrations rápidas para colunas novas
 try { db.exec("ALTER TABLE users ADD COLUMN must_change_password INTEGER DEFAULT 0"); } catch(e) {}
+try { db.exec("ALTER TABLE tasks ADD COLUMN completed_by TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE tasks ADD COLUMN completed_at DATETIME"); } catch(e) {}
+try { db.exec("ALTER TABLE machines ADD COLUMN created_by TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE machines ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"); } catch(e) {}
+try { db.exec("ALTER TABLE cameras ADD COLUMN created_by TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE cameras ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"); } catch(e) {}
+try { db.exec("ALTER TABLE network_devices ADD COLUMN created_by TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE network_devices ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"); } catch(e) {}
 
 // Criar admin se não existir
 db.get("SELECT * FROM users WHERE username = 'admin'", (err, row) => {
@@ -132,7 +209,13 @@ const authenticate = (req, res, next) => {
 
 // Helper: Registrar ação no log de auditoria
 const logAction = (req, action, details) => {
-  const user = req.headers['x-user'] || 'Sistema';
+  let user = req.headers['x-user'] || 'Sistema';
+  try {
+    const parsed = JSON.parse(user);
+    if (parsed && parsed.username) user = parsed.username;
+  } catch (e) {
+    // Se não for JSON, mantém o valor original
+  }
   db.run("INSERT INTO audit_logs (user, action, details) VALUES (?, ?, ?)", [user, action, details]);
 };
 

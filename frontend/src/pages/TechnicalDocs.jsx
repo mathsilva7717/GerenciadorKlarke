@@ -236,8 +236,8 @@ function TechnicalDocs() {
               <span onClick={() => setCurrentFolder(null)} style={{fontWeight: !currentFolder ? 'bold' : 'normal'}}>Raiz do Acervo</span>
               {currentFolder && (
                 <>
-                  <ChevronRight size={14} />
-                  <span style={{fontWeight: 'bold', color: 'var(--color-primary)'}}>{currentFolder.name}</span>
+                  <ChevronRight size={14} color="rgba(255,255,255,0.7)" />
+                  <span style={{fontWeight: 'bold', color: 'white'}}>{currentFolder.name}</span>
                 </>
               )}
             </div>
