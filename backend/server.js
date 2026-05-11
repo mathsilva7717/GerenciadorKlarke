@@ -55,7 +55,7 @@ const db = {
   prepare: (sql) => _db.prepare(sql)
 };
 
-// Criar tabelas se não existirem
+// --- DATABASE TABLES ---
 db.exec(`
   CREATE TABLE IF NOT EXISTS machines (
     id INTEGER PRIMARY KEY AUTOINCREMENT, 
@@ -64,6 +64,7 @@ db.exec(`
     serial_number TEXT, last_seen TEXT, created_by TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
   CREATE TABLE IF NOT EXISTS cameras (
     id INTEGER PRIMARY KEY AUTOINCREMENT, 
     name TEXT, ip TEXT, port TEXT, username TEXT, password TEXT, 
@@ -71,6 +72,7 @@ db.exec(`
     rtsp_link TEXT, created_by TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE,
@@ -79,6 +81,7 @@ db.exec(`
     must_change_password INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
   CREATE TABLE IF NOT EXISTS audit_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user TEXT, action TEXT, details TEXT,
@@ -182,14 +185,15 @@ app.get('/api/users', authenticate, (req, res) => {
 app.post('/api/users', authenticate, async (req, res) => {
   const { username, password, role } = req.body;
   const hashedPassword = await bcrypt.hash(password, 10);
-    db.run(
-      'INSERT INTO users (username, password, role, must_change_password) VALUES (?, ?, ?, ?)',
-      [username, hashedPassword, role || 'user', 1],
-      function(err) {
-        if (err) return res.status(400).json({ error: 'Usuário já existe' });
-        res.status(201).json({ id: this.lastID, message: 'Usuário criado com sucesso' });
-      }
-    );
+  db.run(
+    'INSERT INTO users (username, password, role, must_change_password) VALUES (?, ?, ?, ?)',
+    [username, hashedPassword, role || 'user', 1],
+    function(err) {
+      if (err) return res.status(400).json({ error: 'Usuário já existe' });
+      logAction(req, 'USUÁRIO', `Criou novo usuário: ${username}`);
+      res.status(201).json({ id: this.lastID, message: 'Usuário criado com sucesso' });
+    }
+  );
 });
 
 app.delete('/api/users/:id', authenticate, (req, res) => {
