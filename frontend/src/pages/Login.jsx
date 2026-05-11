@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Lock, User, ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { Lock, Unlock, User, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 
 const API_URL = '/api/login';
 
@@ -104,7 +104,9 @@ function Login() {
           
           <div className="form-group-login">
             <div className="input-icon-wrapper">
-              <Lock size={20} className="input-icon" />
+              <div className="input-icon">
+                {password.length > 0 ? <Unlock size={20} /> : <Lock size={20} />}
+              </div>
               <input
                 type={showPassword ? "text" : "password"}
                 placeholder="Senha"
