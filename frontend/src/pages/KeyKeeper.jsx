@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Key, Plus, Search, ShieldCheck, Lock, Eye, EyeOff, Copy, Trash2, Edit, X, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
+import ConfirmModal from '../components/ConfirmModal';
 
 function KeyKeeper() {
   const [credentials, setCredentials] = useState([]);
@@ -10,6 +11,8 @@ function KeyKeeper() {
   const [editingCred, setEditingCred] = useState(null);
   const [showPassMap, setShowPassMap] = useState({});
   const [copiedField, setCopiedField] = useState(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [credToDelete, setCredToDelete] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     username: '',
@@ -54,15 +57,19 @@ function KeyKeeper() {
     }
   };
 
-  const deleteCred = async (id) => {
-    if (window.confirm('Excluir esta credencial permanentemente?')) {
-      try {
-        await axios.delete(`/api/credentials/${id}`, getAuthConfig());
-        toast.success('Removido');
-        fetchCredentials();
-      } catch (e) {
-        toast.error('Erro ao excluir');
-      }
+  const deleteCred = (id) => {
+    setCredToDelete(id);
+    setShowConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!credToDelete) return;
+    try {
+      await axios.delete(`/api/credentials/${credToDelete}`, getAuthConfig());
+      toast.success('Removido');
+      fetchCredentials();
+    } catch (e) {
+      toast.error('Erro ao excluir');
     }
   };
 
@@ -308,6 +315,15 @@ function KeyKeeper() {
             </form>
           </div>
         </div>
+      )}
+      {showConfirm && (
+        <ConfirmModal 
+          isOpen={showConfirm}
+          onClose={() => setShowConfirm(false)}
+          onConfirm={confirmDelete}
+          title="Excluir Credencial"
+          message="Esta ação é permanente. Deseja remover esta senha do cofre?"
+        />
       )}
     </div>
   );

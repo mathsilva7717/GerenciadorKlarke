@@ -6,6 +6,7 @@ import {
   Folder, FolderPlus, ChevronRight, MoreVertical, Edit 
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import ConfirmModal from '../components/ConfirmModal';
 
 function TechnicalDocs() {
   const [docs, setDocs] = useState([]);
@@ -18,8 +19,9 @@ function TechnicalDocs() {
   const [newFolderName, setNewFolderName] = useState('');
   const [formData, setFormData] = useState({ title: '', type: 'Nota', content: '', amount: '', folder_id: null });
   const [editingDoc, setEditingDoc] = useState(null);
-  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', message: '', onConfirm: null });
   const [selectedFile, setSelectedFile] = useState(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState({ title: '', message: '', onConfirm: null });
 
   const getAuthConfig = () => {
     const token = localStorage.getItem('klarke_token');
@@ -68,18 +70,23 @@ function TechnicalDocs() {
     }
   };
 
-  const deleteFolder = async (id) => {
-    if (window.confirm('Excluir pasta? Os arquivos nela voltarão para a raiz.')) {
-      try {
-        await axios.delete(`/api/vault-folders/${id}`, getAuthConfig());
-        toast.success('Pasta removida');
-        if (currentFolder?.id === id) setCurrentFolder(null);
-        fetchFolders();
-        fetchDocs();
-      } catch (e) {
-        toast.error('Erro ao excluir');
+  const deleteFolder = (id) => {
+    setConfirmConfig({
+      title: 'Excluir Pasta',
+      message: 'Tem certeza? Todos os arquivos desta pasta serão movidos para a raiz.',
+      onConfirm: async () => {
+        try {
+          await axios.delete(`/api/vault-folders/${id}`, getAuthConfig());
+          toast.success('Pasta removida');
+          if (currentFolder?.id === id) setCurrentFolder(null);
+          fetchFolders();
+          fetchDocs();
+        } catch (e) {
+          toast.error('Erro ao excluir');
+        }
       }
-    }
+    });
+    setShowConfirm(true);
   };
 
   const handleSubmit = async (e) => {
@@ -140,9 +147,8 @@ function TechnicalDocs() {
     setIsModalOpen(true);
   };
 
-  const deleteDoc = async (id) => {
-    setConfirmDialog({
-      open: true,
+  const deleteDoc = (id) => {
+    setConfirmConfig({
       title: 'Excluir Item do Acervo',
       message: 'Esta ação removerá o documento ou arquivo permanentemente. Confirmar?',
       onConfirm: async () => {
@@ -153,9 +159,9 @@ function TechnicalDocs() {
         } catch (e) {
           toast.error('Erro ao excluir');
         }
-        setConfirmDialog({ ...confirmDialog, open: false });
       }
     });
+    setShowConfirm(true);
   };
 
   const filtered = docs.filter(d => {
@@ -582,22 +588,13 @@ function TechnicalDocs() {
           }
         }
       `}</style>
-      {confirmDialog.open && (
-        <div className="confirm-modal-overlay" onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}>
-          <div className="confirm-modal-content" onClick={e => e.stopPropagation()}>
-            <h3 className="confirm-modal-title">{confirmDialog.title}</h3>
-            <p className="confirm-modal-text">{confirmDialog.message}</p>
-            <div className="confirm-modal-actions">
-              <button className="btn-confirm-cancel" onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}>
-                CANCELAR
-              </button>
-              <button className="btn-confirm-danger" onClick={confirmDialog.onConfirm}>
-                CONFIRMAR EXCLUSÃO
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal 
+        isOpen={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        onConfirm={confirmConfig.onConfirm}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+      />
     </div>
   );
 }

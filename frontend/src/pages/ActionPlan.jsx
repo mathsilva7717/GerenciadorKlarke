@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Plus, CheckCircle2, Circle, ListTodo, Trash2, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
+import ConfirmModal from '../components/ConfirmModal';
 
 const API_URL = '/api/tasks';
 
 function ActionPlan() {
   const [tasks, setTasks] = useState([]);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState(null);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDesc, setNewTaskDesc] = useState('');
 
@@ -88,15 +91,19 @@ function ActionPlan() {
     });
   };
 
-  const deleteStaticTask = async (id) => {
-    if (window.confirm('Excluir esta tarefa?')) {
-      try {
-        await axios.delete(`${API_URL}/${id}`, getAuthConfig());
-        toast.success('Tarefa removida');
-        fetchTasks();
-      } catch (error) {
-        toast.error('Erro ao remover tarefa');
-      }
+  const deleteStaticTask = (id) => {
+    setTaskToDelete(id);
+    setShowConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!taskToDelete) return;
+    try {
+      await axios.delete(`${API_URL}/${taskToDelete}`, getAuthConfig());
+      toast.success('Tarefa removida');
+      fetchTasks();
+    } catch (error) {
+      toast.error('Erro ao remover tarefa');
     }
   };
 
@@ -186,7 +193,13 @@ function ActionPlan() {
             ))}
           </div>
         )}
-      </div>
+      <ConfirmModal 
+        isOpen={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        onConfirm={confirmDelete}
+        title="Excluir Tarefa"
+        message="Tem certeza que deseja remover esta tarefa permanentemente?"
+      />
     </div>
   );
 }
