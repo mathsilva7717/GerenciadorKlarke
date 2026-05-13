@@ -2,6 +2,20 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import axios from 'axios';
+import Login from './pages/Login';
+import Layout from './components/Layout';
+import Dashboard from './pages/Dashboard';
+import Cameras from './pages/Cameras';
+import NetworkDevices from './pages/NetworkDevices';
+import ActionPlan from './pages/ActionPlan';
+import Home from './pages/Home';
+import AuditLogs from './pages/AuditLogs';
+import Users from './pages/Users';
+import TechnicalDocs from './pages/TechnicalDocs';
+import Voip from './pages/Voip';
+import Inventory from './pages/Inventory';
+import KeyKeeper from './pages/KeyKeeper';
+import ResetPassword from './pages/ResetPassword';
 
 // Interceptor global para injetar headers em todas as requisições
 axios.interceptors.request.use(
@@ -26,12 +40,12 @@ axios.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Interceptor global para tratar expiração de token (401)
+// Interceptor global para tratar expiração de token (401/403)
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      toast.error('Sessão expirada. Por favor, faça login novamente.', { id: 'auth-error' });
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      toast.error('Sessão inválida ou expirada. Faça login novamente.', { id: 'auth-error' });
       localStorage.removeItem('klarke_token');
       localStorage.removeItem('klarke_user');
       setTimeout(() => {
@@ -41,20 +55,6 @@ axios.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-import Login from './pages/Login';
-import Layout from './components/Layout';
-import Dashboard from './pages/Dashboard';
-import Cameras from './pages/Cameras';
-import NetworkDevices from './pages/NetworkDevices';
-import ActionPlan from './pages/ActionPlan';
-import Home from './pages/Home';
-import AuditLogs from './pages/AuditLogs';
-import Users from './pages/Users';
-import TechnicalDocs from './pages/TechnicalDocs';
-import Voip from './pages/Voip';
-import Inventory from './pages/Inventory';
-import KeyKeeper from './pages/KeyKeeper';
-import ResetPassword from './pages/ResetPassword';
 
 function App() {
   const ProtectedRoute = ({ children }) => {

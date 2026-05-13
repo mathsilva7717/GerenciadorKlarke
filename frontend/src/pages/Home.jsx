@@ -56,7 +56,7 @@ function Home() {
         camerasOnline: (c.data || []).filter(x => isOnline(x.last_seen)).length,
         network: n.data?.length || 0,
         networkOnline: (n.data || []).filter(x => isOnline(x.last_seen)).length,
-        tasks: (t.data || []).filter(x => !x.is_completed).length,
+        tasks: (t.data || []).filter(x => Number(x.is_completed) === 0).length,
         users: u.data?.length || 0,
         logsTotal: logs.data?.length || 0,
         credentials: creds.data?.length || 0,
