@@ -18,8 +18,7 @@ function ActionPlan() {
 
   const fetchTasks = async () => {
     try {
-      // Adicionamos um timestamp para evitar que o navegador use o cache (erro 304)
-      const res = await axios.get(`${API_URL}?t=${Date.now()}`, getAuthConfig());
+      const res = await axios.get(API_URL, getAuthConfig());
       setTasks(res.data);
     } catch (error) {
       console.error('[API ERROR] Falha ao buscar tarefas:', error.response?.data || error.message);
