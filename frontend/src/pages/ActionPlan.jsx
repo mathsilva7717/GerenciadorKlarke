@@ -12,6 +12,8 @@ function ActionPlan() {
   const [taskToDelete, setTaskToDelete] = useState(null);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDesc, setNewTaskDesc] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const getAuthConfig = () => {
     const token = localStorage.getItem('klarke_token');
@@ -111,7 +113,20 @@ function ActionPlan() {
   const progressPercent = tasks.length === 0 ? 0 : Math.round((completedCount / tasks.length) * 100);
 
   const pendingTasks = tasks.filter(t => Number(t.is_completed) === 0);
-  const completedTasks = tasks.filter(t => Number(t.is_completed) === 1);
+  const allCompletedTasks = tasks.filter(t => Number(t.is_completed) === 1);
+
+  // Lógica de Paginação para Concluídas
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const completedTasks = allCompletedTasks.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(allCompletedTasks.length / itemsPerPage);
+
+  const paginate = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    // Scroll suave para o topo da lista de concluídas
+    const listElement = document.querySelector('.task-list.mt-24');
+    if (listElement) listElement.scrollIntoView({ behavior: 'smooth' });
+  };
 
   return (
     <div className="action-plan-container">
@@ -191,6 +206,27 @@ function ActionPlan() {
                 </button>
               </div>
             ))}
+            {totalPages > 1 && (
+              <div className="pagination-industrial">
+                <button 
+                  disabled={currentPage === 1}
+                  onClick={() => paginate(currentPage - 1)}
+                  className="page-btn"
+                >
+                  Anterior
+                </button>
+                <div className="page-info">
+                  Página <span>{currentPage}</span> de {totalPages}
+                </div>
+                <button 
+                  disabled={currentPage === totalPages}
+                  onClick={() => paginate(currentPage + 1)}
+                  className="page-btn"
+                >
+                  Próxima
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
