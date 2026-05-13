@@ -49,35 +49,31 @@ function ActionPlan() {
 
   const toggleTask = async (id, currentStatus) => {
     try {
+      console.log(`[DEBUG] Tentando alternar tarefa ${id}. Status atual: ${currentStatus}`);
       const userData = localStorage.getItem('klarke_user');
-      let user = 'Desconhecido';
-      try {
-        const parsed = JSON.parse(userData);
-        user = parsed.username || userData;
-      } catch (e) {
-        user = userData || 'Desconhecido';
+      let userName = 'Sistema';
+      
+      if (userData) {
+        try {
+          const parsed = JSON.parse(userData);
+          userName = parsed.username || parsed;
+        } catch (e) {
+          userName = userData;
+        }
       }
 
-      await axios.put(`${API_URL}/${id}`, { 
-        is_completed: !currentStatus,
-        completed_by: user
-      }, getAuthConfig());
+      const newStatus = Number(currentStatus) === 1 ? 0 : 1;
       
-      if (!currentStatus) {
-        toast.success(`TAREFA CONCLUÍDA POR: ${user.toUpperCase()}`, {
-          duration: 4000,
-          icon: '🛠️',
-          style: {
-            borderRadius: '4px',
-            background: '#1e293b',
-            color: '#fff',
-            fontWeight: 'bold',
-            border: '1px solid #10b981'
-          }
-        });
+      await axios.put(`${API_URL}/${id}`, { 
+        is_completed: newStatus,
+        completed_by: userName
+      }, getAuthConfig());
+      if (newStatus === 1) {
+        toast.success(`TAREFA CONCLUÍDA!`, { id: 'task-success' });
       }
       fetchTasks();
     } catch (error) {
+      console.error('[API ERROR] Erro ao atualizar tarefa:', error);
       toast.error('Erro ao atualizar tarefa');
     }
   };
