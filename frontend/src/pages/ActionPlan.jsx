@@ -193,6 +193,7 @@ function ActionPlan() {
             ))}
           </div>
         )}
+      </div>
       <ConfirmModal 
         isOpen={showConfirm}
         onClose={() => setShowConfirm(false)}
