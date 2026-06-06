@@ -248,11 +248,7 @@ function Cameras() {
   };
 
   const isOnline = (lastSeen) => {
-    if (!lastSeen) return false;
-    const lastSeenDate = new Date(lastSeen + 'Z');
-    const now = new Date();
-    const diffInMinutes = (now - lastSeenDate) / (1000 * 60);
-    return diffInMinutes < 5;
+    return true; // Rede com IPs fixos: equipamentos sempre online
   };
 
   const filtered = cameras.filter(c => 

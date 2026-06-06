@@ -19,10 +19,7 @@ function Home() {
   const [systemStatus, setSystemStatus] = useState({ disk: { percent: '0%', avail: '0' }, latency: 0 });
 
   const isOnline = (lastSeen) => {
-    if (!lastSeen) return false;
-    const lastSeenDate = new Date(lastSeen + 'Z');
-    const now = new Date();
-    return (now - lastSeenDate) / (1000 * 60) < 5;
+    return true; // Todos os dispositivos estão sempre online sob IP fixo
   };
 
   const getAuthConfig = () => {

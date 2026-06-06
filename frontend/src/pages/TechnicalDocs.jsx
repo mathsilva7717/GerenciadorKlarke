@@ -22,6 +22,7 @@ function TechnicalDocs() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState({ title: '', message: '', onConfirm: null });
+  const [previewImage, setPreviewImage] = useState(null);
 
   const getAuthConfig = () => {
     const token = localStorage.getItem('klarke_token');
@@ -316,7 +317,8 @@ function TechnicalDocs() {
                     <img 
                       src={`/uploads/docs/${doc.file_path}`} 
                       alt={doc.title} 
-                      style={{width: '100%', maxHeight: '200px', objectFit: 'cover'}} 
+                      style={{width: '100%', maxHeight: '200px', objectFit: 'cover', cursor: 'pointer'}} 
+                      onClick={() => setPreviewImage(`/uploads/docs/${doc.file_path}`)}
                     />
                   </div>
                 )}
@@ -588,6 +590,50 @@ function TechnicalDocs() {
           }
         }
       `}</style>
+      {previewImage && (
+        <div 
+          className="modal-overlay" 
+          style={{ 
+            zIndex: 9999, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            background: 'rgba(0,0,0,0.85)',
+            position: 'fixed',
+            inset: 0
+          }} 
+          onClick={() => setPreviewImage(null)}
+        >
+          <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
+            <button 
+              onClick={() => setPreviewImage(null)}
+              style={{
+                position: 'absolute',
+                top: '-45px',
+                right: '0',
+                background: 'rgba(255,255,255,0.1)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                borderRadius: '8px',
+                padding: '6px 14px',
+                color: 'white',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontWeight: 'bold',
+                fontSize: '0.85rem'
+              }}
+            >
+              <X size={18} /> FECHAR
+            </button>
+            <img 
+              src={previewImage} 
+              alt="Preview" 
+              style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: '8px', boxShadow: '0 12px 40px rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)', objectFit: 'contain' }} 
+            />
+          </div>
+        </div>
+      )}
       <ConfirmModal 
         isOpen={showConfirm}
         onClose={() => setShowConfirm(false)}

@@ -23,7 +23,7 @@ function Voip() {
     const { name, value } = e.target;
     let formattedValue = value;
 
-    if (name === 'pabx_ip' || name === 'ip_address') {
+    if (name === 'ip_address') {
       formattedValue = value.replace(/[^0-9.]/g, ''); // Apenas números e pontos
       formattedValue = formattedValue.replace(/\.\./g, '.'); // Evita pontos duplos
     }

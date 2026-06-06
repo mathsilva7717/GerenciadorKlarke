@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const Database = require('better-sqlite3');
+const { DatabaseSync } = require('node:sqlite');
 const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
@@ -18,8 +18,8 @@ app.use(express.json({ limit: '10mb' }));
 
 // Database setup
 const dbPath = path.join(__dirname, 'database.sqlite');
-const _db = new Database(dbPath);
-console.log('Conectado ao banco de dados SQLite (Better).');
+const _db = new DatabaseSync(dbPath);
+console.log('Conectado ao banco de dados SQLite nativo (Node 24).');
 
 // Adaptador de compatibilidade para não quebrar o código legado
 const db = {
@@ -27,8 +27,11 @@ const db = {
     try {
       if (typeof params === 'function') { callback = params; params = []; }
       const stmt = _db.prepare(sql);
-      const info = stmt.run(params);
-      if (callback) callback.call({ lastID: info.lastInsertRowid, changes: info.changes }, null);
+      const bindParams = Array.isArray(params) ? params : [params];
+      const info = stmt.run(...bindParams);
+      // better-sqlite3 retorna lastInsertRowid como BigInt, mas precisamos converter para número ou usar como number se vier como BigInt
+      const lastID = typeof info.lastInsertRowid === 'bigint' ? Number(info.lastInsertRowid) : info.lastInsertRowid;
+      if (callback) callback.call({ lastID, changes: info.changes }, null);
     } catch (err) {
       if (callback) callback(err);
     }
@@ -36,7 +39,9 @@ const db = {
   get: (sql, params, callback) => {
     try {
       if (typeof params === 'function') { callback = params; params = []; }
-      const row = _db.prepare(sql).get(params);
+      const stmt = _db.prepare(sql);
+      const bindParams = Array.isArray(params) ? params : [params];
+      const row = stmt.get(...bindParams);
       if (callback) callback(null, row);
     } catch (err) {
       if (callback) callback(err);
@@ -45,7 +50,9 @@ const db = {
   all: (sql, params, callback) => {
     try {
       if (typeof params === 'function') { callback = params; params = []; }
-      const rows = _db.prepare(sql).all(params);
+      const stmt = _db.prepare(sql);
+      const bindParams = Array.isArray(params) ? params : [params];
+      const rows = stmt.all(...bindParams);
       if (callback) callback(null, rows);
     } catch (err) {
       if (callback) callback(err);
@@ -156,12 +163,20 @@ db.exec(`
     notes TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS network_locations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT UNIQUE,
+    icon TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 // Migrations rápidas para colunas novas
 try { db.exec("ALTER TABLE users ADD COLUMN must_change_password INTEGER DEFAULT 0"); } catch(e) {}
 try { db.exec("ALTER TABLE tasks ADD COLUMN completed_by TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE tasks ADD COLUMN completed_at DATETIME"); } catch(e) {}
+try { db.exec("ALTER TABLE tasks ADD COLUMN assigned_to TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE machines ADD COLUMN created_by TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE machines ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"); } catch(e) {}
 try { db.exec("ALTER TABLE cameras ADD COLUMN created_by TEXT"); } catch(e) {}
@@ -211,7 +226,7 @@ const logAction = (req, action, details) => {
 
 // Route: Get all audit logs
 app.get('/api/audit-logs', authenticate, (req, res) => {
-  db.all('SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 100', [], (err, rows) => {
+  db.all('SELECT * FROM audit_logs ORDER BY created_at DESC', [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
@@ -502,9 +517,9 @@ app.get('/api/tasks', authenticate, (req, res) => {
 });
 
 app.post('/api/tasks', authenticate, (req, res) => {
-  const { title, description } = req.body;
-  const sql = `INSERT INTO tasks (title, description, is_completed) VALUES (?, ?, 0)`;
-  db.run(sql, [title, description], function(err) {
+  const { title, description, assigned_to } = req.body;
+  const sql = `INSERT INTO tasks (title, description, is_completed, assigned_to) VALUES (?, ?, 0, ?)`;
+  db.run(sql, [title, description, assigned_to || null], function(err) {
     if (err) return res.status(500).json({ error: err.message });
     res.status(201).json({ id: this.lastID });
   });
@@ -531,6 +546,42 @@ app.delete('/api/tasks/:id', authenticate, (req, res) => {
       if (err) return res.status(500).json({ error: err.message });
       logAction(req, 'EXCLUSÃO', `Removeu tarefa: ${taskTitle}`);
       res.json({ message: 'Tarefa deletada com sucesso' });
+    });
+  });
+});
+
+// ==========================================
+// ROUTES: NETWORK LOCATIONS
+// ==========================================
+
+app.get('/api/network-locations', authenticate, (req, res) => {
+  db.all('SELECT * FROM network_locations ORDER BY name ASC', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+app.post('/api/network-locations', authenticate, (req, res) => {
+  const { name, icon } = req.body;
+  db.run(
+    "INSERT INTO network_locations (name, icon) VALUES (?, ?)",
+    [name, icon || 'building'],
+    function(err) {
+      if (err) return res.status(400).json({ error: 'Local já cadastrado ou erro ao salvar' });
+      logAction(req, 'MAPA REDE', `Cadastrou local: ${name}`);
+      res.status(201).json({ id: this.lastID, name, icon });
+    }
+  );
+});
+
+app.delete('/api/network-locations/:id', authenticate, (req, res) => {
+  const { id } = req.params;
+  db.get('SELECT name FROM network_locations WHERE id = ?', [id], (err, row) => {
+    const locName = row ? row.name : id;
+    db.run("DELETE FROM network_locations WHERE id = ?", [id], (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      logAction(req, 'EXCLUSÃO', `Removeu local do mapa: ${locName}`);
+      res.json({ message: 'Local removido' });
     });
   });
 });

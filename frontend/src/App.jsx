@@ -15,7 +15,9 @@ import TechnicalDocs from './pages/TechnicalDocs';
 import Voip from './pages/Voip';
 import Inventory from './pages/Inventory';
 import KeyKeeper from './pages/KeyKeeper';
+import MailPage from './pages/Mail';
 import ResetPassword from './pages/ResetPassword';
+import NetworkMap from './pages/NetworkMap';
 
 // Interceptor global para injetar headers em todas as requisições
 axios.interceptors.request.use(
@@ -97,6 +99,8 @@ function App() {
             <Route path="voip" element={<Voip />} />
             <Route path="inventory" element={<Inventory />} />
             <Route path="key-keeper" element={<KeyKeeper />} />
+            <Route path="mail" element={<MailPage />} />
+            <Route path="network-map" element={<NetworkMap />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

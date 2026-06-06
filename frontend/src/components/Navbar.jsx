@@ -3,7 +3,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { 
   LogOut, Monitor, Camera, Router as RouterIcon, Moon, Sun, 
   ListTodo, ArrowLeft, Home, History, BookOpen, 
-  ChevronDown, Phone, Package, Key, ShieldCheck 
+  ChevronDown, Phone, Package, Key, ShieldCheck, MapPin, Mail 
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -36,6 +36,7 @@ function Navbar() {
       label: 'Infra',
       icon: <RouterIcon size={18} />,
       items: [
+        { icon: <MapPin size={16} />, label: 'Mapa de Rede', path: '/control/network-map' },
         { icon: <Camera size={16} />, label: 'Câmeras', path: '/control/cameras' },
         { icon: <RouterIcon size={16} />, label: 'Rede', path: '/control/network' },
         { icon: <Phone size={16} />, label: 'VOIP', path: '/control/voip' },
@@ -55,19 +56,19 @@ function Navbar() {
       icon: <ListTodo size={18} />,
       items: [
         { icon: <ListTodo size={16} />, label: 'Tarefas', path: '/control/action-plan' },
+        { icon: <Mail size={16} />, label: 'E-mail', path: '/control/mail' },
         { icon: <BookOpen size={16} />, label: 'Vault', path: '/control/technical-docs' },
         { icon: <History size={16} />, label: 'Audit Logs', path: '/control/audit-logs' },
       ]
     }
   ];
 
-  // Mobile nav items (top 5 essential)
   const mobileItems = [
     { icon: <Home size={20} />, label: 'Home', path: '/control' },
+    { icon: <MapPin size={20} />, label: 'Mapa', path: '/control/network-map' },
     { icon: <Monitor size={20} />, label: 'Ativos', path: '/control/machines' },
     { icon: <Camera size={20} />, label: 'Câmeras', path: '/control/cameras' },
     { icon: <ListTodo size={20} />, label: 'Tarefas', path: '/control/action-plan' },
-    { icon: <Package size={20} />, label: 'Estoque', path: '/control/inventory' },
   ];
 
   return (

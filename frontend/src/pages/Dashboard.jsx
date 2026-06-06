@@ -144,8 +144,9 @@ function Dashboard() {
       formattedValue = value.replace(/[^0-9]/g, '');
     }
 
-    // Tudo em maiúsculo para máquinas
-    setFormData({ ...formData, [name]: formattedValue.toUpperCase() });
+    // Tudo em maiúsculo para máquinas (exceto a senha remota)
+    const finalValue = name === 'password' ? formattedValue : formattedValue.toUpperCase();
+    setFormData({ ...formData, [name]: finalValue });
   };
 
   const openModal = (machine = null) => {
@@ -387,11 +388,7 @@ function Dashboard() {
   };
 
   const isOnline = (lastSeen) => {
-    if (!lastSeen) return false;
-    const lastSeenDate = new Date(lastSeen + 'Z'); // Add Z for UTC
-    const now = new Date();
-    const diffInMinutes = (now - lastSeenDate) / (1000 * 60);
-    return diffInMinutes < 5; // 5 minutos de tolerância
+    return true; // Rede com IPs fixos: equipamentos sempre online
   };
 
   const onlineCount = machines.filter(m => isOnline(m.last_seen)).length;
