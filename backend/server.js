@@ -170,9 +170,22 @@ db.exec(`
     icon TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS tickets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    requester TEXT,
+    title TEXT,
+    category TEXT,
+    priority TEXT,
+    description TEXT,
+    status TEXT DEFAULT 'Pendente',
+    photo TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 // Migrations rápidas para colunas novas
+try { db.exec("ALTER TABLE tickets ADD COLUMN photo TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN must_change_password INTEGER DEFAULT 0"); } catch(e) {}
 try { db.exec("ALTER TABLE tasks ADD COLUMN completed_by TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE tasks ADD COLUMN completed_at DATETIME"); } catch(e) {}
@@ -887,6 +900,16 @@ app.post('/api/monitoring/snapshot', (req, res) => {
     });
   });
 });
+// Rota para baixar o Klarke Repair.exe
+app.get('/api/monitoring/repair-download', (req, res) => {
+  const repairPath = path.join(__dirname, '../repair-tool/Klarke Repair.exe');
+  if (!fs.existsSync(repairPath)) {
+    return res.status(404).send('Ferramenta de reparo não encontrada no servidor');
+  }
+  res.setHeader('Content-Type', 'application/octet-stream');
+  res.setHeader('Content-Disposition', 'attachment; filename="Klarke Repair.exe"');
+  res.sendFile(repairPath);
+});
 
 // Rota para baixar o script do agente COM CONFIGURAÇÃO EMBUTIDA
 app.get('/api/monitoring/agent-download', (req, res) => {
@@ -932,6 +955,115 @@ pause`;
   res.setHeader('Content-Type', 'application/x-bat');
   res.setHeader('Content-Disposition', 'attachment; filename=ATIVAR_MONITORAMENTO.bat');
   res.send(batContent);
+});
+
+// --- ROTAS DE SUPORTE (TICKETS) ---
+
+// Criar chamado (Público para qualquer dispositivo da rede da empresa)
+app.post('/api/tickets', (req, res) => {
+  const { requester, title, category, priority, description, image } = req.body;
+  if (!requester || !title || !category || !priority || !description) {
+    return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
+  }
+  
+  let photoFieldValue = null;
+  if (image) {
+    try {
+      const imagesToProcess = Array.isArray(image) ? image : [image];
+      const photoFilesList = [];
+      
+      const dir = path.join(__dirname, 'uploads');
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+      imagesToProcess.forEach((imgBase64, index) => {
+        if (!imgBase64) return;
+        const base64Data = imgBase64.replace(/^data:image\/\w+;base64,/, "");
+        const fileName = `ticket_${Date.now()}_${index}.jpg`;
+        const filePath = path.join(__dirname, 'uploads', fileName);
+        fs.writeFileSync(filePath, base64Data, 'base64');
+        photoFilesList.push(fileName);
+      });
+
+      if (photoFilesList.length > 0) {
+        // Se for enviado apenas uma imagem no formato antigo, ou se for uma lista, salvamos como array em JSON
+        photoFieldValue = JSON.stringify(photoFilesList);
+      }
+    } catch (e) {
+      console.error('Erro ao salvar imagens do chamado:', e);
+      photoFieldValue = null;
+    }
+  }
+  
+  db.run(
+    'INSERT INTO tickets (requester, title, category, priority, description, photo) VALUES (?, ?, ?, ?, ?, ?)',
+    [requester, title, category, priority, description, photoFieldValue],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      
+      try {
+        db.run(
+          "INSERT INTO audit_logs (user, action, details) VALUES (?, ?, ?)",
+          [requester, 'CHAMADO_ABERTO', `Abriu chamado #${this.lastID}: ${title}`]
+        );
+      } catch (e) {}
+      
+      res.status(201).json({ id: this.lastID, message: 'Chamado aberto com sucesso!' });
+    }
+  );
+});
+
+// Consultar status de chamados específicos por IDs (Público para o PWA móvel)
+app.get('/api/tickets/status-check', (req, res) => {
+  const idsParam = req.query.ids;
+  if (!idsParam) return res.json([]);
+  
+  const ids = idsParam.split(',').map(Number).filter(Boolean);
+  if (ids.length === 0) return res.json([]);
+  
+  const placeholders = ids.map(() => '?').join(',');
+  db.all(
+    `SELECT id, requester, title, category, priority, status, created_at FROM tickets WHERE id IN (${placeholders}) ORDER BY created_at DESC`,
+    ids,
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(rows);
+    }
+  );
+});
+
+// Listar todos os chamados (Autenticado)
+app.get('/api/tickets', authenticate, (req, res) => {
+  db.all('SELECT * FROM tickets ORDER BY created_at DESC', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+// Atualizar status do chamado (Autenticado)
+app.put('/api/tickets/:id', authenticate, (req, res) => {
+  const { status } = req.body;
+  const { id } = req.params;
+  
+  db.run(
+    'UPDATE tickets SET status = ? WHERE id = ?',
+    [status, id],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      logAction(req, 'CHAMADO_STATUS', `Alterou status do chamado #${id} para: ${status}`);
+      res.json({ message: 'Chamado atualizado com sucesso' });
+    }
+  );
+});
+
+// Deletar/Arquivar chamado (Autenticado)
+app.delete('/api/tickets/:id', authenticate, (req, res) => {
+  const { id } = req.params;
+  
+  db.run('DELETE FROM tickets WHERE id = ?', id, function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    logAction(req, 'CHAMADO_EXCLUIR', `Excluiu chamado #${id}`);
+    res.json({ message: 'Chamado removido com sucesso' });
+  });
 });
 
 // Rota de status do sistema (Disco e Latência)

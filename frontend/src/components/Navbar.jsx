@@ -3,7 +3,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { 
   LogOut, Monitor, Camera, Router as RouterIcon, Moon, Sun, 
   ListTodo, ArrowLeft, Home, History, BookOpen, 
-  ChevronDown, Phone, Package, Key, ShieldCheck, MapPin, Mail 
+  ChevronDown, Phone, Package, Key, ShieldCheck, MapPin, Mail, MessageSquare 
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -56,6 +56,7 @@ function Navbar() {
       icon: <ListTodo size={18} />,
       items: [
         { icon: <ListTodo size={16} />, label: 'Tarefas', path: '/control/action-plan' },
+        { icon: <MessageSquare size={16} />, label: 'Chamados', path: '/control/tickets' },
         { icon: <Mail size={16} />, label: 'E-mail', path: '/control/mail' },
         { icon: <BookOpen size={16} />, label: 'Vault', path: '/control/technical-docs' },
         { icon: <History size={16} />, label: 'Audit Logs', path: '/control/audit-logs' },

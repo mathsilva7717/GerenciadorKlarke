@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Monitor, Camera, Router as RouterIcon, ListTodo, ChevronRight, Activity, ShieldCheck, Cpu, Database, RotateCw, BookOpen, Phone, Package, Key, Globe } from 'lucide-react';
+import { Monitor, Camera, Router as RouterIcon, ListTodo, ChevronRight, Activity, ShieldCheck, Cpu, Database, RotateCw, BookOpen, Phone, Package, Key, Globe, MessageSquare } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 function Home() {
@@ -13,8 +13,10 @@ function Home() {
     tasks: 0,
     users: 0,
     docs: 0,
-    logsTotal: 0
+    logsTotal: 0,
+    ticketsPending: 0
   });
+  const [recentTickets, setRecentTickets] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [systemStatus, setSystemStatus] = useState({ disk: { percent: '0%', avail: '0' }, latency: 0 });
 
@@ -31,7 +33,7 @@ function Home() {
   const fetchStats = async (manual = false) => {
     if (manual) setIsRefreshing(true);
     try {
-      const [m, c, n, t, u, logs, creds, inv, voip, docs, sys] = await Promise.all([
+      const [m, c, n, t, u, logs, creds, inv, voip, docs, ticketsRes, sys] = await Promise.all([
         axios.get('/api/machines', getAuthConfig()).catch(() => ({ data: [] })),
         axios.get('/api/cameras', getAuthConfig()).catch(() => ({ data: [] })),
         axios.get('/api/network-devices', getAuthConfig()).catch(() => ({ data: [] })),
@@ -42,8 +44,13 @@ function Home() {
         axios.get('/api/inventory', getAuthConfig()).catch(() => ({ data: [] })),
         axios.get('/api/voip', getAuthConfig()).catch(() => ({ data: [] })),
         axios.get('/api/technical-docs', getAuthConfig()).catch(() => ({ data: [] })),
+        axios.get('/api/tickets', getAuthConfig()).catch(() => ({ data: [] })),
         axios.get('/api/system-status', getAuthConfig()).catch(() => ({ data: { disk: { percent: '0%', avail: '0' }, latency: 0 } }))
       ]);
+      
+      const allTickets = ticketsRes.data || [];
+      const pendingTickets = allTickets.filter(x => x.status === 'Pendente');
+      setRecentTickets(allTickets.slice(0, 5));
       
       setSystemStatus(sys.data);
       setStats({
@@ -59,7 +66,8 @@ function Home() {
         credentials: creds.data?.length || 0,
         inventory: inv.data?.length || 0,
         voip: voip.data?.length || 0,
-        docs: docs.data?.length || 0
+        docs: docs.data?.length || 0,
+        ticketsPending: pendingTickets.length
       });
       if (manual) toast.success('Dados atualizados!');
     } catch (e) {
@@ -198,6 +206,17 @@ function Home() {
               {parseInt(systemStatus?.disk?.percent) > 90 ? 'CRÍTICO: DISCO CHEIO' : `${systemStatus?.disk?.avail || '0'} disponíveis`}
             </span>
           </div>
+
+          <div className="stat-box-industrial" onClick={() => navigate('/control/tickets')} style={{ minWidth: '180px', cursor: 'pointer', borderLeft: stats.ticketsPending > 0 ? '4px solid #ef4444' : '4px solid #10b981' }}>
+            <span className="stat-label">SUPORTE FLOW</span>
+            <div className="stat-value-row">
+              <MessageSquare size={16} color={stats.ticketsPending > 0 ? '#ef4444' : '#10b981'} />
+              <span className="stat-value" style={{fontSize: '1rem', marginLeft: '8px'}}>{stats.ticketsPending} PENDENTES</span>
+            </div>
+            <span style={{fontSize: '0.65rem', opacity: 0.6, marginTop: '4px', color: stats.ticketsPending > 0 ? '#ef4444' : 'inherit'}}>
+              {stats.ticketsPending > 0 ? 'Atenção imediata' : 'Nenhuma pendência'}
+            </span>
+          </div>
         </div>
 
       {/* MODULES GRID */}
@@ -264,6 +283,24 @@ function Home() {
             </div>
           </div>
           <div className="industrial-footer"><span>tarefas</span><ChevronRight size={14} /></div>
+        </div>
+
+        <div className="card-industrial" onClick={() => navigate('/control/tickets')}>
+          <div className="card-industrial-header">
+            <div className="industrial-icon"><MessageSquare size={22} /></div>
+            <div className="industrial-badge" style={{ backgroundColor: stats.ticketsPending > 0 ? '#ef4444' : '#64748b' }}>
+              {stats.ticketsPending}
+            </div>
+          </div>
+          <div className="industrial-body">
+            <h3>Chamados e Suporte</h3>
+            <p>Abertura e atendimento rápido de solicitações.</p>
+            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <div style={{width: '6px', height: '6px', borderRadius: '50%', background: stats.ticketsPending > 0 ? '#ef4444' : '#10b981'}}></div>
+              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>{stats.ticketsPending} pendentes</span>
+            </div>
+          </div>
+          <div className="industrial-footer"><span>atender chamados</span><ChevronRight size={14} /></div>
         </div>
 
         <div className="card-industrial" onClick={() => navigate('/control/audit-logs')}>
@@ -345,6 +382,93 @@ function Home() {
           </div>
           <div className="industrial-footer"><span>ACESSAR COFRE</span><ChevronRight size={14} /></div>
         </div>
+      </div>
+
+      {/* SEÇÃO DE CHAMADOS RECENTES */}
+      <div style={{ marginTop: '32px', padding: '24px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '0px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>
+          <div>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+              <MessageSquare size={20} color="var(--color-accent)" />
+              Chamados Recentes (Klarke Flow)
+            </h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '2px', margin: 0 }}>
+              Últimas solicitações abertas pelos usuários no Klarke Flow.
+            </p>
+          </div>
+          <button 
+            className="btn" 
+            onClick={() => navigate('/control/tickets')}
+            style={{ width: 'auto', marginTop: 0, padding: '8px 16px', fontSize: '0.85rem', background: 'var(--color-accent)', color: 'white' }}
+          >
+            Ver Todos
+          </button>
+        </div>
+
+        {recentTickets.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '30px 20px', color: 'var(--color-text-muted)' }}>
+            <ShieldCheck size={40} style={{ opacity: 0.3, marginBottom: '8px' }} />
+            <p style={{ fontSize: '0.9rem', margin: 0 }}>Nenhum chamado aberto no momento. Tudo limpo!</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {recentTickets.map(ticket => (
+              <div 
+                key={ticket.id} 
+                onClick={() => navigate('/control/tickets')}
+                style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center', 
+                  padding: '16px 20px', 
+                  background: 'var(--color-primary-light)', 
+                  border: '1px solid var(--color-border)', 
+                  borderLeft: `4px solid ${
+                    ticket.priority === 'Alta' ? '#ef4444' : ticket.priority === 'Média' ? '#f59e0b' : '#10b981'
+                  }`,
+                  cursor: 'pointer'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, minWidth: 0 }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 'bold', fontFamily: 'monospace', color: 'var(--color-text-muted)', background: 'rgba(0,0,0,0.1)', padding: '2px 6px', minWidth: '45px', textAlign: 'center' }}>
+                    #{ticket.id}
+                  </span>
+                  
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: '700', color: 'var(--color-text)', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 0 }}>
+                      {ticket.title}
+                    </h4>
+                    <div style={{ display: 'flex', gap: '16px', fontSize: '0.78rem', color: 'var(--color-text-muted)', flexWrap: 'wrap' }}>
+                      <span><strong>Solicitante:</strong> {ticket.requester}</span>
+                      <span><strong>Categoria:</strong> {ticket.category}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginLeft: '16px' }}>
+                  <span style={{ 
+                    fontSize: '0.72rem', 
+                    fontWeight: 'bold', 
+                    padding: '3px 8px', 
+                    borderRadius: '0px',
+                    textTransform: 'uppercase',
+                    backgroundColor: ticket.status === 'Resolvido' ? 'rgba(16,185,129,0.15)' : ticket.status === 'Em Atendimento' ? 'rgba(56,189,248,0.15)' : 'rgba(245,158,11,0.15)',
+                    color: ticket.status === 'Resolvido' ? '#10b981' : ticket.status === 'Em Atendimento' ? 'var(--color-accent)' : '#f59e0b',
+                    border: '1px solid currentColor'
+                  }}>
+                    {ticket.status}
+                  </span>
+
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
+                    {new Date(ticket.created_at).toLocaleDateString('pt-BR')}
+                  </span>
+                  
+                  <ChevronRight size={16} color="var(--color-text-muted)" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* QUICK ACTIONS BAR */}

@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Klarke Flow | Suporte Ágil</title>
+  
+  <!-- SEO & PWA Meta Tags -->
+  <meta name="description" content="Abertura rápida e acompanhamento de chamados de suporte técnico da Klarke.">
+  <meta name="theme-color" content="#020617">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="/flow.webmanifest">
+  <link rel="shortcut icon" href="logo.png" type="image/png">
+  <link rel="icon" href="logo.png" type="image/png">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons for modern flair -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    :root {
+      --bg-color: #020617;
+      --bg-card: #0f172a;
+      --bg-card-light: #1e293b;
+      --accent-color: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.15);
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --border-color: rgba(255, 255, 255, 0.08);
+      
+      --color-success: #10b981;
+      --color-warning: #f59e0b;
+      --color-danger: #ef4444;
+      
+      --font-primary: 'Inter', sans-serif;
+      --font-heading: 'Plus Jakarta Sans', sans-serif;
+      
+      --radius: 12px;
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+      --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: var(--font-primary);
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Base Container */
+    .app-viewport {
+      max-width: 480px;
+      width: 100%;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      position: relative;
+      padding-bottom: 90px; /* Space for Bottom Bar */
+    }
+
+    /* Ambient Background Glow */
+    .glow-effect {
+      position: absolute;
+      width: 250px;
+      height: 250px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--accent-glow) 0%, rgba(2, 6, 23, 0) 70%);
+      top: -50px;
+      right: -50px;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    /* Header */
+    header {
+      padding: 24px 20px 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .brand-logo {
+      width: 40px;
+      height: 40px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-color);
+      font-size: 1.2rem;
+    }
+
+    .brand-info h1 {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-info p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* Tabs */
+    .tabs-nav {
+      display: flex;
+      padding: 16px 20px;
+      gap: 12px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      border-radius: var(--radius);
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: var(--transition);
+    }
+
+    .tab-btn.active {
+      background: var(--accent-color);
+      color: #000;
+      border-color: var(--accent-color);
+      box-shadow: 0 4px 15px rgba(56, 189, 248, 0.2);
+    }
+
+    /* Main View Area */
+    .view-content {
+      padding: 0 20px 20px 20px;
+      flex: 1;
+    }
+
+    .tab-panel {
+      display: none;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Form Styles */
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .input-field {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 14px 16px;
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 0.95rem;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .input-field:focus {
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    textarea.input-field {
+      resize: none;
+      min-height: 100px;
+    }
+
+    /* Visual Category Cards Grid */
+    .categories-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .category-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: var(--transition);
+      text-align: center;
+    }
+
+    .category-card i {
+      font-size: 1.5rem;
+      color: var(--text-muted);
+      transition: var(--transition);
+    }
+
+    .category-card span {
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .category-card.selected {
+      border-color: var(--accent-color);
+      background: var(--bg-card-light);
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    .category-card.selected i {
+      color: var(--accent-color);
+      transform: scale(1.1);
+    }
+
+    /* Priority Selector Pills */
+    .priority-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .priority-pill {
+      flex: 1;
+      padding: 12px;
+      border-radius: var(--radius);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .priority-pill[data-val="Baixa"].selected {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: var(--color-success);
+      color: var(--color-success);
+    }
+
+    .priority-pill[data-val="Média"].selected {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: var(--color-warning);
+      color: var(--color-warning);
+    }
+
+    .priority-pill[data-val="Alta"].selected {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: var(--color-danger);
+      color: var(--color-danger);
+    }
+
+    /* Glowing Submit Button */
+    .submit-btn {
+      width: 100%;
+      padding: 16px;
+      background: var(--accent-color);
+      border: none;
+      border-radius: var(--radius);
+      color: #000;
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 4px 20px rgba(56, 189, 248, 0.2);
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(56, 189, 248, 0.35);
+    }
+
+    .submit-btn:active {
+      transform: translateY(0);
+    }
+
+    /* Ticket Card styling for list */
+    .ticket-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: var(--transition);
+    }
+
+    .ticket-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .ticket-card-id {
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      background: var(--bg-card-light);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .ticket-badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+    }
+
+    .ticket-badge.pendente {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--color-warning);
+    }
+
+    .ticket-badge.em-atendimento {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent-color);
+    }
+
+    .ticket-badge.resolvido {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--color-success);
+    }
+
+    .ticket-card-title {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .ticket-card-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .ticket-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 8px;
+      margin-top: 4px;
+    }
+
+    .ticket-card-category {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Modal de Sucesso */
+    .success-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(2, 6, 23, 0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      padding: 24px;
+    }
+
+    .success-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .success-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 40px 30px;
+      text-align: center;
+      width: 100%;
+      max-width: 360px;
+      box-shadow: var(--shadow);
+      transform: scale(0.9);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .success-overlay.active .success-box {
+      transform: scale(1);
+    }
+
+    .success-icon-wrapper {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--color-success);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      margin: 0 auto 20px auto;
+    }
+
+    .success-box h2 {
+      font-family: var(--font-heading);
+      margin-bottom: 10px;
+      font-size: 1.5rem;
+    }
+
+    .success-box p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+      margin-bottom: 30px;
+    }
+
+    .success-btn {
+      width: 100%;
+      padding: 14px;
+      background: var(--bg-card-light);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      border-radius: var(--radius);
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .success-btn:hover {
+      background: var(--accent-color);
+      color: #000;
+      border-color: var(--accent-color);
+    }
+
+    /* Bottom Toast/Notif */
+    .toast-notif {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translate(-50%, 100px);
+      background: var(--bg-card-light);
+      border: 1px solid var(--border-color);
+      padding: 14px 20px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 1000;
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+
+    .toast-notif.active {
+      transform: translate(-50%, 0);
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state i {
+      font-size: 3rem;
+      opacity: 0.3;
+      margin-bottom: 16px;
+    }
+
+    .empty-state h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .empty-state p {
+      font-size: 0.85rem;
+      max-width: 250px;
+      margin: 0 auto;
+    }
+
+    /* Contact Section */
+    .contact-section {
+      margin-top: 30px;
+      padding: 16px 20px;
+      text-align: center;
+      border-top: 1px solid var(--border-color);
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .contact-section span.label {
+      font-weight: 500;
+      margin-right: 4px;
+    }
+
+    .contact-section a {
+      color: var(--accent-color);
+      text-decoration: none;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: var(--transition);
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    .contact-section a:hover {
+      color: var(--text-main);
+      background: var(--accent-glow);
+    }
+
+    .contact-section a.whatsapp:hover {
+      color: #25d366;
+      background: rgba(37, 211, 102, 0.1);
+    }
+
+    .contact-section .divider {
+      color: rgba(255, 255, 255, 0.1);
+      margin: 0 4px;
+    }
+  </style>
+</head>
+<body>
+  
+  <div class="app-viewport">
+    <div class="glow-effect"></div>
+    
+    <!-- Top Brand Header -->
+    <header style="display: flex; align-items: center; gap: 12px;">
+      <img src="logo.png" alt="Klarke Logo" style="height: 40px; width: auto; object-fit: contain;" />
+      <div class="brand-logo">
+        <i class="fa-solid fa-headset"></i>
+      </div>
+      <div class="brand-info">
+        <h1>Klarke Flow</h1>
+        <p>Suporte Interno & Abertura de Chamados</p>
+      </div>
+    </header>
+
+
+
+    <!-- Main Views -->
+    <div class="view-content">
+      
+      <!-- TAB: Novo Chamado -->
+      <div class="tab-panel active" id="panel-new">
+        <form id="ticket-form" onsubmit="handleFormSubmit(event)">
+          
+          <div class="form-group">
+            <label class="form-label" for="requester">Seu Nome</label>
+            <input required type="text" class="input-field" id="requester" placeholder="Ex: Maria">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="sector">Setor / Loja</label>
+            <select required class="input-field" id="sector">
+              <option value="" disabled selected>Selecione o setor...</option>
+              <option value="LOJA TUDO 10 OU 20 - SÃO VICENTE">LOJA TUDO 10 OU 20 - SÃO VICENTE</option>
+              <option value="LOJA TUDO 10 OU 20 - PRAIA GRANDE">LOJA TUDO 10 OU 20 - PRAIA GRANDE</option>
+              <option value="LIOMEX IMPORTADORA">LIOMEX IMPORTADORA</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Categoria do Problema</label>
+            <div class="categories-grid">
+              <div class="category-card" data-val="Hardware" onclick="selectCategory(this)">
+                <i class="fa-solid fa-desktop"></i>
+                <span>Computador / Impressora</span>
+              </div>
+              <div class="category-card" data-val="Software" onclick="selectCategory(this)">
+                <i class="fa-solid fa-window-restore"></i>
+                <span>Sistema / Programas</span>
+              </div>
+              <div class="category-card" data-val="Rede/Internet" onclick="selectCategory(this)">
+                <i class="fa-solid fa-wifi"></i>
+                <span>Internet / Rede</span>
+              </div>
+              <div class="category-card" data-val="Telefonia/VoIP" onclick="selectCategory(this)">
+                <i class="fa-solid fa-phone-volume"></i>
+                <span>Telefone / VoIP</span>
+              </div>
+            </div>
+            <input type="hidden" id="category" value="">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Nível de Prioridade</label>
+            <div class="priority-row">
+              <div class="priority-pill selected" data-val="Baixa" onclick="selectPriority(this)">Baixa</div>
+              <div class="priority-pill" data-val="Média" onclick="selectPriority(this)">Média</div>
+              <div class="priority-pill" data-val="Alta" onclick="selectPriority(this)">Alta</div>
+            </div>
+            <input type="hidden" id="priority" value="Baixa">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="title">Assunto Curto</label>
+            <input required type="text" class="input-field" id="title" placeholder="Ex: Impressora não liga">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="description">Descrição Detalhada</label>
+            <textarea required class="input-field" id="description" placeholder="Descreva o problema com detalhes..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Foto(s) do Problema (Opcional)</label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <label class="input-field" style="display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; background: var(--bg-card); flex: 1; border-style: dashed; border-color: var(--accent-color);">
+                <i class="fa-solid fa-camera" id="photo-icon" style="color: var(--accent-color);"></i>
+                <span id="photo-label" style="font-size: 0.9rem; color: var(--text-main); font-weight: 500;">Tirar ou Escolher Foto(s)</span>
+                <input type="file" id="photo-input" accept="image/*" multiple style="display: none;" onchange="handlePhotoChange(event)">
+              </label>
+              <button type="button" id="photo-clear" style="display: none; width: 50px; padding: 14px; background: var(--bg-card-light); border: 1px solid var(--color-danger); border-radius: var(--radius); color: var(--color-danger); cursor: pointer;" onclick="clearPhoto()">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+            <!-- Preview container -->
+            <div id="photo-preview-container" style="display: none; margin-top: 12px; border-radius: var(--radius); border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); padding: 12px;">
+              <div id="photo-previews-wrapper" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;"></div>
+            </div>
+          </div>
+
+          <button type="submit" class="submit-btn">
+            <i class="fa-solid fa-paper-plane"></i> Enviar Chamado
+          </button>
+          
+        </form>
+      </div>
+
+
+
+      <!-- Seção de Contato Rápido -->
+      <div class="contact-section">
+        <span class="label">Ajuda urgente?</span>
+        <a href="https://wa.me/5511989330765" target="_blank" class="whatsapp">
+          <i class="fa-brands fa-whatsapp"></i> +55 11 98933-0765
+        </a>
+        <span class="divider">|</span>
+        <a href="mailto:contato@klarke.com.br">
+          <i class="fa-regular fa-envelope"></i> contato@klarke.com.br
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Modal de Sucesso -->
+  <div class="success-overlay" id="success-modal">
+    <div class="success-box">
+      <div class="success-icon-wrapper">
+        <i class="fa-solid fa-check"></i>
+      </div>
+      <h2>Chamado Enviado!</h2>
+      <p>Seu chamado foi registrado na Klarke. Nossa equipe técnica foi notificada e entrará em contato em breve.</p>
+      <button class="success-btn" onclick="closeSuccessModal()">Fechar</button>
+    </div>
+  </div>
+
+  <!-- Toast Toast -->
+  <div class="toast-notif" id="toast-message">
+    <i id="toast-icon" class="fa-solid fa-info-circle"></i>
+    <span id="toast-text">Mensagem do Sistema</span>
+  </div>
+
+  <script>
+    // Configurações & Estado
+    let selectedCategoryVal = "";
+    let selectedPriorityVal = "Baixa";
+    let base64ImagesList = [];
+
+    // Processamento da Foto
+    function handlePhotoChange(event) {
+      const files = Array.from(event.target.files);
+      if (files.length === 0) return;
+
+      if (base64ImagesList.length + files.length > 5) {
+        showToast("Você pode anexar no máximo 5 fotos por chamado", true);
+        event.target.value = "";
+        return;
+      }
+
+      let loadedCount = 0;
+      files.forEach(file => {
+        if (file.size > 5 * 1024 * 1024) {
+          showToast(`A imagem ${file.name} excede o limite de 5MB`, true);
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          base64ImagesList.push(e.target.result);
+          loadedCount++;
+          if (loadedCount === files.length || base64ImagesList.length === 5) {
+            renderPreviews();
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+
+      // Limpa o valor do input para permitir selecionar a mesma foto (ou novas fotos tiradas pela câmera)
+      event.target.value = "";
+    }
+
+    function renderPreviews() {
+      const container = document.getElementById("photo-preview-container");
+      const previewWrapper = document.getElementById("photo-previews-wrapper");
+      
+      if (base64ImagesList.length === 0) {
+        container.style.display = "none";
+        document.getElementById("photo-clear").style.display = "none";
+        document.getElementById("photo-label").innerText = "Tirar ou Escolher Foto(s)";
+        document.getElementById("photo-icon").style.color = "var(--accent-color)";
+        return;
+      }
+
+      container.style.display = "block";
+      document.getElementById("photo-clear").style.display = "block";
+      document.getElementById("photo-label").innerText = `${base64ImagesList.length} Foto(s) Selecionada(s)`;
+      document.getElementById("photo-icon").style.color = "var(--color-success)";
+
+      previewWrapper.innerHTML = base64ImagesList.map((imgBase64, index) => `
+        <div style="position: relative; display: inline-block; width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); background: rgba(0,0,0,0.3);">
+          <img src="${imgBase64}" style="width: 100%; height: 100%; object-fit: cover;" />
+          <button type="button" onclick="removePhoto(${index})" style="position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; border-radius: 50%; background: rgba(239, 68, 68, 0.9); color: white; border: none; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; padding: 0;">
+            <i class="fa-solid fa-times" style="font-size: 0.65rem;"></i>
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function removePhoto(index) {
+      base64ImagesList.splice(index, 1);
+      renderPreviews();
+    }
+
+    function clearPhoto() {
+      base64ImagesList = [];
+      document.getElementById("photo-input").value = "";
+      renderPreviews();
+    }
+    
+    // Carregar nome salvo no localStorage
+    document.addEventListener("DOMContentLoaded", () => {
+      const savedRequester = localStorage.getItem("klarke_flow_requester");
+      if (savedRequester) {
+        document.getElementById("requester").value = savedRequester;
+      }
+      const savedSector = localStorage.getItem("klarke_flow_sector");
+      if (savedSector) {
+        document.getElementById("sector").value = savedSector;
+      }
+      
+      // Auto selecionar primeira categoria
+      const firstCat = document.querySelector(".category-card");
+      if (firstCat) selectCategory(firstCat);
+    });
+
+
+    // Selecionar Categoria
+    function selectCategory(element) {
+      document.querySelectorAll(".category-card").forEach(card => card.classList.remove("selected"));
+      element.classList.add("selected");
+      selectedCategoryVal = element.getAttribute("data-val");
+      document.getElementById("category").value = selectedCategoryVal;
+    }
+
+    // Selecionar Prioridade
+    function selectPriority(element) {
+      document.querySelectorAll(".priority-pill").forEach(pill => pill.classList.remove("selected"));
+      element.classList.add("selected");
+      selectedPriorityVal = element.getAttribute("data-val");
+      document.getElementById("priority").value = selectedPriorityVal;
+    }
+
+    // Mostrar Toast rápido
+    function showToast(text, isError = false) {
+      const toast = document.getElementById("toast-message");
+      const icon = document.getElementById("toast-icon");
+      const span = document.getElementById("toast-text");
+      
+      span.innerText = text;
+      if (isError) {
+        icon.className = "fa-solid fa-exclamation-triangle";
+        toast.style.borderColor = "var(--color-danger)";
+        icon.style.color = "var(--color-danger)";
+      } else {
+        icon.className = "fa-solid fa-check-circle";
+        toast.style.borderColor = "var(--accent-color)";
+        icon.style.color = "var(--accent-color)";
+      }
+      
+      toast.classList.add("active");
+      setTimeout(() => {
+        toast.classList.remove("active");
+      }, 3000);
+    }
+
+    // Enviar formulário
+    async function handleFormSubmit(event) {
+      event.preventDefault();
+      
+      const requesterName = document.getElementById("requester").value.trim();
+      const sector = document.getElementById("sector").value;
+      const category = document.getElementById("category").value;
+      const priority = document.getElementById("priority").value;
+      const title = document.getElementById("title").value.trim();
+      const description = document.getElementById("description").value.trim();
+      
+      if (!requesterName || !sector || !category || !priority || !title || !description) {
+        showToast("Por favor, preencha todos os campos", true);
+        return;
+      }
+      
+      // Combinar nome e setor para o campo requester que o backend espera
+      const requester = `${requesterName} - ${sector}`;
+      
+      // Salva os dados localmente para facilitar abertura posterior
+      localStorage.setItem("klarke_flow_requester", requesterName);
+      localStorage.setItem("klarke_flow_sector", sector);
+      
+      const submitBtn = document.querySelector(".submit-btn");
+      const originalBtnHTML = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Enviando...`;
+      
+      try {
+        const response = await fetch('/api/tickets', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ requester, category, priority, title, description, image: base64ImagesList })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          // Salva ID do chamado no localStorage para consultas futuras
+          const myTickets = JSON.parse(localStorage.getItem("klarke_flow_tickets") || "[]");
+          myTickets.push(data.id);
+          localStorage.setItem("klarke_flow_tickets", JSON.stringify(myTickets));
+          
+          // Limpa formulário
+          document.getElementById("title").value = "";
+          document.getElementById("description").value = "";
+          clearPhoto();
+          
+          // Abre modal de sucesso
+          document.getElementById("success-modal").classList.add("active");
+        } else {
+          showToast(data.error || "Erro ao abrir chamado", true);
+        }
+      } catch (err) {
+        console.error(err);
+        showToast("Erro de rede ao se conectar ao servidor", true);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnHTML;
+      }
+    }
+
+    function closeSuccessModal() {
+      document.getElementById("success-modal").classList.remove("active");
+    }
+
+    // Registra Service Worker para PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => {
+          console.log('SW registration failed: ', err);
+        });
+      });
+    }
+  </script>
+</body>
+</html>

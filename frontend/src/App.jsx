@@ -18,6 +18,7 @@ import KeyKeeper from './pages/KeyKeeper';
 import MailPage from './pages/Mail';
 import ResetPassword from './pages/ResetPassword';
 import NetworkMap from './pages/NetworkMap';
+import Tickets from './pages/Tickets';
 
 // Interceptor global para injetar headers em todas as requisições
 axios.interceptors.request.use(
@@ -101,6 +102,7 @@ function App() {
             <Route path="key-keeper" element={<KeyKeeper />} />
             <Route path="mail" element={<MailPage />} />
             <Route path="network-map" element={<NetworkMap />} />
+            <Route path="tickets" element={<Tickets />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

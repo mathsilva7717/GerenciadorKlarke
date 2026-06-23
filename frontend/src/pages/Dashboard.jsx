@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, Plus, X, Copy, Monitor, MapPin, Check, Download, Clipboard, Trash2, QrCode, Activity, Edit, Printer, ChevronLeft, ChevronRight, RotateCw, Database, Wifi, Globe } from 'lucide-react';
+import { Search, Plus, X, Copy, Monitor, MapPin, Check, Download, Clipboard, Trash2, QrCode, Activity, Edit, Printer, ChevronLeft, ChevronRight, RotateCw, Database, Wifi, Globe, Wrench } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -368,22 +368,22 @@ function Dashboard() {
     toast.success('Exportação concluída!');
   };
 
-  const downloadAgent = async () => {
+  const downloadRepair = async () => {
     try {
-      const response = await axios.get('/api/monitoring/agent-download', {
+      const response = await axios.get('/api/monitoring/repair-download', {
         ...getAuthConfig(),
         responseType: 'blob'
       });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', 'klarke-agent.js');
+      link.setAttribute('download', 'Klarke Repair.exe');
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      toast.success('Agente baixado com sucesso!');
+      toast.success('Klarke Repair baixado com sucesso!');
     } catch (e) {
-      toast.error('Erro ao baixar agente');
+      toast.error('Erro ao baixar Klarke Repair');
     }
   };
 
@@ -509,10 +509,10 @@ function Dashboard() {
           <button 
             className="btn-action-square" 
             style={{background: '#334155'}} 
-            onClick={downloadAgent} 
-            title="Baixar Klarke Agent"
+            onClick={downloadRepair} 
+            title="Baixar Klarke Repair"
           >
-            <Activity size={20} />
+            <Wrench size={20} />
           </button>
           <button 
             className="btn-action-square" 
