@@ -14,7 +14,9 @@ function Home() {
     users: 0,
     docs: 0,
     logsTotal: 0,
-    ticketsPending: 0
+    ticketsPending: 0,
+    ticketsActive: 0,
+    ticketsResolved: 0
   });
   const [recentTickets, setRecentTickets] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -50,6 +52,8 @@ function Home() {
       
       const allTickets = ticketsRes.data || [];
       const pendingTickets = allTickets.filter(x => x.status === 'Pendente');
+      const activeTickets = allTickets.filter(x => x.status === 'Em Atendimento');
+      const resolvedTickets = allTickets.filter(x => x.status === 'Resolvido');
       setRecentTickets(allTickets.slice(0, 5));
       
       setSystemStatus(sys.data);
@@ -67,7 +71,9 @@ function Home() {
         inventory: inv.data?.length || 0,
         voip: voip.data?.length || 0,
         docs: docs.data?.length || 0,
-        ticketsPending: pendingTickets.length
+        ticketsPending: pendingTickets.length,
+        ticketsActive: activeTickets.length,
+        ticketsResolved: resolvedTickets.length
       });
       if (manual) toast.success('Dados atualizados!');
     } catch (e) {
