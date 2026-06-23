@@ -186,6 +186,7 @@ db.exec(`
 
 // Migrations rápidas para colunas novas
 try { db.exec("ALTER TABLE tickets ADD COLUMN photo TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE tickets ADD COLUMN comments TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN must_change_password INTEGER DEFAULT 0"); } catch(e) {}
 try { db.exec("ALTER TABLE tasks ADD COLUMN completed_by TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE tasks ADD COLUMN completed_at DATETIME"); } catch(e) {}
@@ -1019,6 +1020,67 @@ app.delete('/api/tickets/:id', authenticate, (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     logAction(req, 'CHAMADO_EXCLUIR', `Excluiu chamado #${id}`);
     res.json({ message: 'Chamado removido com sucesso' });
+  });
+});
+
+// Adicionar comentário/anotação ao chamado (Autenticado)
+app.post('/api/tickets/:id/comments', authenticate, (req, res) => {
+  const { id } = req.params;
+  const { text, image } = req.body;
+  
+  if (!text && !image) {
+    return res.status(400).json({ error: 'Comentário ou imagem é obrigatório' });
+  }
+
+  db.get('SELECT comments FROM tickets WHERE id = ?', [id], (err, ticket) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!ticket) return res.status(404).json({ error: 'Chamado não encontrado' });
+
+    let commentsList = [];
+    try {
+      if (ticket.comments) {
+        commentsList = JSON.parse(ticket.comments);
+      }
+    } catch (e) {
+      commentsList = [];
+    }
+
+    let commentImageName = null;
+    if (image) {
+      try {
+        const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
+        commentImageName = `comment_${id}_${Date.now()}.jpg`;
+        const filePath = path.join(__dirname, 'uploads', commentImageName);
+        
+        const dir = path.join(__dirname, 'uploads');
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        
+        fs.writeFileSync(filePath, base64Data, 'base64');
+      } catch (e) {
+        console.error('Erro ao salvar imagem do comentário:', e);
+      }
+    }
+
+    const newComment = {
+      id: Date.now(),
+      author: req.user?.username || 'Suporte',
+      text: text || '',
+      image: commentImageName,
+      created_at: new Date().toISOString()
+    };
+
+    commentsList.push(newComment);
+    const commentsJSON = JSON.stringify(commentsList);
+
+    db.run(
+      'UPDATE tickets SET comments = ? WHERE id = ?',
+      [commentsJSON, id],
+      function(err2) {
+        if (err2) return res.status(500).json({ error: err2.message });
+        logAction(req, 'CHAMADO_COMENTARIO', `Adicionou comentário no chamado #${id}`);
+        res.json({ message: 'Comentário adicionado com sucesso', comments: commentsList });
+      }
+    );
   });
 });
 
