@@ -141,81 +141,148 @@ function Home() {
             </button>
           </div>
         </div>
-        
-        <div className="quick-stats-row-sober" style={{ marginBottom: '32px' }}>
-          <div className="stat-box-industrial" style={{ minWidth: '180px', background: 'linear-gradient(180deg, rgba(16, 185, 129, 0.05) 0%, transparent 100%)' }}>
-            <span className="stat-label">SAÚDE GLOBAL</span>
-            <div className="stat-value-row">
-              <div className={`indicator-pulse-${(stats.machinesOnline + stats.camerasOnline + stats.networkOnline) > 0 ? 'green' : 'red'}`}></div>
-              <span className="stat-value">
-                {Math.round(((stats.machinesOnline + stats.camerasOnline + stats.networkOnline) / (stats.machines + stats.cameras + stats.network || 1)) * 100)}%
+               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', marginBottom: '32px' }}>
+          {/* Card 1: Saúde Global */}
+          <div className="stat-box-industrial" style={{ flex: '1 1 240px', minHeight: '180px', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '20px', padding: '24px' }}>
+            <div style={{ position: 'relative', width: '90px', height: '90px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="90" height="90" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+                {/* Background circle */}
+                <circle cx="50" cy="50" r="40" stroke="rgba(255,255,255,0.05)" strokeWidth="8" fill="transparent" />
+                {/* Progress circle */}
+                <circle 
+                  cx="50" 
+                  cy="50" 
+                  r="40" 
+                  stroke="#10b981" 
+                  strokeWidth="8" 
+                  fill="transparent" 
+                  strokeDasharray={2 * Math.PI * 40}
+                  strokeDashoffset={2 * Math.PI * 40 * (1 - (stats.machinesOnline + stats.camerasOnline + stats.networkOnline) / (stats.machines + stats.cameras + stats.network || 1))}
+                  strokeLinecap="round"
+                  style={{ transition: 'stroke-dashoffset 0.5s ease-out' }}
+                />
+              </svg>
+              <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--color-text)' }}>
+                  {Math.round(((stats.machinesOnline + stats.camerasOnline + stats.networkOnline) / (stats.machines + stats.cameras + stats.network || 1)) * 100)}%
+                </span>
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <span className="stat-label" style={{ letterSpacing: '1px' }}>SAÚDE GLOBAL</span>
+              <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                <strong>{stats.machinesOnline + stats.camerasOnline + stats.networkOnline}</strong> de <strong>{stats.machines + stats.cameras + stats.network}</strong> ativos online.
+              </span>
+              <span style={{ fontSize: '0.7rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }}></span>
+                Rede operando normalmente
               </span>
             </div>
-            <span style={{fontSize: '0.65rem', opacity: 0.6, marginTop: '4px'}}>
-              Sincronizado em tempo real
-            </span>
           </div>
 
-          <div className="stat-box-industrial" style={{borderColor: 'var(--color-accent)', minWidth: '180px'}}>
-            <span className="stat-label">ÚLTIMO BACKUP</span>
-            <div className="stat-value-row">
-              <Database size={16} color="var(--color-accent)" />
-              <span className="stat-value" style={{fontSize: '0.9rem', marginLeft: '8px'}}>STATUS: OK</span>
+          {/* Card 2: Armazenamento da VPS */}
+          <div className="stat-box-industrial" style={{ flex: '1 1 240px', minHeight: '180px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '12px', padding: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="stat-label">DISCO DA VPS</span>
+              <span style={{ fontSize: '1.15rem', fontWeight: '800', color: parseInt(systemStatus?.disk?.percent) > 90 ? '#ef4444' : 'var(--color-text)' }}>
+                {systemStatus?.disk?.percent || '0%'}
+              </span>
             </div>
+            
+            {/* Progress Bar Container */}
+            <div style={{ width: '100%', height: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '5px', overflow: 'hidden', border: '1px solid var(--color-border)' }}>
+              <div style={{ 
+                width: systemStatus?.disk?.percent || '0%', 
+                height: '100%', 
+                background: parseInt(systemStatus?.disk?.percent) > 90 ? 'linear-gradient(90deg, #ef4444, #f43f5e)' : 'linear-gradient(90deg, #38bdf8, #3b82f6)',
+                transition: 'width 0.5s ease-out'
+              }}></div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+              <span>Em uso: {systemStatus?.disk?.percent || '0%'}</span>
+              <span>{systemStatus?.disk?.avail || '0'} livres</span>
+            </div>
+            
             <button 
               onClick={downloadBackup}
-              style={{background: 'none', border: 'none', color: 'var(--color-accent)', fontSize: '0.6rem', cursor: 'pointer', padding: 0, marginTop: '4px', fontWeight: 'bold'}}
+              style={{ background: 'none', border: 'none', color: 'var(--color-accent)', fontSize: '0.75rem', cursor: 'pointer', padding: 0, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', alignSelf: 'flex-start', marginTop: '4px' }}
             >
-              BAIXAR CÓPIA AGORA
+              <Database size={12} />
+              BAIXAR BACKUP DO BANCO
             </button>
           </div>
 
-          <div className="stat-box-industrial" style={{ minWidth: '180px' }}>
-            <span className="stat-label">ATIVIDADE LOGS</span>
-            <div className="stat-value-row">
-              <Activity size={16} color="#10b981" />
-              <span className="stat-value" style={{fontSize: '1rem', marginLeft: '8px'}}>{stats.logsTotal}</span>
+          {/* Card 3: Suporte Flow */}
+          <div className="stat-box-industrial" onClick={() => navigate('/control/tickets')} style={{ flex: '1 1 240px', minHeight: '180px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '12px', padding: '24px', cursor: 'pointer' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="stat-label">SUPORTE FLOW</span>
+              <span style={{ fontSize: '1.15rem', fontWeight: '800', color: stats.ticketsPending > 0 ? '#ef4444' : '#10b981' }}>
+                {stats.ticketsPending + stats.ticketsActive} ABERTOS
+              </span>
             </div>
-            <span style={{fontSize: '0.65rem', opacity: 0.6, marginTop: '4px'}}>
-              Total de eventos registrados
-            </span>
+
+            {/* Stacked Progress Bar */}
+            {(() => {
+              const total = stats.ticketsPending + stats.ticketsActive + stats.ticketsResolved || 1;
+              const pctPending = (stats.ticketsPending / total) * 100;
+              const pctActive = (stats.ticketsActive / total) * 100;
+              const pctResolved = (stats.ticketsResolved / total) * 100;
+
+              return (
+                <div style={{ width: '100%', height: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '5px', overflow: 'hidden', display: 'flex', border: '1px solid var(--color-border)' }}>
+                  {stats.ticketsPending > 0 && <div style={{ width: `${pctPending}%`, height: '100%', backgroundColor: '#ef4444', transition: 'width 0.5s ease-out' }} title="Pendente"></div>}
+                  {stats.ticketsActive > 0 && <div style={{ width: `${pctActive}%`, height: '100%', backgroundColor: 'var(--color-accent)', transition: 'width 0.5s ease-out' }} title="Em Atendimento"></div>}
+                  {stats.ticketsResolved > 0 && <div style={{ width: `${pctResolved}%`, height: '100%', backgroundColor: '#10b981', transition: 'width 0.5s ease-out' }} title="Resolvido"></div>}
+                </div>
+              );
+            })()}
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', textAlign: 'center', marginTop: '4px' }}>
+              <div style={{ background: 'rgba(0,0,0,0.05)', padding: '6px', border: '1px solid var(--color-border)' }}>
+                <div style={{ fontSize: '0.65rem', color: '#ef4444', fontWeight: 'bold' }}>PENDENTES</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: '800', color: '#ef4444' }}>{stats.ticketsPending}</div>
+              </div>
+              <div style={{ background: 'rgba(0,0,0,0.05)', padding: '6px', border: '1px solid var(--color-border)' }}>
+                <div style={{ fontSize: '0.65rem', color: 'var(--color-accent)', fontWeight: 'bold' }}>EM CURSO</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: '800', color: 'var(--color-accent)' }}>{stats.ticketsActive}</div>
+              </div>
+              <div style={{ background: 'rgba(0,0,0,0.05)', padding: '6px', border: '1px solid var(--color-border)' }}>
+                <div style={{ fontSize: '0.65rem', color: '#10b981', fontWeight: 'bold' }}>RESOLVIDOS</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: '800', color: '#10b981' }}>{stats.ticketsResolved}</div>
+              </div>
+            </div>
           </div>
 
-          <div className="stat-box-industrial" style={{ minWidth: '180px', borderLeft: '4px solid #10b981' }}>
-            <span className="stat-label">ESTADO DA REDE</span>
-            <div className="stat-value-row">
-              <Globe size={16} color="#10b981" />
-              <span className="stat-value" style={{fontSize: '1rem', marginLeft: '8px'}}>{systemStatus?.latency > 0 ? 'ESTÁVEL' : 'OFFLINE'}</span>
+          {/* Card 4: Rede e Auditoria */}
+          <div className="stat-box-industrial" style={{ flex: '1 1 240px', minHeight: '180px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '12px', padding: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="stat-label">REDE E AUDITORIA</span>
+              <span style={{ fontSize: '1rem', fontWeight: '800', color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ display: 'flex', alignItems: 'flex-end', gap: '2px', height: '14px' }}>
+                  <span style={{ width: '3px', height: '4px', backgroundColor: '#10b981' }}></span>
+                  <span style={{ width: '3px', height: '7px', backgroundColor: '#10b981' }}></span>
+                  <span style={{ width: '3px', height: '10px', backgroundColor: '#10b981' }}></span>
+                  <span style={{ width: '3px', height: '14px', backgroundColor: '#10b981' }}></span>
+                </span>
+                {systemStatus?.latency || 0}ms
+              </span>
             </div>
-            <span style={{fontSize: '0.65rem', opacity: 0.6, marginTop: '4px'}}>
-              Latência média: {systemStatus?.latency || 0}ms
-            </span>
-          </div>
 
-          <div className="stat-box-industrial" style={{ 
-            minWidth: '180px', 
-            borderLeft: '4px solid #ef4444',
-            background: parseInt(systemStatus?.disk?.percent) > 90 ? 'linear-gradient(180deg, rgba(239, 68, 68, 0.1) 0%, transparent 100%)' : 'transparent'
-          }}>
-            <span className="stat-label">ARMAZENAMENTO</span>
-            <div className="stat-value-row">
-              <Database size={16} color="#ef4444" className={parseInt(systemStatus?.disk?.percent) > 90 ? 'pulse-icon' : ''} />
-              <span className="stat-value" style={{fontSize: '1rem', marginLeft: '8px'}}>{systemStatus?.disk?.percent || '0%'}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(0,0,0,0.05)', padding: '12px', border: '1px solid var(--color-border)' }}>
+              <Activity size={18} color="#10b981" />
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Histórico Geral</span>
+                <span style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--color-text)' }}>
+                  {stats.logsTotal} eventos gravados
+                </span>
+              </div>
             </div>
-            <span style={{fontSize: '0.65rem', opacity: 0.6, marginTop: '4px', color: parseInt(systemStatus?.disk?.percent) > 90 ? '#ef4444' : 'inherit'}}>
-              {parseInt(systemStatus?.disk?.percent) > 90 ? 'CRÍTICO: DISCO CHEIO' : `${systemStatus?.disk?.avail || '0'} disponíveis`}
-            </span>
-          </div>
 
-          <div className="stat-box-industrial" onClick={() => navigate('/control/tickets')} style={{ minWidth: '180px', cursor: 'pointer', borderLeft: stats.ticketsPending > 0 ? '4px solid #ef4444' : '4px solid #10b981' }}>
-            <span className="stat-label">SUPORTE FLOW</span>
-            <div className="stat-value-row">
-              <MessageSquare size={16} color={stats.ticketsPending > 0 ? '#ef4444' : '#10b981'} />
-              <span className="stat-value" style={{fontSize: '1rem', marginLeft: '8px'}}>{stats.ticketsPending} PENDENTES</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+              <span>Status da Rede: ESTÁVEL</span>
+              <span style={{ color: '#10b981', fontWeight: '600' }}>ONLINE</span>
             </div>
-            <span style={{fontSize: '0.65rem', opacity: 0.6, marginTop: '4px', color: stats.ticketsPending > 0 ? '#ef4444' : 'inherit'}}>
-              {stats.ticketsPending > 0 ? 'Atenção imediata' : 'Nenhuma pendência'}
-            </span>
           </div>
         </div>
 
