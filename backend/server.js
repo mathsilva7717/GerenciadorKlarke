@@ -911,51 +911,7 @@ app.get('/api/monitoring/repair-download', (req, res) => {
   res.sendFile(repairPath);
 });
 
-// Rota para baixar o script do agente COM CONFIGURAÇÃO EMBUTIDA
-app.get('/api/monitoring/agent-download', (req, res) => {
-  const agentPath = path.join(__dirname, 'klarke-agent.js');
-  if (!fs.existsSync(agentPath)) return res.status(404).send('Script do agente não encontrado no servidor');
-  
-  let content = fs.readFileSync(agentPath, 'utf8');
-  const serverUrl = `${req.protocol}://${req.get('host')}`;
-  const token = process.env.AUTH_TOKEN || 'klarke-admin-token-xyz';
-  
-  // Injetar variáveis no topo do script para que o cliente não precise de argumentos
-  const injection = `
-// === CONFIGURAÇÃO AUTOMÁTICA KLARKE ===
-const AUTO_URL = "${serverUrl}";
-const AUTO_TOKEN = "${token}";
-// ======================================
-  `;
-  
-  content = injection + content;
-  
-  res.setHeader('Content-Type', 'application/javascript');
-  res.setHeader('Content-Disposition', 'attachment; filename=klarke-agent.js');
-  res.send(content);
-});
 
-// Rota para baixar o ativador .BAT (Um clique)
-app.get('/api/monitoring/agent-bat', (req, res) => {
-  const batContent = `@echo off
-title Klarke Agent Monitor
-echo ========================================
-echo   INICIANDO MONITORAMENTO KLARKE
-echo ========================================
-echo.
-node klarke-agent.js
-if %errorlevel% neq 0 (
-    echo.
-    echo [ERRO] O Node.js nao parece estar instalado ou o script nao foi encontrado.
-    echo Por favor, instale o Node.js em: https://nodejs.org/
-    pause
-)
-pause`;
-
-  res.setHeader('Content-Type', 'application/x-bat');
-  res.setHeader('Content-Disposition', 'attachment; filename=ATIVAR_MONITORAMENTO.bat');
-  res.send(batContent);
-});
 
 // --- ROTAS DE SUPORTE (TICKETS) ---
 

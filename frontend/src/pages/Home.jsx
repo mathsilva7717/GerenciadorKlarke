@@ -285,23 +285,6 @@ function Home() {
           <div className="industrial-footer"><span>tarefas</span><ChevronRight size={14} /></div>
         </div>
 
-        <div className="card-industrial" onClick={() => navigate('/control/tickets')}>
-          <div className="card-industrial-header">
-            <div className="industrial-icon"><MessageSquare size={22} /></div>
-            <div className="industrial-badge" style={{ backgroundColor: stats.ticketsPending > 0 ? '#ef4444' : '#64748b' }}>
-              {stats.ticketsPending}
-            </div>
-          </div>
-          <div className="industrial-body">
-            <h3>Chamados e Suporte</h3>
-            <p>Abertura e atendimento rápido de solicitações.</p>
-            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
-              <div style={{width: '6px', height: '6px', borderRadius: '50%', background: stats.ticketsPending > 0 ? '#ef4444' : '#10b981'}}></div>
-              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>{stats.ticketsPending} pendentes</span>
-            </div>
-          </div>
-          <div className="industrial-footer"><span>atender chamados</span><ChevronRight size={14} /></div>
-        </div>
 
         <div className="card-industrial" onClick={() => navigate('/control/audit-logs')}>
           <div className="card-industrial-header">
@@ -478,10 +461,7 @@ function Home() {
           <p style={{margin: '4px 0 0 0', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)'}}>Baixe as ferramentas necessárias para configurar os PCs dos clientes.</p>
         </div>
         <div style={{display: 'flex', gap: '12px', flexWrap: 'wrap'}}>
-          <button className="btn btn-primary" onClick={downloadAgent} style={{display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', background: '#334155', border: '1px solid rgba(255,255,255,0.1)', width: 'auto'}}>
-            <Activity size={18} />
-            BAIXAR KLARKE AGENT (JS)
-          </button>
+
           <button className="btn btn-primary" onClick={() => navigate('/control/users')} style={{display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', width: 'auto'}}>
             <ShieldCheck size={18} />
             GERENCIAR ACESSOS
