@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Lock, Unlock, User, ShieldCheck, Eye, EyeOff, MessageSquare } from 'lucide-react';
+import { Lock, Unlock, User, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 
 const API_URL = '/api/login';
 
@@ -129,27 +129,6 @@ function Login() {
           <button type="submit" className="btn btn-primary btn-block" disabled={isLoading}>
             {isLoading ? 'Entrando...' : 'Entrar'}
           </button>
-
-          <div style={{ marginTop: '20px', textAlign: 'center', borderTop: '1px solid var(--color-border)', paddingTop: '16px' }}>
-            <a 
-              href="/flow.html" 
-              style={{ 
-                color: 'var(--color-accent)', 
-                textDecoration: 'none', 
-                fontSize: '0.85rem', 
-                fontWeight: '600',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                transition: 'opacity 0.2s'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.opacity = '0.85'}
-              onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-            >
-              <MessageSquare size={16} />
-              Precisa de Suporte? Abrir Chamado (Klarke Flow)
-            </a>
-          </div>
         </form>
       </div>
     </div>

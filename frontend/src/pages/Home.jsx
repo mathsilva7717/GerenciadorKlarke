@@ -188,7 +188,7 @@ function Home() {
 
           {/* Card 2: Armazenamento da VPS */}
           <div className="stat-box-industrial" style={{ flex: '1 1 260px', minHeight: '180px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '12px', padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', width: '100%' }}>
               <span className="stat-label" style={{ whiteSpace: 'nowrap' }}>DISCO DA VPS</span>
               <span style={{ fontSize: '1.15rem', fontWeight: '800', color: parseInt(systemStatus?.disk?.percent) > 90 ? '#ef4444' : 'var(--color-text)', whiteSpace: 'nowrap' }}>
                 {systemStatus?.disk?.percent || '0%'}
@@ -205,7 +205,7 @@ function Home() {
               }}></div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
               <span>Em uso: {systemStatus?.disk?.percent || '0%'}</span>
               <span>{systemStatus?.disk?.avail || '0'} livres</span>
             </div>
@@ -221,7 +221,7 @@ function Home() {
 
           {/* Card 3: Suporte Flow */}
           <div className="stat-box-industrial" onClick={() => navigate('/control/tickets')} style={{ flex: '1 1 260px', minHeight: '180px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '12px', padding: '24px', cursor: 'pointer' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', width: '100%' }}>
               <span className="stat-label" style={{ whiteSpace: 'nowrap' }}>SUPORTE FLOW</span>
               <span style={{ fontSize: '1.15rem', fontWeight: '800', color: stats.ticketsPending > 0 ? '#ef4444' : '#10b981', whiteSpace: 'nowrap' }}>
                 {stats.ticketsPending + stats.ticketsActive} ABERTOS
@@ -262,7 +262,7 @@ function Home() {
 
           {/* Card 4: Rede e Auditoria */}
           <div className="stat-box-industrial" style={{ flex: '1 1 260px', minHeight: '180px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '12px', padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', width: '100%' }}>
               <span className="stat-label" style={{ whiteSpace: 'nowrap' }}>REDE E AUDITORIA</span>
               <span style={{ fontSize: '1rem', fontWeight: '800', color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
                 <span style={{ display: 'flex', alignItems: 'flex-end', gap: '2px', height: '14px' }}>
@@ -285,7 +285,7 @@ function Home() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', gap: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', gap: '12px' }}>
               <span style={{ whiteSpace: 'nowrap' }}>Status da Rede: ESTÁVEL</span>
               <span style={{ color: '#10b981', fontWeight: '600', whiteSpace: 'nowrap' }}>ONLINE</span>
             </div>
