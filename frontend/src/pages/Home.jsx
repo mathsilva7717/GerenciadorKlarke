@@ -612,7 +612,7 @@ function Home() {
                   justifyContent: 'space-between', 
                   alignItems: 'center', 
                   padding: '16px 20px', 
-                  background: 'var(--color-primary-light)', 
+                  background: 'var(--color-secondary)', 
                   border: '1px solid var(--color-border)', 
                   borderLeft: `4px solid ${
                     ticket.priority === 'Alta' ? '#ef4444' : ticket.priority === 'Média' ? '#f59e0b' : '#10b981'

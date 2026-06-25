@@ -159,7 +159,7 @@ function Tickets() {
 
       {/* Filtros e Busca */}
       <div className="search-wrapper" style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '24px', width: '100%' }}>
-        <div className="search-container" style={{ flex: '1 1 300px', display: 'flex', alignItems: 'center', background: 'var(--color-primary-light)', border: '1px solid var(--color-border)', padding: '0 16px', borderRadius: '0px' }}>
+        <div className="search-container" style={{ flex: '1 1 300px', display: 'flex', alignItems: 'center', background: 'var(--color-secondary)', border: '1px solid var(--color-border)', padding: '0 16px', borderRadius: '0px' }}>
           <Search className="search-icon" size={20} color="var(--color-text-muted)" style={{ marginRight: '12px' }} />
           <input 
             type="text" 
@@ -173,41 +173,41 @@ function Tickets() {
         
         <div className="action-buttons-group" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
           {/* Filtro Status */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-primary-light)', border: '1px solid var(--color-border)', padding: '0 16px', borderRadius: '0px', height: '52px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-secondary)', border: '1px solid var(--color-border)', padding: '0 16px', borderRadius: '0px', height: '52px' }}>
             <Filter size={16} color="var(--color-text-muted)" />
             <select 
               value={statusFilter} 
               onChange={(e) => setStatusFilter(e.target.value)}
               style={{ background: 'transparent', border: 'none', color: 'var(--color-text)', outline: 'none', cursor: 'pointer', fontSize: '0.9rem', fontWeight: '600', height: '100%', width: '140px', padding: '0 4px', appearance: 'none', WebkitAppearance: 'none' }}
             >
-              <option value="Todos" style={{ background: 'var(--color-primary-light)', color: 'var(--color-text)' }}>Todos os Status</option>
-              <option value="Pendente" style={{ background: 'var(--color-primary-light)', color: '#ef4444' }}>Pendentes</option>
-              <option value="Em Atendimento" style={{ background: 'var(--color-primary-light)', color: 'var(--color-accent)' }}>Em Atendimento</option>
-              <option value="Resolvido" style={{ background: 'var(--color-primary-light)', color: '#10b981' }}>Resolvidos</option>
+              <option value="Todos" style={{ background: 'var(--color-secondary)', color: 'var(--color-text)' }}>Todos os Status</option>
+              <option value="Pendente" style={{ background: 'var(--color-secondary)', color: '#ef4444' }}>Pendentes</option>
+              <option value="Em Atendimento" style={{ background: 'var(--color-secondary)', color: 'var(--color-accent)' }}>Em Atendimento</option>
+              <option value="Resolvido" style={{ background: 'var(--color-secondary)', color: '#10b981' }}>Resolvidos</option>
             </select>
           </div>
-
+ 
           {/* Filtro Prioridade */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-primary-light)', border: '1px solid var(--color-border)', padding: '0 16px', borderRadius: '0px', height: '52px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-secondary)', border: '1px solid var(--color-border)', padding: '0 16px', borderRadius: '0px', height: '52px' }}>
             <AlertCircle size={16} color="var(--color-text-muted)" />
             <select 
               value={priorityFilter} 
               onChange={(e) => setPriorityFilter(e.target.value)}
               style={{ background: 'transparent', border: 'none', color: 'var(--color-text)', outline: 'none', cursor: 'pointer', fontSize: '0.9rem', fontWeight: '600', height: '100%', width: '140px', padding: '0 4px', appearance: 'none', WebkitAppearance: 'none' }}
             >
-              <option value="Todos" style={{ background: 'var(--color-primary-light)', color: 'var(--color-text)' }}>Todas Prioridades</option>
-              <option value="Alta" style={{ background: 'var(--color-primary-light)', color: '#ef4444' }}>Alta</option>
-              <option value="Média" style={{ background: 'var(--color-primary-light)', color: '#f59e0b' }}>Média</option>
-              <option value="Baixa" style={{ background: 'var(--color-primary-light)', color: '#10b981' }}>Baixa</option>
+              <option value="Todos" style={{ background: 'var(--color-secondary)', color: 'var(--color-text)' }}>Todas Prioridades</option>
+              <option value="Alta" style={{ background: 'var(--color-secondary)', color: '#ef4444' }}>Alta</option>
+              <option value="Média" style={{ background: 'var(--color-secondary)', color: '#f59e0b' }}>Média</option>
+              <option value="Baixa" style={{ background: 'var(--color-secondary)', color: '#10b981' }}>Baixa</option>
             </select>
           </div>
-
+ 
           <button 
             className={`btn-refresh-sober ${isRefreshing ? 'spinning' : ''}`}
             onClick={() => fetchTickets(true)}
             title="Atualizar Chamados"
             disabled={isRefreshing}
-            style={{ width: '52px', height: '52px', display: 'flex', alignItems: 'center', justifyCenter: 'center', border: '1px solid var(--color-border)', background: 'var(--color-primary-light)', color: 'var(--color-text)', borderRadius: '0px', cursor: 'pointer' }}
+            style={{ width: '52px', height: '52px', display: 'flex', alignItems: 'center', justifyCenter: 'center', border: '1px solid var(--color-border)', background: 'var(--color-secondary)', color: 'var(--color-text)', borderRadius: '0px', cursor: 'pointer' }}
           >
             <RefreshCw size={20} style={{ margin: 'auto' }} />
           </button>
@@ -437,7 +437,7 @@ function Tickets() {
                         </div>
                       ) : (
                         comments.map(c => (
-                          <div key={c.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--color-primary-light)', padding: '12px', border: '1px solid var(--color-border)', borderRadius: '0px' }}>
+                          <div key={c.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--color-secondary)', padding: '12px', border: '1px solid var(--color-border)', borderRadius: '0px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-text-muted)', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '4px', marginBottom: '4px' }}>
                               <span style={{ fontWeight: '700', color: 'var(--color-accent)' }}>{c.author}</span>
                               <span>{new Date(c.created_at).toLocaleString('pt-BR')}</span>
@@ -464,10 +464,10 @@ function Tickets() {
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
                       placeholder="Escreva uma nota técnica ou comentário..."
-                      style={{ flex: 1, height: '60px', background: 'var(--color-primary-light)', border: '1px solid var(--color-border)', borderRadius: '0px', color: 'var(--color-text)', padding: '10px 12px', fontSize: '0.88rem', outline: 'none', resize: 'none' }}
+                      style={{ flex: 1, height: '60px', background: 'var(--color-secondary)', border: '1px solid var(--color-border)', borderRadius: '0px', color: 'var(--color-text)', padding: '10px 12px', fontSize: '0.88rem', outline: 'none', resize: 'none' }}
                     />
                     
-                    <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '60px', height: '60px', border: '1px dashed var(--color-border)', background: 'var(--color-primary-light)', borderRadius: '0px', cursor: 'pointer', color: commentImage ? '#10b981' : 'var(--color-text-muted)' }} title="Anexar foto">
+                    <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '60px', height: '60px', border: '1px dashed var(--color-border)', background: 'var(--color-secondary)', borderRadius: '0px', cursor: 'pointer', color: commentImage ? '#10b981' : 'var(--color-text-muted)' }} title="Anexar foto">
                       <Camera size={20} style={{ margin: 'auto' }} />
                       <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleCommentPhotoChange} />
                     </label>
