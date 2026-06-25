@@ -187,6 +187,7 @@ db.exec(`
 // Migrations rápidas para colunas novas
 try { db.exec("ALTER TABLE tickets ADD COLUMN photo TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE tickets ADD COLUMN comments TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE tickets ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN must_change_password INTEGER DEFAULT 0"); } catch(e) {}
 try { db.exec("ALTER TABLE tasks ADD COLUMN completed_by TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE tasks ADD COLUMN completed_at DATETIME"); } catch(e) {}
@@ -633,7 +634,12 @@ app.use(express.static(path.join(__dirname, '../frontend/dist')));
 // Rota para backup do banco de dados (Download do .sqlite)
 app.get('/api/backup', authenticate, (req, res) => {
   res.download(dbPath, 'klarke_backup.sqlite', (err) => {
-    if (err) res.status(500).json({ error: 'Erro ao baixar backup' });
+    if (err) {
+      console.error('Erro no download do backup:', err.message);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Erro ao baixar backup' });
+      }
+    }
   });
 });
 
