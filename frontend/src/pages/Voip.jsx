@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Phone, Plus, Search, Activity, Trash2, Edit, X, Copy, ExternalLink, Shield, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getAuthConfig } from '../utils/auth';
 
 function Voip() {
   const [extensions, setExtensions] = useState([]);
@@ -29,11 +30,6 @@ function Voip() {
     }
 
     setFormData({ ...formData, [name]: formattedValue });
-  };
-  const getAuthConfig = () => {
-    const token = localStorage.getItem('klarke_token');
-    const user = localStorage.getItem('klarke_user') || 'Sistema';
-    return { headers: { Authorization: `Bearer ${token}`, 'X-User': user } };
   };
 
   const fetchExtensions = async () => {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Package, Plus, Search, Box, Database, Trash2, Edit, X, Minus, PlusCircle, MapPin, Tag } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getAuthConfig } from '../utils/auth';
 
 function Inventory() {
   const [items, setItems] = useState([]);
@@ -17,12 +18,6 @@ function Inventory() {
     location: 'DML / Depósito',
     notes: ''
   });
-
-  const getAuthConfig = () => {
-    const token = localStorage.getItem('klarke_token');
-    const user = localStorage.getItem('klarke_user') || 'Sistema';
-    return { headers: { Authorization: `Bearer ${token}`, 'X-User': user } };
-  };
 
   const fetchItems = async () => {
     try {

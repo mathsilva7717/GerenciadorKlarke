@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { History, User, Clock, Info, Search } from 'lucide-react';
+import { getAuthConfig } from '../utils/auth';
 
 const AuditLogs = () => {
   const [logs, setLogs] = useState([]);
@@ -8,12 +9,6 @@ const AuditLogs = () => {
   const [loading, setLoading] = useState(true);
 
   const API_URL = '/api/audit-logs';
-
-  const getAuthConfig = () => {
-    const token = localStorage.getItem('klarke_token');
-    const user = localStorage.getItem('klarke_user') || 'Sistema';
-    return { headers: { Authorization: `Bearer ${token}`, 'X-User': user } };
-  };
 
   useEffect(() => {
     fetchLogs();

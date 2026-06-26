@@ -5,6 +5,7 @@ import {
   MessageSquare, User, Tag, Shield, Calendar, RefreshCw, Camera 
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getAuthConfig } from '../utils/auth';
 
 function Tickets() {
   const [tickets, setTickets] = useState([]);
@@ -20,11 +21,6 @@ function Tickets() {
   const [commentImage, setCommentImage] = useState(null);
   const [commentImageName, setCommentImageName] = useState('');
   const [isSendingComment, setIsSendingComment] = useState(false);
-
-  const getAuthConfig = () => {
-    const token = localStorage.getItem('klarke_token');
-    return { headers: { Authorization: `Bearer ${token}` } };
-  };
 
   const fetchTickets = async (manual = false) => {
     if (manual) setIsRefreshing(true);

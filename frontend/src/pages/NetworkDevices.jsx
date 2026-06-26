@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Search, Plus, X, Copy, Router as RouterIcon, MapPin, Check, Download, Clipboard, Trash2, QrCode, ChevronLeft, ChevronRight, RotateCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { getAuthConfig } from '../utils/auth';
 
 const API_URL = '/api/network-devices';
 
@@ -22,19 +23,6 @@ function NetworkDevices() {
   const [formData, setFormData] = useState({
     name: '', type: 'Modem', ip: '', username: '', password: '', location: '', isp: '', serial_number: ''
   });
-
-  const getAuthConfig = () => {
-    const token = localStorage.getItem('klarke_token');
-    const userData = localStorage.getItem('klarke_user');
-    let user = 'Sistema';
-    try {
-      const parsed = JSON.parse(userData);
-      user = parsed.username || userData;
-    } catch (e) {
-      user = userData || 'Sistema';
-    }
-    return { headers: { Authorization: `Bearer ${token}`, 'X-User': user } };
-  };
 
   useEffect(() => {
     const token = localStorage.getItem('klarke_token');

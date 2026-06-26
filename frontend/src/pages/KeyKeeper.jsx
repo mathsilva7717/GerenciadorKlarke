@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Key, Plus, Search, ShieldCheck, Lock, Eye, EyeOff, Copy, Trash2, Edit, X, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
+import { getAuthConfig } from '../utils/auth';
 
 function KeyKeeper() {
   const [credentials, setCredentials] = useState([]);
@@ -20,12 +21,6 @@ function KeyKeeper() {
     category: 'Sistemas',
     notes: ''
   });
-
-  const getAuthConfig = () => {
-    const token = localStorage.getItem('klarke_token');
-    const user = localStorage.getItem('klarke_user') || 'Sistema';
-    return { headers: { Authorization: `Bearer ${token}`, 'X-User': user } };
-  };
 
   const fetchCredentials = async () => {
     try {

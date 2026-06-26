@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { UserPlus, Trash2, Shield, User, RotateCcw } from 'lucide-react';
+import { getAuthConfig } from '../utils/auth';
 
 const Users = () => {
   const [users, setUsers] = useState([]);
@@ -61,21 +62,15 @@ const Users = () => {
     }
   };
 
-  const getAuthConfig = () => {
-    const token = localStorage.getItem('klarke_token');
-    const user = localStorage.getItem('klarke_user') || 'Sistema';
-    return { headers: { Authorization: `Bearer ${token}`, 'X-User': user } };
-  };
-
   const handleResetPassword = async (id) => {
     setConfirmDialog({
       open: true,
       title: 'Resetar Senha',
-      message: 'A senha será resetada para 123456. O usuário será forçado a trocá-la no próximo acesso. Confirmar?',
+      message: 'Uma senha temporária aleatória será gerada e exibida uma única vez. O usuário será forçado a trocá-la no próximo acesso. Confirmar?',
       onConfirm: async () => {
         try {
-          await axios.post(`${API_URL}/api/users/${id}/reset-password`, {}, getAuthConfig());
-          setMessage({ type: 'success', text: 'Senha resetada com sucesso!' });
+          const { data } = await axios.post(`${API_URL}/api/users/${id}/reset-password`, {}, getAuthConfig());
+          setMessage({ type: 'success', text: `Senha temporária (anote, não será exibida novamente): ${data.tempPassword}` });
         } catch (error) {
           setMessage({ type: 'error', text: 'Erro ao resetar senha.' });
         }

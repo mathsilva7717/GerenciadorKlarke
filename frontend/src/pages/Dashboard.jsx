@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Search, Plus, X, Copy, Monitor, MapPin, Check, Download, Clipboard, Trash2, QrCode, Activity, Edit, Printer, ChevronLeft, ChevronRight, RotateCw, Database, Wifi, Globe, Wrench } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { getAuthConfig } from '../utils/auth';
 
 const API_URL = '/api/machines';
 
@@ -32,19 +33,6 @@ function Dashboard() {
     password: '',
     serial_number: ''
   });
-
-  const getAuthConfig = () => {
-    const token = localStorage.getItem('klarke_token');
-    const userData = localStorage.getItem('klarke_user');
-    let user = 'Sistema';
-    try {
-      const parsed = JSON.parse(userData);
-      user = parsed.username || userData;
-    } catch (e) {
-      user = userData || 'Sistema';
-    }
-    return { headers: { Authorization: `Bearer ${token}`, 'X-User': user } };
-  };
 
   useEffect(() => {
     const token = localStorage.getItem('klarke_token');
@@ -401,8 +389,10 @@ function Dashboard() {
     }
   };
 
+  // Considera online se last_seen foi há menos de 5 minutos
   const isOnline = (lastSeen) => {
-    return true; // Rede com IPs fixos: equipamentos sempre online
+    if (!lastSeen) return false;
+    return (Date.now() - new Date(lastSeen).getTime()) < 5 * 60 * 1000;
   };
 
   const onlineCount = machines.filter(m => isOnline(m.last_seen)).length;

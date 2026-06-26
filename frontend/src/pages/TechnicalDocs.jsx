@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
+import { getAuthConfig } from '../utils/auth';
 
 function TechnicalDocs() {
   const [docs, setDocs] = useState([]);
@@ -23,12 +24,6 @@ function TechnicalDocs() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState({ title: '', message: '', onConfirm: null });
   const [previewImage, setPreviewImage] = useState(null);
-
-  const getAuthConfig = () => {
-    const token = localStorage.getItem('klarke_token');
-    const user = localStorage.getItem('klarke_user') || 'Sistema';
-    return { headers: { Authorization: `Bearer ${token}`, 'X-User': user } };
-  };
 
   const fetchDocs = async () => {
     try {

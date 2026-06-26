@@ -3,6 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Monitor, Camera, Router as RouterIcon, ListTodo, ChevronRight, Activity, ShieldCheck, Cpu, Database, RotateCw, BookOpen, Phone, Package, Key, Globe, MessageSquare } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getAuthConfig } from '../utils/auth';
+
+// Considera online se last_seen foi há menos de 5 minutos
+const isOnline = (lastSeen) => {
+  if (!lastSeen) return false;
+  return (Date.now() - new Date(lastSeen).getTime()) < 5 * 60 * 1000;
+};
 
 function Home() {
   const navigate = useNavigate();
@@ -21,16 +28,6 @@ function Home() {
   const [recentTickets, setRecentTickets] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [systemStatus, setSystemStatus] = useState({ disk: { percent: '0%', avail: '0' }, latency: 0 });
-
-  const isOnline = (lastSeen) => {
-    return true; // Todos os dispositivos estão sempre online sob IP fixo
-  };
-
-  const getAuthConfig = () => {
-    const token = localStorage.getItem('klarke_token');
-    const user = localStorage.getItem('klarke_user') || 'Sistema';
-    return { headers: { Authorization: `Bearer ${token}`, 'X-User': user } };
-  };
 
   const fetchStats = async (manual = false) => {
     if (manual) setIsRefreshing(true);

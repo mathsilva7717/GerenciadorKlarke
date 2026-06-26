@@ -59,27 +59,27 @@ axios.interceptors.response.use(
   }
 );
 
+function ProtectedRoute({ children }) {
+  const token = localStorage.getItem('klarke_token');
+  if (!token) return <Navigate to="/" replace />;
+
+  const userData = localStorage.getItem('klarke_user');
+  let user = {};
+  try {
+    user = JSON.parse(userData || '{}');
+    if (typeof user === 'string') user = { username: user };
+  } catch (e) {
+    user = { username: userData };
+  }
+
+  if (user.mustChangePassword && window.location.pathname !== '/reset-password') {
+    return <Navigate to="/reset-password" replace />;
+  }
+
+  return children;
+}
+
 function App() {
-  const ProtectedRoute = ({ children }) => {
-    const token = localStorage.getItem('klarke_token');
-    if (!token) return <Navigate to="/" replace />;
-
-    const userData = localStorage.getItem('klarke_user');
-    let user = {};
-    try {
-      user = JSON.parse(userData || '{}');
-      if (typeof user === 'string') user = { username: user };
-    } catch (e) {
-      user = { username: userData };
-    }
-
-    if (user.mustChangePassword && window.location.pathname !== '/reset-password') {
-      return <Navigate to="/reset-password" replace />;
-    }
-
-    return children;
-  };
-
   return (
     <Router>
       <div className="dashboard-layout">

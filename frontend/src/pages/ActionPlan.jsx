@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Plus, CheckCircle2, Circle, ListTodo, Trash2, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
+import { getAuthConfig } from '../utils/auth';
 
 const API_URL = '/api/tasks';
 
@@ -16,12 +17,6 @@ function ActionPlan() {
   const [assignedTo, setAssignedTo] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-
-  const getAuthConfig = () => {
-    const token = localStorage.getItem('klarke_token');
-    const user = localStorage.getItem('klarke_user') || 'Sistema';
-    return { headers: { Authorization: `Bearer ${token}`, 'X-User': user } };
-  };
 
   const fetchTasks = async () => {
     try {

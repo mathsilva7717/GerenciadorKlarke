@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
+import { getAuthConfig } from '../utils/auth';
 
 const ICON_OPTIONS = [
   { value: 'building', label: 'Escritório / Prédio', component: Building2 },
@@ -48,12 +49,6 @@ function NetworkMap() {
     name: '',
     icon: 'building'
   });
-
-  const getAuthConfig = () => {
-    const token = localStorage.getItem('klarke_token');
-    const user = localStorage.getItem('klarke_user') || 'Sistema';
-    return { headers: { Authorization: `Bearer ${token}`, 'X-User': user } };
-  };
 
   const fetchData = async (initialize = false) => {
     try {
