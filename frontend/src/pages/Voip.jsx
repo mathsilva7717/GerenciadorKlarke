@@ -201,7 +201,7 @@ function Voip() {
                     </div>
                   </div>
                   <div className="detail-item">
-                    <span className="detail-label">IP do PABX</span>
+                    <span className="detail-label">PABX (IP/DNS)</span>
                     <div className="detail-value" style={{display: 'flex', justifyContent: 'space-between', width: '100%'}}>
                       <span style={{fontWeight: 'bold'}}>{ext.pabx_ip || '---'}</span>
                       <button className="copy-btn" onClick={() => copyToClipboard(ext.pabx_ip, `pabx-${ext.id}`)}>
@@ -312,13 +312,13 @@ function Voip() {
                 </div>
               </div>
               <div className="form-group">
-                <label className="form-label">Endereço IP do PABX / Servidor</label>
-                <input 
-                  type="text" className="form-input" 
+                <label className="form-label">Endereço do PABX / Servidor (IP ou DNS)</label>
+                <input
+                  type="text" className="form-input"
                   name="pabx_ip"
-                  value={formData.pabx_ip} 
-                  onChange={handleInputChange}
-                  placeholder="Ex: 192.168.1.10"
+                  value={formData.pabx_ip}
+                  onChange={e => setFormData({ ...formData, pabx_ip: e.target.value })}
+                  placeholder="Ex: 192.168.1.10 ou pabx.empresa.com.br"
                 />
               </div>
               <div className="form-group">

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { 
-  Search, Trash2, CheckCircle2, Clock, Filter, AlertCircle, 
-  MessageSquare, User, Tag, Shield, Calendar, RefreshCw, Camera 
+import {
+  Search, Trash2, CheckCircle2, Clock, Filter, AlertCircle,
+  MessageSquare, User, Tag, Shield, Calendar, RefreshCw, Camera,
+  FileText, Download
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getAuthConfig } from '../utils/auth';
@@ -12,6 +13,8 @@ function Tickets() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('Todos');
   const [priorityFilter, setPriorityFilter] = useState('Todos');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState({ open: false, id: null });
@@ -114,17 +117,127 @@ function Tickets() {
   };
 
   const filteredTickets = tickets.filter(t => {
-    const matchesSearch = 
+    const matchesSearch =
       t.requester.toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       String(t.id).includes(searchTerm);
-      
+
     const matchesStatus = statusFilter === 'Todos' || t.status === statusFilter;
     const matchesPriority = priorityFilter === 'Todos' || t.priority === priorityFilter;
-    
-    return matchesSearch && matchesStatus && matchesPriority;
+
+    // Filtro por período (compara só a data, ignora hora)
+    let matchesDate = true;
+    if (dateFrom || dateTo) {
+      const created = (t.created_at || '').slice(0, 10);
+      if (dateFrom && created < dateFrom) matchesDate = false;
+      if (dateTo && created > dateTo) matchesDate = false;
+    }
+
+    return matchesSearch && matchesStatus && matchesPriority && matchesDate;
   });
+
+  // Resumo dos chamados filtrados (para os contadores e o relatório)
+  const summary = {
+    total: filteredTickets.length,
+    pendente: filteredTickets.filter(t => t.status === 'Pendente').length,
+    atendimento: filteredTickets.filter(t => t.status === 'Em Atendimento').length,
+    resolvido: filteredTickets.filter(t => t.status === 'Resolvido').length,
+  };
+
+  const escHtml = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // Exporta os chamados filtrados em CSV (compatível com Excel)
+  const exportCsv = () => {
+    if (filteredTickets.length === 0) { toast.error('Nenhum chamado para exportar'); return; }
+    const headers = ['ID', 'Data', 'Solicitante', 'Categoria', 'Prioridade', 'Status', 'Assunto', 'Descrição'];
+    const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const lines = [headers.join(';')];
+    filteredTickets.forEach(t => {
+      lines.push([
+        t.id,
+        new Date(t.created_at).toLocaleString('pt-BR'),
+        t.requester,
+        t.category,
+        t.priority,
+        t.status,
+        t.title,
+        (t.description || '').replace(/\s+/g, ' '),
+      ].map(esc).join(';'));
+    });
+    const csv = '﻿' + lines.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `chamados_klarke_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('CSV exportado!');
+  };
+
+  // Gera um relatório bonito em nova janela, pronto pra imprimir/salvar em PDF
+  const generatePdfReport = () => {
+    if (filteredTickets.length === 0) { toast.error('Nenhum chamado para o relatório'); return; }
+    const periodo = (dateFrom || dateTo)
+      ? `${dateFrom ? new Date(dateFrom + 'T00:00').toLocaleDateString('pt-BR') : '...'} até ${dateTo ? new Date(dateTo + 'T00:00').toLocaleDateString('pt-BR') : '...'}`
+      : 'Todos os períodos';
+    const badgeClass = (s) => s === 'Pendente' ? 'b-pend' : s === 'Em Atendimento' ? 'b-atend' : 'b-resol';
+    const rowsHtml = filteredTickets.map(t => `<tr>
+      <td>#${t.id}</td>
+      <td>${new Date(t.created_at).toLocaleDateString('pt-BR')}</td>
+      <td>${escHtml(t.requester)}</td>
+      <td>${escHtml(t.category)}</td>
+      <td class="prio-${escHtml(t.priority)}">${escHtml(t.priority)}</td>
+      <td><span class="badge ${badgeClass(t.status)}">${escHtml(t.status)}</span></td>
+      <td>${escHtml(t.title)}</td>
+    </tr>`).join('');
+
+    const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
+<title>Relatório de Chamados - Klarke</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Segoe UI',Arial,sans-serif;color:#0f172a;padding:32px;}
+  .h{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #0f172a;padding-bottom:16px;margin-bottom:24px;}
+  .h h1{font-size:22px;letter-spacing:-.5px;} .h .sub{color:#64748b;font-size:13px;margin-top:4px;}
+  .logo{font-size:28px;font-weight:800;color:#0f172a;letter-spacing:-1px;}
+  .meta{display:flex;gap:24px;margin-bottom:20px;font-size:13px;color:#475569;flex-wrap:wrap;}
+  .cards{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap;}
+  .card{flex:1;min-width:110px;border:1px solid #e2e8f0;border-radius:8px;padding:14px;}
+  .card .n{font-size:26px;font-weight:800;line-height:1;} .card .l{font-size:11px;text-transform:uppercase;color:#64748b;letter-spacing:.5px;margin-top:6px;}
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  th{background:#0f172a;color:#fff;text-align:left;padding:9px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.5px;}
+  td{padding:8px 10px;border-bottom:1px solid #e2e8f0;}
+  tr:nth-child(even) td{background:#f8fafc;}
+  .badge{padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;white-space:nowrap;}
+  .b-pend{background:#fef3c7;color:#92400e;} .b-atend{background:#dbeafe;color:#1e40af;} .b-resol{background:#d1fae5;color:#065f46;}
+  .prio-Alta{color:#dc2626;font-weight:700;} .prio-Média{color:#d97706;font-weight:700;} .prio-Baixa{color:#059669;font-weight:700;}
+  .ft{margin-top:32px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;text-align:center;}
+  @media print{body{padding:0;} @page{margin:1.2cm;}}
+</style></head><body>
+  <div class="h"><div><h1>Relatório de Chamados Técnicos</h1><div class="sub">Klarke Solutions · Suporte & Tecnologia</div></div><div class="logo">KLARKE</div></div>
+  <div class="meta">
+    <div><strong>Gerado em:</strong> ${new Date().toLocaleString('pt-BR')}</div>
+    <div><strong>Período:</strong> ${escHtml(periodo)}</div>
+    <div><strong>Filtro de status:</strong> ${escHtml(statusFilter)}</div>
+  </div>
+  <div class="cards">
+    <div class="card"><div class="n">${summary.total}</div><div class="l">Total</div></div>
+    <div class="card"><div class="n" style="color:#d97706">${summary.pendente}</div><div class="l">Pendentes</div></div>
+    <div class="card"><div class="n" style="color:#2563eb">${summary.atendimento}</div><div class="l">Em Atendimento</div></div>
+    <div class="card"><div class="n" style="color:#059669">${summary.resolvido}</div><div class="l">Resolvidos</div></div>
+  </div>
+  <table><thead><tr><th>#</th><th>Data</th><th>Solicitante</th><th>Categoria</th><th>Prioridade</th><th>Status</th><th>Assunto</th></tr></thead><tbody>${rowsHtml}</tbody></table>
+  <div class="ft">Relatório gerado automaticamente pelo Klarke Control · ${new Date().getFullYear()} · Klarke Solutions</div>
+</body></html>`;
+
+    const win = window.open('', '_blank');
+    if (!win) { toast.error('Permita pop-ups para gerar o relatório'); return; }
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 600);
+  };
 
   const getPriorityColor = (priority) => {
     switch (priority) {
@@ -146,12 +259,45 @@ function Tickets() {
 
   return (
     <>
-      <header className="page-header" style={{ marginBottom: '32px' }}>
+      <header className="page-header" style={{ marginBottom: '24px' }}>
         <div>
           <h1 style={{ marginBottom: '8px' }}>Central de Chamados (Klarke Flow)</h1>
           <p>Gerencie as solicitações de suporte dos usuários da empresa.</p>
         </div>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button
+            onClick={generatePdfReport}
+            className="add-btn"
+            style={{ background: '#0f172a' }}
+            title="Gerar relatório em PDF dos chamados filtrados"
+          >
+            <FileText size={16} /> <span className="hide-mobile">RELATÓRIO PDF</span>
+          </button>
+          <button
+            onClick={exportCsv}
+            className="add-btn"
+            style={{ background: '#059669' }}
+            title="Exportar os chamados filtrados em CSV"
+          >
+            <Download size={16} /> <span className="hide-mobile">CSV</span>
+          </button>
+        </div>
       </header>
+
+      {/* Barra de resumo */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+        {[
+          { label: 'Total', value: summary.total, color: 'var(--color-text)' },
+          { label: 'Pendentes', value: summary.pendente, color: '#f59e0b' },
+          { label: 'Em Atendimento', value: summary.atendimento, color: 'var(--color-accent)' },
+          { label: 'Resolvidos', value: summary.resolvido, color: '#10b981' },
+        ].map((s, i) => (
+          <div key={i} className="stat-box-industrial" style={{ padding: '16px 20px', borderLeftColor: s.color }}>
+            <div style={{ fontSize: '1.8rem', fontWeight: '900', color: s.color, lineHeight: 1 }}>{s.value}</div>
+            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)', marginTop: '6px', fontWeight: '700' }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
 
       {/* Filtros e Busca */}
       <div className="search-wrapper" style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '24px', width: '100%' }}>
@@ -198,12 +344,39 @@ function Tickets() {
             </select>
           </div>
  
-          <button 
+          {/* Filtro por período */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--color-secondary)', border: '1px solid var(--color-border)', padding: '0 12px', height: '52px' }}>
+            <Calendar size={16} color="var(--color-text-muted)" />
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              title="Data inicial"
+              style={{ background: 'transparent', border: 'none', color: 'var(--color-text)', outline: 'none', fontSize: '0.85rem', fontWeight: '600', colorScheme: 'dark' }}
+            />
+            <span style={{ color: 'var(--color-text-muted)' }}>–</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              title="Data final"
+              style={{ background: 'transparent', border: 'none', color: 'var(--color-text)', outline: 'none', fontSize: '0.85rem', fontWeight: '600', colorScheme: 'dark' }}
+            />
+            {(dateFrom || dateTo) && (
+              <button
+                onClick={() => { setDateFrom(''); setDateTo(''); }}
+                title="Limpar período"
+                style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '1rem', lineHeight: 1 }}
+              >×</button>
+            )}
+          </div>
+
+          <button
             className={`btn-refresh-sober ${isRefreshing ? 'spinning' : ''}`}
             onClick={() => fetchTickets(true)}
             title="Atualizar Chamados"
             disabled={isRefreshing}
-            style={{ width: '52px', height: '52px', display: 'flex', alignItems: 'center', justifyCenter: 'center', border: '1px solid var(--color-border)', background: 'var(--color-secondary)', color: 'var(--color-text)', borderRadius: '0px', cursor: 'pointer' }}
+            style={{ width: '52px', height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--color-border)', background: 'var(--color-secondary)', color: 'var(--color-text)', borderRadius: '0px', cursor: 'pointer' }}
           >
             <RefreshCw size={20} style={{ margin: 'auto' }} />
           </button>

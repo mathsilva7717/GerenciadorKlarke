@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Monitor, Camera, Router as RouterIcon, ListTodo, ChevronRight, Activity, ShieldCheck, Cpu, Database, RotateCw, BookOpen, Phone, Package, Key, Globe, MessageSquare } from 'lucide-react';
+import { Monitor, Camera, Router as RouterIcon, ListTodo, ChevronRight, Activity, ShieldCheck, Cpu, Database, RotateCw, BookOpen, Phone, Package, Key, Globe, MessageSquare, Wrench, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getAuthConfig } from '../utils/auth';
 
@@ -9,6 +9,27 @@ import { getAuthConfig } from '../utils/auth';
 const isOnline = (lastSeen) => {
   if (!lastSeen) return false;
   return (Date.now() - new Date(lastSeen).getTime()) < 5 * 60 * 1000;
+};
+
+// Saudação em inglês conforme o horário do dia
+const getGreeting = () => {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 12) return 'Good morning';
+  if (h >= 12 && h < 18) return 'Good afternoon';
+  return 'Good evening';
+};
+
+// Primeiro nome do usuário logado (localStorage), capitalizado
+const getFirstName = () => {
+  try {
+    const u = JSON.parse(localStorage.getItem('klarke_user'));
+    const raw = (u?.username || '').trim();
+    if (!raw) return 'Operador';
+    const first = raw.split(/[\s._@-]+/)[0];
+    return first.charAt(0).toUpperCase() + first.slice(1);
+  } catch {
+    return 'Operador';
+  }
 };
 
 function Home() {
@@ -52,7 +73,7 @@ function Home() {
       const activeTickets = allTickets.filter(x => x.status === 'Em Atendimento');
       const resolvedTickets = allTickets.filter(x => x.status === 'Resolvido');
       setRecentTickets(allTickets.slice(0, 5));
-      
+
       setSystemStatus(sys.data);
       setStats({
         machines: m.data?.length || 0,
@@ -106,6 +127,17 @@ function Home() {
     }
   };
 
+  const downloadRepair = () => {
+    // Rota pública que devolve o .exe com Content-Disposition: attachment
+    const link = document.createElement('a');
+    link.href = '/api/monitoring/repair-download';
+    link.setAttribute('download', 'Klarke Repair.exe');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Iniciando download do Klarke Repair...');
+  };
+
   const downloadAgent = async () => {
     try {
       const response = await axios.get('/api/monitoring/agent-download', {
@@ -133,8 +165,12 @@ function Home() {
             <h1>COMMAND CENTER</h1>
             <p>Monitoramento de redes e gestão de ativos.</p>
           </div>
-          <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-            <button 
+          <div style={{display: 'flex', alignItems: 'center', gap: '18px'}}>
+            <div className="hero-greeting">
+              <span className="greeting-time">{getGreeting()},</span>
+              <span className="greeting-name">{getFirstName()}</span>
+            </div>
+            <button
               className={`refresh-btn-circular ${isRefreshing ? 'spinning' : ''}`}
               onClick={() => fetchStats(true)}
               title="Atualizar Painel"
@@ -183,10 +219,10 @@ function Home() {
             </div>
           </div>
 
-          {/* Card 2: Armazenamento da VPS */}
+          {/* Card 2: Armazenamento do Servidor */}
           <div className="stat-box-industrial" style={{ flex: '1 1 260px', minHeight: '180px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '12px', padding: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', width: '100%' }}>
-              <span className="stat-label" style={{ whiteSpace: 'nowrap' }}>DISCO DA VPS</span>
+              <span className="stat-label" style={{ whiteSpace: 'nowrap' }}>DISCO DO SERVIDOR</span>
               <span style={{ fontSize: '1.15rem', fontWeight: '800', color: parseInt(systemStatus?.disk?.percent) > 90 ? '#ef4444' : 'var(--color-text)', whiteSpace: 'nowrap' }}>
                 {systemStatus?.disk?.percent || '0%'}
               </span>
@@ -207,13 +243,24 @@ function Home() {
               <span>Livre: {systemStatus?.disk?.avail || '0'}</span>
             </div>
             
-            <button 
-              onClick={downloadBackup}
-              style={{ background: 'none', border: 'none', color: 'var(--color-accent)', fontSize: '0.75rem', cursor: 'pointer', padding: 0, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', alignSelf: 'flex-start', marginTop: '4px' }}
-            >
-              <Database size={12} />
-              BAIXAR BACKUP DO BANCO
-            </button>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
+              <button
+                onClick={downloadBackup}
+                style={{ background: 'none', border: 'none', color: 'var(--color-accent)', fontSize: '0.75rem', cursor: 'pointer', padding: 0, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}
+              >
+                <Database size={12} />
+                BAIXAR BACKUP
+              </button>
+              <span style={{ color: 'var(--color-border)' }}>|</span>
+              <button
+                onClick={downloadRepair}
+                style={{ background: 'none', border: 'none', color: '#10b981', fontSize: '0.75rem', cursor: 'pointer', padding: 0, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}
+                title="Baixar a ferramenta de reparo para o técnico"
+              >
+                <Wrench size={12} />
+                KLARKE REPAIR
+              </button>
+            </div>
           </div>
 
           {/* Card 3: Suporte Flow */}
@@ -272,19 +319,47 @@ function Home() {
               </span>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(0,0,0,0.05)', padding: '12px', border: '1px solid var(--color-border)' }}>
-              <Activity size={18} color="#10b981" />
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Histórico Geral</span>
-                <span style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--color-text)' }}>
-                  {stats.logsTotal} eventos gravados
-                </span>
+            <div style={{ display: 'flex', alignItems: 'stretch', gap: '20px', width: '100%', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(0,0,0,0.05)', padding: '12px 16px', border: '1px solid var(--color-border)' }}>
+                <Activity size={18} color="#10b981" />
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Histórico Geral</span>
+                  <span style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--color-text)' }}>
+                    {stats.logsTotal} eventos gravados
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ flex: '1 1 320px', display: 'flex', alignItems: 'center', borderLeft: '1px solid var(--color-border)', paddingLeft: '20px', minWidth: 0 }}>
+                <svg viewBox="0 0 320 64" preserveAspectRatio="none" style={{ width: '100%', height: '64px', overflow: 'visible' }} aria-hidden="true">
+                  <defs>
+                    <linearGradient id="netGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity="0.22" />
+                      <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M0,44 L24,40 L48,46 L72,30 L96,36 L120,18 L144,30 L168,38 L192,22 L216,32 L240,26 L264,40 L288,20 L312,30 L320,28 V64 H0 Z" fill="url(#netGrad)" />
+                  <polyline points="0,44 24,40 48,46 72,30 96,36 120,18 144,30 168,38 192,22 216,32 240,26 264,40 288,20 312,30 320,28" fill="none" stroke="#10b981" strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
+                  <circle cx="320" cy="28" r="3.5" fill="#10b981">
+                    <animate attributeName="opacity" values="1;0.15;1" dur="1.6s" repeatCount="indefinite" />
+                    <animate attributeName="r" values="3.5;5;3.5" dur="1.6s" repeatCount="indefinite" />
+                  </circle>
+                </svg>
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px', gap: '12px' }}>
-              <span style={{ whiteSpace: 'nowrap' }}>Status da Rede: ESTÁVEL</span>
-              <span style={{ color: '#10b981', fontWeight: '600', whiteSpace: 'nowrap' }}>ONLINE</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginTop: '4px', gap: '12px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Status da Rede</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.68rem', fontWeight: '700', color: '#10b981', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.28)', padding: '3px 10px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }}></span>
+                  Estável
+                </span>
+              </div>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.68rem', fontWeight: '700', color: '#10b981', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.28)', padding: '3px 10px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>
+                <span className="pulse-dot" style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }}></span>
+                Online
+              </span>
             </div>
           </div>
         </div>

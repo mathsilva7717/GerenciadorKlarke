@@ -426,24 +426,26 @@ body.dark .machine-card:hover {
   background-color: rgba(2, 6, 23, 0.8);
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center;
   z-index: 99999;
-  padding: 80px 20px 40px 20px;
+  padding: 20px;
   backdrop-filter: blur(8px);
   overflow-y: auto;
-  cursor: pointer; /* Indica que o fundo é clicável para fechar */
+  cursor: pointer;
 }
 
 .modal-content {
   background-color: var(--color-surface);
   border-radius: 0px;
-  padding: 32px;
+  padding: 24px 28px;
   width: 100%;
   max-width: 550px;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   animation: slideUp 0.3s ease-out;
   position: relative;
-  cursor: default; /* Dentro do formulário o cursor volta ao normal */
+  cursor: default;
 }
 
 @keyframes slideUp {
@@ -455,7 +457,7 @@ body.dark .machine-card:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .modal-title {
@@ -661,6 +663,15 @@ body.dark .machine-card:hover {
   box-shadow: 0 0 0 3px rgba(44, 99, 171, 0.1);
 }
 
+/* Campos mais compactos dentro dos modais de cadastro */
+.modal-content .form-group {
+  margin-bottom: 12px;
+}
+
+.modal-content .form-input {
+  padding: 10px 14px;
+}
+
 .btn {
   width: 100%;
   padding: 14px;
@@ -707,18 +718,20 @@ body.dark .machine-card:hover {
   background: var(--color-primary) !important;
   color: white !important;
   border: none !important;
-  padding: 6px 12px !important;
-  border-radius: 6px !important;
+  padding: 11px 20px !important;
+  border-radius: 8px !important;
   cursor: pointer !important;
-  display: flex !important;
+  display: inline-flex !important;
   align-items: center !important;
-  gap: 6px !important;
-  font-weight: 600 !important;
-  font-size: 0.75rem !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  font-weight: 700 !important;
+  font-size: 0.8rem !important;
   transition: all 0.2s !important;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12) !important;
   text-transform: uppercase !important;
   letter-spacing: 0.5px !important;
+  white-space: nowrap !important;
   height: fit-content !important;
   align-self: center !important;
 }
@@ -1583,6 +1596,44 @@ body.dark .progress-bar-bg {
   margin-top: 4px;
 }
 
+/* Saudação personalizada no header (Space Grotesk) */
+.hero-greeting {
+  text-align: right;
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.hero-greeting .greeting-time {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.hero-greeting .greeting-name {
+  display: block;
+  font-size: 1.4rem;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  color: var(--color-primary);
+}
+
+.hero-greeting .greeting-wave {
+  color: var(--color-accent);
+}
+
+/* Bolinha de status "ONLINE" pulsando */
+.pulse-dot {
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%   { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45); }
+  70%  { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
 .system-status {
   display: flex;
   align-items: center;
@@ -2207,13 +2258,13 @@ body.dark .status-badge {
   }
 
   .modal-overlay {
-    padding: 100px 10px 20px 10px;
+    padding: 20px;
   }
 
   .modal-content {
     width: 100%;
-    max-height: calc(100vh - 140px);
-    overflow-y: auto;
+    max-height: 90vh;
+    padding: 20px;
   }
 }
 

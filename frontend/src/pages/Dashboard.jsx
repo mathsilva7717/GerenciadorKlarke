@@ -469,7 +469,7 @@ function Dashboard() {
 
         {/* ARMAZENAMENTO */}
         <div className="stat-box-industrial" style={{borderLeft: '4px solid #ef4444', background: 'var(--color-surface)', backdropFilter: 'blur(8px)'}}>
-          <span className="stat-label">Armazenamento VPS</span>
+          <span className="stat-label">Armazenamento do Servidor</span>
           <div className="stat-value-row">
             <Database size={18} color="#ef4444" />
             <span className="stat-value">{systemStatus?.disk?.percent || '0%'}</span>

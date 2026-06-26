@@ -210,6 +210,42 @@
       min-height: 100px;
     }
 
+    /* Select estilizado (tira a cara de HTML cru) */
+    .select-wrapper {
+      position: relative;
+    }
+
+    select.input-field {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      padding-right: 44px;
+      cursor: pointer;
+    }
+
+    select.input-field:required:invalid {
+      color: var(--text-muted);
+    }
+
+    select.input-field option {
+      background: var(--bg-card);
+      color: var(--text-main);
+    }
+
+    select.input-field option[disabled] {
+      color: var(--text-muted);
+    }
+
+    .select-arrow {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--accent-color);
+      pointer-events: none;
+      font-size: 0.8rem;
+    }
+
     /* Visual Category Cards Grid */
     .categories-grid {
       display: grid;
@@ -568,11 +604,6 @@
       background: var(--accent-glow);
     }
 
-    .contact-section a.whatsapp:hover {
-      color: #25d366;
-      background: rgba(37, 211, 102, 0.1);
-    }
-
     .contact-section .divider {
       color: rgba(255, 255, 255, 0.1);
       margin: 0 4px;
@@ -612,12 +643,15 @@
 
           <div class="form-group">
             <label class="form-label" for="sector">Setor / Loja</label>
-            <select required class="input-field" id="sector">
-              <option value="" disabled selected>Selecione o setor...</option>
-              <option value="LOJA TUDO 10 OU 20 - SÃO VICENTE">LOJA TUDO 10 OU 20 - SÃO VICENTE</option>
-              <option value="LOJA TUDO 10 OU 20 - PRAIA GRANDE">LOJA TUDO 10 OU 20 - PRAIA GRANDE</option>
-              <option value="LIOMEX IMPORTADORA">LIOMEX IMPORTADORA</option>
-            </select>
+            <div class="select-wrapper">
+              <select required class="input-field" id="sector">
+                <option value="" disabled selected>Selecione o setor...</option>
+                <option value="LOJA TUDO 10 OU 20 - SÃO VICENTE">LOJA TUDO 10 OU 20 - SÃO VICENTE</option>
+                <option value="LOJA TUDO 10 OU 20 - PRAIA GRANDE">LOJA TUDO 10 OU 20 - PRAIA GRANDE</option>
+                <option value="LIOMEX IMPORTADORA">LIOMEX IMPORTADORA</option>
+              </select>
+              <i class="fa-solid fa-chevron-down select-arrow"></i>
+            </div>
           </div>
 
           <div class="form-group">
@@ -641,16 +675,6 @@
               </div>
             </div>
             <input type="hidden" id="category" value="">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Nível de Prioridade</label>
-            <div class="priority-row">
-              <div class="priority-pill selected" data-val="Baixa" onclick="selectPriority(this)">Baixa</div>
-              <div class="priority-pill" data-val="Média" onclick="selectPriority(this)">Média</div>
-              <div class="priority-pill" data-val="Alta" onclick="selectPriority(this)">Alta</div>
-            </div>
-            <input type="hidden" id="priority" value="Baixa">
           </div>
 
           <div class="form-group">
@@ -693,10 +717,6 @@
       <!-- Seção de Contato Rápido -->
       <div class="contact-section">
         <span class="label">Ajuda urgente?</span>
-        <a href="https://wa.me/5511989330765" target="_blank" class="whatsapp">
-          <i class="fa-brands fa-whatsapp"></i> +55 11 98933-0765
-        </a>
-        <span class="divider">|</span>
         <a href="mailto:contato@klarke.com.br">
           <i class="fa-regular fa-envelope"></i> contato@klarke.com.br
         </a>
@@ -726,7 +746,6 @@
   <script>
     // Configurações & Estado
     let selectedCategoryVal = "";
-    let selectedPriorityVal = "Baixa";
     let base64ImagesList = [];
 
     // Processamento da Foto
@@ -799,7 +818,7 @@
       document.getElementById("photo-input").value = "";
       renderPreviews();
     }
-    
+
     // Carregar nome salvo no localStorage
     document.addEventListener("DOMContentLoaded", () => {
       const savedRequester = localStorage.getItem("klarke_flow_requester");
@@ -810,7 +829,7 @@
       if (savedSector) {
         document.getElementById("sector").value = savedSector;
       }
-      
+
       // Auto selecionar primeira categoria
       const firstCat = document.querySelector(".category-card");
       if (firstCat) selectCategory(firstCat);
@@ -823,14 +842,6 @@
       element.classList.add("selected");
       selectedCategoryVal = element.getAttribute("data-val");
       document.getElementById("category").value = selectedCategoryVal;
-    }
-
-    // Selecionar Prioridade
-    function selectPriority(element) {
-      document.querySelectorAll(".priority-pill").forEach(pill => pill.classList.remove("selected"));
-      element.classList.add("selected");
-      selectedPriorityVal = element.getAttribute("data-val");
-      document.getElementById("priority").value = selectedPriorityVal;
     }
 
     // Mostrar Toast rápido
@@ -863,18 +874,18 @@
       const requesterName = document.getElementById("requester").value.trim();
       const sector = document.getElementById("sector").value;
       const category = document.getElementById("category").value;
-      const priority = document.getElementById("priority").value;
+      const priority = "Média"; // Prioridade é definida pela equipe técnica na triagem
       const title = document.getElementById("title").value.trim();
       const description = document.getElementById("description").value.trim();
-      
+
       if (!requesterName || !sector || !category || !priority || !title || !description) {
         showToast("Por favor, preencha todos os campos", true);
         return;
       }
-      
+
       // Combinar nome e setor para o campo requester que o backend espera
       const requester = `${requesterName} - ${sector}`;
-      
+
       // Salva os dados localmente para facilitar abertura posterior
       localStorage.setItem("klarke_flow_requester", requesterName);
       localStorage.setItem("klarke_flow_sector", sector);

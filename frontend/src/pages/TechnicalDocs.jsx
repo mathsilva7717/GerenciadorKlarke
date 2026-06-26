@@ -171,19 +171,19 @@ function TechnicalDocs() {
     <div className="users-container">
       <div className="page-header" style={{marginBottom: '32px'}}>
         <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-          <div className="industrial-icon" style={{background: 'var(--color-primary)', color: 'white', padding: '8px', borderRadius: '6px'}}>
-            <BookOpen size={20} />
+          <div className="industrial-icon" style={{background: 'var(--color-primary)', color: 'white', padding: '10px', borderRadius: '8px', display: 'flex'}}>
+            <BookOpen size={22} />
           </div>
-          <header className="page-header" style={{marginBottom: '32px'}}>
-        <h1 style={{marginBottom: '8px'}}>Acervo Técnico & Procedimentos</h1>
-        <p>Documentação centralizada para consulta rápida em campo.</p>
-      </header>
+          <div>
+            <h1 style={{marginBottom: '4px'}}>Acervo Técnico & Procedimentos</h1>
+            <p>Documentação centralizada para consulta rápida em campo.</p>
+          </div>
         </div>
-        <div style={{display: 'flex', gap: '8px'}}>
-          <button className="add-btn" onClick={() => setIsFolderModalOpen(true)} style={{background: 'var(--color-accent)', color: 'white'}}>
-            <FolderPlus size={16} /> <span className="hide-mobile">PASTA</span>
+        <div style={{display: 'flex', gap: '10px', flexWrap: 'wrap'}}>
+          <button className="add-btn" onClick={() => setIsFolderModalOpen(true)} style={{background: 'var(--color-accent)'}}>
+            <FolderPlus size={16} /> <span className="hide-mobile">NOVA PASTA</span>
           </button>
-          <button className="add-btn" onClick={() => openModal()} style={{background: 'var(--color-primary)', color: 'white'}}>
+          <button className="add-btn" onClick={() => openModal()} style={{background: 'var(--color-primary)'}}>
             <Plus size={16} /> <span className="hide-mobile">NOVO ITEM</span>
           </button>
         </div>
@@ -235,11 +235,11 @@ function TechnicalDocs() {
           {/* Breadcrumb / Mobile Selector */}
           <div style={{marginBottom: '20px'}}>
             <div className="vault-breadcrumb">
-              <span onClick={() => setCurrentFolder(null)} style={{fontWeight: !currentFolder ? 'bold' : 'normal'}}>Raiz do Acervo</span>
+              <span onClick={() => setCurrentFolder(null)} style={{fontWeight: !currentFolder ? 'bold' : 'normal', color: !currentFolder ? 'var(--color-text)' : 'var(--color-text-muted)'}}>Raiz do Acervo</span>
               {currentFolder && (
                 <>
-                  <ChevronRight size={14} color="rgba(255,255,255,0.7)" />
-                  <span style={{fontWeight: 'bold', color: 'white'}}>{currentFolder.name}</span>
+                  <ChevronRight size={14} color="var(--color-text-muted)" />
+                  <span style={{fontWeight: 'bold', color: 'var(--color-text)'}}>{currentFolder.name}</span>
                 </>
               )}
             </div>
@@ -555,24 +555,25 @@ function TechnicalDocs() {
         }
 
         .vault-breadcrumb {
-          background: var(--color-primary-light);
-          padding: 8px 16px;
-          border-radius: 6px;
+          background: var(--color-secondary);
+          border: 1px solid var(--color-border);
+          padding: 8px 14px;
+          border-radius: 8px;
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          font-size: 0.8rem;
-          color: rgba(255, 255, 255, 0.9);
+          font-size: 0.85rem;
+          color: var(--color-text-muted);
           white-space: nowrap;
         }
 
         .vault-breadcrumb span {
-          color: rgba(255, 255, 255, 0.7);
+          color: var(--color-text-muted);
           transition: color 0.2s;
         }
 
         .vault-breadcrumb span:hover {
-          color: #fff;
+          color: var(--color-accent);
           cursor: pointer;
         }
 
