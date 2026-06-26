@@ -231,15 +231,28 @@ function Cameras() {
 
   const exportToCSV = () => {
     const headers = ['ID', 'Nome', 'IP', 'Porta', 'Local', 'Usuário', 'Senha', 'Série', 'Criado em'];
-    const rows = cameras.map(c => [
-      c.id, c.name, c.ip, c.port, c.location, c.username, c.password, c.serial_number, c.created_at
-    ]);
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const csvRows = [headers.join(',')];
     
-    const encodedUri = encodeURI(csvContent);
+    cameras.forEach(c => {
+      const row = [
+        c.id,
+        `"${(c.name || '').replace(/"/g, '""')}"`,
+        `"${(c.ip || '').replace(/"/g, '""')}"`,
+        `"${(c.port || '').replace(/"/g, '""')}"`,
+        `"${(c.location || '').replace(/"/g, '""')}"`,
+        `"${(c.username || '').replace(/"/g, '""')}"`,
+        `"${(c.password || '').replace(/"/g, '""')}"`,
+        `"${(c.serial_number || '').replace(/"/g, '""')}"`,
+        `"${(c.created_at || '').replace(/"/g, '""')}"`
+      ];
+      csvRows.push(row.join(','));
+    });
+    
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.setAttribute('href', url);
     link.setAttribute('download', 'klarke_cameras.csv');
     document.body.appendChild(link);
     link.click();

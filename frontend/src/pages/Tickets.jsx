@@ -167,7 +167,7 @@ function Tickets() {
             placeholder="Buscar por solicitante, assunto, descrição ou ID..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ width: '100%', padding: '14px 0', background: 'transparent', border: 'none', color: 'var(--color-text)', outline: 'none', fontSize: '0.95rem' }}
+            style={{ width: '100%', padding: '14px 0 14px 40px', background: 'transparent', border: 'none', color: 'var(--color-text)', outline: 'none', fontSize: '0.95rem' }}
           />
         </div>
         

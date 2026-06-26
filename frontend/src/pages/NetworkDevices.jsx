@@ -227,15 +227,29 @@ function NetworkDevices() {
 
   const exportToCSV = () => {
     const headers = ['ID', 'Nome', 'Tipo', 'IP', 'Local', 'Operadora', 'Usuário', 'Senha', 'Série', 'Criado em'];
-    const rows = devices.map(d => [
-      d.id, d.name, d.type, d.ip, d.location, d.isp, d.username, d.password, d.serial_number, d.created_at
-    ]);
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    
-    const encodedUri = encodeURI(csvContent);
+    const csvRows = [headers.join(',')];
+
+    devices.forEach(d => {
+      const row = [
+        d.id,
+        `"${(d.name || '').replace(/"/g, '""')}"`,
+        `"${(d.type || '').replace(/"/g, '""')}"`,
+        `"${(d.ip || '').replace(/"/g, '""')}"`,
+        `"${(d.location || '').replace(/"/g, '""')}"`,
+        `"${(d.isp || '').replace(/"/g, '""')}"`,
+        `"${(d.username || '').replace(/"/g, '""')}"`,
+        `"${(d.password || '').replace(/"/g, '""')}"`,
+        `"${(d.serial_number || '').replace(/"/g, '""')}"`,
+        `"${(d.created_at || '').replace(/"/g, '""')}"`
+      ];
+      csvRows.push(row.join(','));
+    });
+
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.setAttribute('href', url);
     link.setAttribute('download', 'klarke_rede.csv');
     document.body.appendChild(link);
     link.click();

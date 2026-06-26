@@ -352,15 +352,29 @@ function Dashboard() {
 
   const exportToCSV = () => {
     const headers = ['ID', 'Nome', 'IP', 'MAC', 'Local', 'AnyDesk', 'RustDesk', 'Senha', 'Série', 'Criado em'];
-    const rows = machines.map(m => [
-      m.id, m.name, m.ip, m.mac, m.location, m.anydesk_id, m.rustdesk_id, m.password, m.serial_number, m.created_at
-    ]);
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const csvRows = [headers.join(',')];
     
-    const encodedUri = encodeURI(csvContent);
+    machines.forEach(m => {
+      const row = [
+        m.id,
+        `"${(m.name || '').replace(/"/g, '""')}"`,
+        `"${(m.ip || '').replace(/"/g, '""')}"`,
+        `"${(m.mac || '').replace(/"/g, '""')}"`,
+        `"${(m.location || '').replace(/"/g, '""')}"`,
+        `"${(m.anydesk_id || '').replace(/"/g, '""')}"`,
+        `"${(m.rustdesk_id || '').replace(/"/g, '""')}"`,
+        `"${(m.password || '').replace(/"/g, '""')}"`,
+        `"${(m.serial_number || '').replace(/"/g, '""')}"`,
+        `"${(m.created_at || '').replace(/"/g, '""')}"`
+      ];
+      csvRows.push(row.join(','));
+    });
+    
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.setAttribute('href', url);
     link.setAttribute('download', 'klarke_maquinas.csv');
     document.body.appendChild(link);
     link.click();
