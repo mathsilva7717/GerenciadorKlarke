@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Monitor, Camera, Router as RouterIcon, ListTodo, ChevronRight, Activity, ShieldCheck, Cpu, Database, RotateCw, BookOpen, Phone, Package, Key, Globe, MessageSquare, Wrench, Download, Trash2 } from 'lucide-react';
+import { Monitor, Camera, Router as RouterIcon, ListTodo, ChevronRight, Activity, ShieldCheck, Cpu, Database, RotateCw, BookOpen, Phone, Package, Key, Globe, MessageSquare, Wrench, Download, Trash2, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getAuthConfig } from '../utils/auth';
 
@@ -52,6 +52,7 @@ function Home() {
   const [isAddingSite, setIsAddingSite] = useState(false);
   const [newSiteLabel, setNewSiteLabel] = useState('');
   const [newSiteIp, setNewSiteIp] = useState('');
+  const [isSitesModalOpen, setIsSitesModalOpen] = useState(false);
 
   const fetchStats = async (manual = false) => {
     if (manual) setIsRefreshing(true);
@@ -221,129 +222,63 @@ function Home() {
           </div>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', marginBottom: '32px' }}>
-          {/* Card 1: Saúde Global Integrado */}
-          <div className="stat-box-industrial" style={{ flex: '2 1 600px', minHeight: '260px', display: 'flex', flexDirection: 'row', gap: '24px', padding: '24px', position: 'relative' }}>
-            {/* Lado Esquerdo: Progresso Radial e Contadores */}
-            <div style={{ flex: '1 1 250px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div style={{ position: 'relative', width: '80px', height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <svg width="80" height="80" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
-                    <circle cx="50" cy="50" r="40" stroke="rgba(255,255,255,0.05)" strokeWidth="8" fill="transparent" />
-                    <circle 
-                      cx="50" 
-                      cy="50" 
-                      r="40" 
-                      stroke="#10b981" 
-                      strokeWidth="8" 
-                      fill="transparent" 
-                      strokeDasharray={2 * Math.PI * 40}
-                      strokeDashoffset={2 * Math.PI * 40 * (1 - sitesOnline / (sitesTotal || 1))}
-                      strokeLinecap="round"
-                      style={{ transition: 'stroke-dashoffset 0.5s ease-out' }}
-                    />
-                  </svg>
-                  <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--color-text)' }}>
-                      {healthPct}%
-                    </span>
-                  </div>
-                </div>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                  <span className="stat-label" style={{ letterSpacing: '1px', whiteSpace: 'nowrap' }}>SAÚDE GLOBAL</span>
-                  <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-                    <strong>{sitesOnline}</strong> de <strong>{sitesTotal}</strong> locais online.
-                  </span>
-                  <span style={{ fontSize: '0.68rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600', marginTop: '4px' }}>
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }}></span>
-                    Monitoramento via Ping
-                  </span>
-                </div>
-              </div>
+          {/* Card 1: Saúde Global */}
+          <div className="stat-box-industrial" style={{ flex: '1 1 260px', minHeight: '180px', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '15px', padding: '20px', position: 'relative' }}>
+            {/* Botão de adicionar/gerenciar IPs públicos */}
+            <button 
+              onClick={() => setIsSitesModalOpen(true)}
+              style={{ position: 'absolute', top: '12px', right: '12px', background: 'none', border: 'none', color: 'var(--color-accent)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              title="Gerenciar IPs Públicos"
+            >
+              <Plus size={16} />
+            </button>
 
-              {/* Contadores de ativos cadastrados */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', background: 'rgba(0,0,0,0.02)', padding: '12px', border: '1px solid var(--color-border)' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                  <Monitor size={14} color="#64748b" style={{ marginBottom: '4px' }} />
-                  <span style={{ fontSize: '0.62rem', fontWeight: 'bold', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>PCs</span>
-                  <span style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--color-text)' }}>{stats.machines}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', borderLeft: '1px solid var(--color-border)', borderRight: '1px solid var(--color-border)' }}>
-                  <Camera size={14} color="#64748b" style={{ marginBottom: '4px' }} />
-                  <span style={{ fontSize: '0.62rem', fontWeight: 'bold', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Câmeras</span>
-                  <span style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--color-text)' }}>{stats.cameras}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                  <Phone size={14} color="#64748b" style={{ marginBottom: '4px' }} />
-                  <span style={{ fontSize: '0.62rem', fontWeight: 'bold', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>VOIP</span>
-                  <span style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--color-text)' }}>{stats.voip || 0}</span>
-                </div>
+            <div style={{ position: 'relative', width: '70px', height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="70" height="70" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+                {/* Background circle */}
+                <circle cx="50" cy="50" r="40" stroke="rgba(255,255,255,0.05)" strokeWidth="8" fill="transparent" />
+                {/* Progress circle */}
+                <circle 
+                  cx="50" 
+                  cy="50" 
+                  r="40" 
+                  stroke={healthPct === 0 ? "#ef4444" : "#10b981"} 
+                  strokeWidth="8" 
+                  fill="transparent" 
+                  strokeDasharray={2 * Math.PI * 40}
+                  strokeDashoffset={2 * Math.PI * 40 * (1 - sitesOnline / (sitesTotal || 1))}
+                  strokeLinecap="round"
+                  style={{ transition: 'stroke-dashoffset 0.5s ease-out' }}
+                />
+              </svg>
+              <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: '1.05rem', fontWeight: '800', color: 'var(--color-text)' }}>
+                  {healthPct}%
+                </span>
               </div>
             </div>
 
-            {/* Lado Direito: Ping de IPs Públicos */}
-            <div style={{ flex: '1.2 1 300px', display: 'flex', flexDirection: 'column', gap: '8px', borderLeft: '1px solid var(--color-border)', paddingLeft: '24px', minWidth: 0 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span className="stat-label">PINGS PÚBLICOS</span>
-                <button 
-                  onClick={() => setIsAddingSite(!isAddingSite)}
-                  style={{ background: 'none', border: 'none', color: 'var(--color-accent)', fontSize: '0.72rem', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}
-                >
-                  {isAddingSite ? 'CANCELAR' : '+ ADICIONAR IP'}
-                </button>
-              </div>
-
-              {isAddingSite ? (
-                <form onSubmit={handleAddSite} style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: 'rgba(0,0,0,0.03)', padding: '10px', border: '1px solid var(--color-border)' }}>
-                  <input 
-                    type="text" 
-                    placeholder="Nome (ex: Loja Centro)" 
-                    value={newSiteLabel} 
-                    onChange={e => setNewSiteLabel(e.target.value)}
-                    style={{ fontSize: '0.75rem', padding: '4px 8px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
-                    required
-                  />
-                  <input 
-                    type="text" 
-                    placeholder="IP Público (ex: 8.8.8.8)" 
-                    value={newSiteIp} 
-                    onChange={e => setNewSiteIp(e.target.value)}
-                    style={{ fontSize: '0.75rem', padding: '4px 8px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text)' }}
-                    required
-                  />
-                  <button type="submit" style={{ fontSize: '0.72rem', padding: '4px 8px', background: 'var(--color-accent)', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
-                    SALVAR IP
-                  </button>
-                </form>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', overflowY: 'auto', flex: 1, maxHeight: '160px', paddingRight: '4px' }}>
-                  {(systemStatus.sites || []).length === 0 ? (
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontStyle: 'italic', marginTop: '10px' }}>Nenhum IP público configurado.</span>
-                  ) : (systemStatus.sites || []).map((s) => (
-                    <div key={s.ip} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', background: 'rgba(0,0,0,0.03)', border: '1px solid var(--color-border)', padding: '6px 10px' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                        <span className={s.online ? "indicator-pulse-green" : "indicator-pulse-red"} style={{ flexShrink: 0 }}></span>
-                        <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.label}</span>
-                          <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', fontFamily: 'monospace' }}>{s.ip}</span>
-                        </span>
-                      </span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 700, whiteSpace: 'nowrap', color: s.online ? '#10b981' : '#ef4444' }}>
-                          {s.online ? `${s.latency}ms` : 'OFF'}
-                        </span>
-                        <button 
-                          onClick={() => handleDeleteSite(s.id)}
-                          style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}
-                          title="Remover IP"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0, flex: 1 }}>
+              <span className="stat-label" style={{ letterSpacing: '0.5px', whiteSpace: 'nowrap', fontSize: '0.62rem' }}>SAÚDE GLOBAL</span>
+              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: '500' }}>
+                <strong>{sitesOnline}</strong> de <strong>{sitesTotal}</strong> locais ok.
+              </span>
+              
+              {/* Contadores compactos inline dos ativos */}
+              <div style={{ display: 'flex', gap: '10px', marginTop: '6px', background: 'rgba(0,0,0,0.02)', padding: '4px 8px', border: '1px solid var(--color-border)', width: 'fit-content' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }} title={`${stats.machines} PCs Cadastrados`}>
+                  <Monitor size={10} color="#64748b" />
+                  <span style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--color-text)' }}>{stats.machines}</span>
                 </div>
-              )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }} title={`${stats.cameras} Câmeras`}>
+                  <Camera size={10} color="#64748b" />
+                  <span style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--color-text)' }}>{stats.cameras}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }} title={`${stats.voip || 0} Ramais VOIP`}>
+                  <Phone size={10} color="#64748b" />
+                  <span style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--color-text)' }}>{stats.voip || 0}</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -741,6 +676,82 @@ function Home() {
           </button>
         </div>
       </div>
+
+      {/* MODAL DE GERENCIAMENTO DE IPS PÚBLICOS */}
+      {isSitesModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsSitesModalOpen(false)}>
+          <div className="modal-content" style={{ maxWidth: '500px' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Gerenciar IPs Públicos (Ping)</h2>
+              <button className="close-btn" onClick={() => setIsSitesModalOpen(false)}>
+                <Plus size={24} style={{ transform: 'rotate(45deg)', display: 'inline-block' }} />
+              </button>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '16px' }}>
+              
+              {/* Formulário de Adicionar IP */}
+              <form onSubmit={handleAddSite} style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'rgba(0,0,0,0.03)', padding: '16px', border: '1px solid var(--color-border)' }}>
+                <h3 style={{ fontSize: '0.85rem', fontWeight: 'bold', margin: 0, color: 'var(--color-text)' }}>Cadastrar Novo IP para Ping</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <input 
+                    type="text" 
+                    placeholder="Nome do local (ex: Filial Centro)" 
+                    value={newSiteLabel} 
+                    onChange={e => setNewSiteLabel(e.target.value)}
+                    className="form-input"
+                    required
+                  />
+                  <input 
+                    type="text" 
+                    placeholder="IP Público ou Host (ex: 8.8.8.8)" 
+                    value={newSiteIp} 
+                    onChange={e => setNewSiteIp(e.target.value)}
+                    className="form-input"
+                    required
+                  />
+                </div>
+                <button type="submit" className="btn btn-primary" style={{ marginTop: '8px', width: '100%', padding: '10px' }}>
+                  SALVAR IP
+                </button>
+              </form>
+
+              {/* Listagem de IPs */}
+              <div>
+                <h3 style={{ fontSize: '0.85rem', fontWeight: 'bold', marginBottom: '8px', color: 'var(--color-text)' }}>IPs Cadastrados</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto', maxHeight: '200px' }}>
+                  {(systemStatus.sites || []).length === 0 ? (
+                    <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>Nenhum IP público configurado.</span>
+                  ) : (systemStatus.sites || []).map((s) => (
+                    <div key={s.ip} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', background: 'rgba(0,0,0,0.02)', border: '1px solid var(--color-border)', padding: '10px 14px' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                        <span className={s.online ? "indicator-pulse-green" : "indicator-pulse-red"} style={{ flexShrink: 0 }}></span>
+                        <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.label}</span>
+                          <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontFamily: 'monospace' }}>{s.ip}</span>
+                        </span>
+                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 700, whiteSpace: 'nowrap', color: s.online ? '#10b981' : '#ef4444' }}>
+                          {s.online ? `${s.latency}ms` : 'OFF'}
+                        </span>
+                        <button 
+                          onClick={() => handleDeleteSite(s.id)}
+                          style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          title="Remover IP"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
