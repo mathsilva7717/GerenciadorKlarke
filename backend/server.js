@@ -285,7 +285,24 @@ db.exec(`
     photo TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS managed_sites (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    label TEXT,
+    ip TEXT UNIQUE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `);
+
+try {
+  db.get("SELECT COUNT(*) as count FROM managed_sites", [], (err, row) => {
+    if (!err && (!row || row.count === 0)) {
+      db.run("INSERT INTO managed_sites (label, ip) VALUES (?, ?)", ['Local Principal', '45.161.6.51']);
+    }
+  });
+} catch (e) {
+  console.error("Erro ao inicializar managed_sites:", e.message);
+}
 
 // Migrations rápidas para colunas novas
 try { db.exec("ALTER TABLE tickets ADD COLUMN photo TEXT"); } catch(e) {}
@@ -1268,33 +1285,8 @@ app.post('/api/tickets/:id/comments', authenticate, (req, res) => {
 // ==========================================
 const { exec } = require('child_process');
 
-// >>> ADICIONE NOVOS LOCAIS AQUI <<<
-// Cada item é um ponto público (loja/filial) que será pingado periodicamente.
-// Alternativa: definir a env MANAGED_SITES = "Nome|IP, Nome2|IP2" para sobrescrever.
-const DEFAULT_SITES = [
-  { label: 'Local Principal', ip: '45.161.6.51' },
-  // { label: 'Filial 02', ip: '0.0.0.0' },
-  // { label: 'Filial 03', ip: '0.0.0.0' },
-];
-
-function loadManagedSites() {
-  if (process.env.MANAGED_SITES) {
-    return process.env.MANAGED_SITES.split(',')
-      .map((s) => {
-        const [label, ip] = s.split('|').map((x) => (x || '').trim());
-        return { label: label || ip, ip };
-      })
-      .filter((s) => s.ip);
-  }
-  return DEFAULT_SITES;
-}
-const MANAGED_SITES = loadManagedSites();
-
-// Estado em memória do último ping de cada IP.
-const siteStatus = new Map(); // ip -> { label, ip, online, latency, lastCheck }
-MANAGED_SITES.forEach((s) =>
-  siteStatus.set(s.ip, { ...s, online: false, latency: 0, lastCheck: null })
-);
+// Cache em memória para latência e status online de todos os IPs públicos monitorados
+const pingCache = new Map(); // ip -> { online: boolean, latency: number, lastCheck: string }
 
 function pingHost(ip) {
   return new Promise((resolve) => {
@@ -1315,46 +1307,142 @@ function pingHost(ip) {
   });
 }
 
+// Helper para limitar concorrência
+async function limitConcurrency(tasks, limit) {
+  const results = [];
+  const executing = new Set();
+  for (const task of tasks) {
+    const p = Promise.resolve().then(() => task());
+    results.push(p);
+    executing.add(p);
+    p.then(() => executing.delete(p));
+    if (executing.size >= limit) {
+      await Promise.race(executing);
+    }
+  }
+  return Promise.all(results);
+}
+
 async function pollSites() {
-  for (const site of MANAGED_SITES) {
-    const r = await pingHost(site.ip);
-    siteStatus.set(site.ip, { ...site, ...r, lastCheck: new Date().toISOString() });
+  try {
+    const sites = await new Promise((resolve) => {
+      db.all('SELECT ip FROM managed_sites', [], (err, rows) => resolve(rows || []));
+    });
+
+    const ipList = new Set();
+    sites.forEach(s => { if (s.ip) ipList.add(s.ip.trim()); });
+
+    const ipArray = Array.from(ipList);
+    const limit = 10;
+    const tasks = ipArray.map(ip => async () => {
+      const res = await pingHost(ip);
+      pingCache.set(ip, { ...res, lastCheck: new Date().toISOString() });
+    });
+
+    await limitConcurrency(tasks, limit);
+  } catch (e) {
+    console.error("Erro no pollSites:", e.message);
   }
 }
+
 // Primeira coleta + polling contínuo a cada 60s.
-if (MANAGED_SITES.length > 0) {
-  pollSites().catch(() => {});
-  setInterval(() => pollSites().catch(() => {}), 60 * 1000);
-}
+pollSites().catch(() => {});
+setInterval(() => pollSites().catch(() => {}), 60 * 1000);
 
-function getSitesSummary() {
-  const sites = MANAGED_SITES.map(
-    (s) => siteStatus.get(s.ip) || { ...s, online: false, latency: 0, lastCheck: null }
-  );
-  const onlineSites = sites.filter((s) => s.online);
-  const avgLatency = onlineSites.length
-    ? Math.round(onlineSites.reduce((a, b) => a + (b.latency || 0), 0) / onlineSites.length)
-    : 0;
-  return { sites, sitesOnline: onlineSites.length, sitesTotal: sites.length, avgLatency };
-}
-
-// Endpoint dedicado (detalhe de cada local gerenciado).
+// Endpoint dedicado para obter locais gerenciados com status de ping
 app.get('/api/monitoring/sites', authenticate, (req, res) => {
-  res.json(getSitesSummary());
+  db.all('SELECT * FROM managed_sites ORDER BY created_at DESC', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    const sites = (rows || []).map(row => {
+      const ip = (row.ip || '').trim();
+      const cached = pingCache.get(ip) || { online: false, latency: 0, lastCheck: null };
+      return {
+        ...row,
+        online: cached.online,
+        latency: cached.latency,
+        lastCheck: cached.lastCheck
+      };
+    });
+    const onlineSites = sites.filter(s => s.online);
+    const avgLatency = onlineSites.length
+      ? Math.round(onlineSites.reduce((a, b) => a + (b.latency || 0), 0) / onlineSites.length)
+      : 0;
+    res.json({ sites, sitesOnline: onlineSites.length, sitesTotal: sites.length, avgLatency });
+  });
+});
+
+// Adicionar local gerenciado
+app.post('/api/monitoring/sites', authenticate, (req, res) => {
+  const { label, ip } = req.body;
+  if (!label || !ip) {
+    return res.status(400).json({ error: 'Nome e IP são obrigatórios' });
+  }
+  if (!/^[a-zA-Z0-9.:_-]{1,253}$/.test(ip)) {
+    return res.status(400).json({ error: 'Formato de IP/Host inválido' });
+  }
+  db.run('INSERT INTO managed_sites (label, ip) VALUES (?, ?)', [label, ip], function(err) {
+    if (err) {
+      if (err.message.includes('UNIQUE')) {
+        return res.status(400).json({ error: 'Este IP já está sendo monitorado' });
+      }
+      return res.status(500).json({ error: err.message });
+    }
+    try { logAction(req, 'MONITORAMENTO', `Adicionou local para ping: ${label} (${ip})`); } catch (e) {}
+    res.status(201).json({ id: this.lastID, label, ip });
+    pollSites().catch(() => {});
+  });
+});
+
+// Remover local gerenciado
+app.delete('/api/monitoring/sites/:id', authenticate, (req, res) => {
+  const { id } = req.params;
+  db.get('SELECT label, ip FROM managed_sites WHERE id = ?', [id], (err, row) => {
+    if (err || !row) return res.status(404).json({ error: 'Local não encontrado' });
+    db.run('DELETE FROM managed_sites WHERE id = ?', [id], function(err2) {
+      if (err2) return res.status(500).json({ error: err2.message });
+      try { logAction(req, 'EXCLUSÃO', `Removeu local de ping: ${row.label} (${row.ip})`); } catch (e) {}
+      pingCache.delete((row.ip || '').trim());
+      res.json({ message: 'Local removido com sucesso' });
+    });
+  });
 });
 
 // Rota de status do sistema (Disco + Latência dos locais gerenciados).
 app.get('/api/system-status', authenticate, (req, res) => {
-  exec('df -h / --output=size,used,avail,pcent | tail -1', (err, stdout) => {
-    let disk = { size: '0', used: '0', avail: '0', percent: '0%' };
-    if (!err) {
-      const parts = stdout.trim().split(/\s+/).filter(Boolean);
-      if (parts.length >= 4) {
-        disk = { size: parts[0], used: parts[1], avail: parts[2], percent: parts[3] };
+  db.all('SELECT * FROM managed_sites', [], (errSites, rowsSites) => {
+    exec('df -h / --output=size,used,avail,pcent | tail -1', (errDisk, stdout) => {
+      let disk = { size: '0', used: '0', avail: '0', percent: '0%' };
+      if (!errDisk) {
+        const parts = stdout.trim().split(/\s+/).filter(Boolean);
+        if (parts.length >= 4) {
+          disk = { size: parts[0], used: parts[1], avail: parts[2], percent: parts[3] };
+        }
       }
-    }
-    const { sites, sitesOnline, sitesTotal, avgLatency } = getSitesSummary();
-    res.json({ disk, latency: avgLatency, sites, sitesOnline, sitesTotal });
+
+      const sites = (rowsSites || []).map(row => {
+        const ip = (row.ip || '').trim();
+        const cached = pingCache.get(ip) || { online: false, latency: 0, lastCheck: null };
+        return {
+          ...row,
+          online: cached.online,
+          latency: cached.latency,
+          lastCheck: cached.lastCheck
+        };
+      });
+
+      const onlineSites = sites.filter(s => s.online);
+      const avgLatency = onlineSites.length
+        ? Math.round(onlineSites.reduce((a, b) => a + (b.latency || 0), 0) / onlineSites.length)
+        : 0;
+
+      res.json({
+        disk,
+        latency: avgLatency,
+        sites,
+        sitesOnline: onlineSites.length,
+        sitesTotal: sites.length
+      });
+    });
   });
 });
 
