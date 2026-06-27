@@ -48,7 +48,7 @@ function Home() {
   });
   const [recentTickets, setRecentTickets] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [systemStatus, setSystemStatus] = useState({ disk: { percent: '0%', avail: '0' }, latency: 0 });
+  const [systemStatus, setSystemStatus] = useState({ disk: { percent: '0%', avail: '0' }, latency: 0, sites: [], sitesOnline: 0, sitesTotal: 0 });
 
   const fetchStats = async (manual = false) => {
     if (manual) setIsRefreshing(true);
@@ -65,7 +65,7 @@ function Home() {
         axios.get('/api/voip', getAuthConfig()).catch(() => ({ data: [] })),
         axios.get('/api/technical-docs', getAuthConfig()).catch(() => ({ data: [] })),
         axios.get('/api/tickets', getAuthConfig()).catch(() => ({ data: [] })),
-        axios.get('/api/system-status', getAuthConfig()).catch(() => ({ data: { disk: { percent: '0%', avail: '0' }, latency: 0 } }))
+        axios.get('/api/system-status', getAuthConfig()).catch(() => ({ data: { disk: { percent: '0%', avail: '0' }, latency: 0, sites: [], sitesOnline: 0, sitesTotal: 0 } }))
       ]);
       
       const allTickets = ticketsRes.data || [];
@@ -128,10 +128,10 @@ function Home() {
   };
 
   const downloadRepair = () => {
-    // Rota pública que devolve o .exe com Content-Disposition: attachment
+    // Rota pública que devolve o app portable (.zip) com Content-Disposition: attachment
     const link = document.createElement('a');
     link.href = '/api/monitoring/repair-download';
-    link.setAttribute('download', 'Klarke Repair.exe');
+    link.setAttribute('download', 'Klarke Repair.zip');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -156,6 +156,11 @@ function Home() {
       toast.error('Erro ao baixar agente');
     }
   };
+
+  // Saúde global = ativos locais (máquinas/câmeras/rede) + locais públicos monitorados por ping.
+  const assetsOnline = stats.machinesOnline + stats.camerasOnline + stats.networkOnline + (systemStatus.sitesOnline || 0);
+  const assetsTotal = stats.machines + stats.cameras + stats.network + (systemStatus.sitesTotal || 0);
+  const healthPct = Math.round((assetsOnline / (assetsTotal || 1)) * 100);
 
   return (
     <div className="home-container">
@@ -196,21 +201,21 @@ function Home() {
                   strokeWidth="8" 
                   fill="transparent" 
                   strokeDasharray={2 * Math.PI * 40}
-                  strokeDashoffset={2 * Math.PI * 40 * (1 - (stats.machinesOnline + stats.camerasOnline + stats.networkOnline) / (stats.machines + stats.cameras + stats.network || 1))}
+                  strokeDashoffset={2 * Math.PI * 40 * (1 - assetsOnline / (assetsTotal || 1))}
                   strokeLinecap="round"
                   style={{ transition: 'stroke-dashoffset 0.5s ease-out' }}
                 />
               </svg>
               <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                 <span style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--color-text)' }}>
-                  {Math.round(((stats.machinesOnline + stats.camerasOnline + stats.networkOnline) / (stats.machines + stats.cameras + stats.network || 1)) * 100)}%
+                  {healthPct}%
                 </span>
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <span className="stat-label" style={{ letterSpacing: '1px', whiteSpace: 'nowrap' }}>SAÚDE GLOBAL</span>
               <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                <strong>{stats.machinesOnline + stats.camerasOnline + stats.networkOnline}</strong> de <strong>{stats.machines + stats.cameras + stats.network}</strong> ativos online.
+                <strong>{assetsOnline}</strong> de <strong>{assetsTotal}</strong> ativos online.
               </span>
               <span style={{ fontSize: '0.7rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600', marginTop: '6px' }}>
                 <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }}></span>
@@ -250,15 +255,6 @@ function Home() {
               >
                 <Database size={12} />
                 BAIXAR BACKUP
-              </button>
-              <span style={{ color: 'var(--color-border)' }}>|</span>
-              <button
-                onClick={downloadRepair}
-                style={{ background: 'none', border: 'none', color: '#10b981', fontSize: '0.75rem', cursor: 'pointer', padding: 0, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}
-                title="Baixar a ferramenta de reparo para o técnico"
-              >
-                <Wrench size={12} />
-                KLARKE REPAIR
               </button>
             </div>
           </div>
@@ -360,6 +356,34 @@ function Home() {
                 <span className="pulse-dot" style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }}></span>
                 Online
               </span>
+            </div>
+          </div>
+
+          {/* Card 5: Locais Gerenciados (ping de IPs públicos) */}
+          <div className="stat-box-industrial" style={{ flex: '1 1 260px', minHeight: '180px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: '10px', padding: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', width: '100%' }}>
+              <span className="stat-label" style={{ whiteSpace: 'nowrap' }}>LOCAIS GERENCIADOS</span>
+              <span style={{ fontSize: '1.15rem', fontWeight: '800', whiteSpace: 'nowrap', color: (systemStatus.sitesTotal && systemStatus.sitesOnline === systemStatus.sitesTotal) ? '#10b981' : (systemStatus.sitesOnline > 0 ? '#f59e0b' : '#ef4444') }}>
+                {systemStatus.sitesOnline || 0}/{systemStatus.sitesTotal || 0}
+              </span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '118px', overflowY: 'auto' }}>
+              {(systemStatus.sites || []).length === 0 ? (
+                <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>Nenhum local configurado.</span>
+              ) : (systemStatus.sites || []).map((s) => (
+                <div key={s.ip} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', background: 'rgba(0,0,0,0.05)', border: '1px solid var(--color-border)', padding: '6px 8px' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0, background: s.online ? '#10b981' : '#ef4444' }}></span>
+                    <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.label}</span>
+                      <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', fontFamily: 'monospace' }}>{s.ip}</span>
+                    </span>
+                  </span>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, whiteSpace: 'nowrap', color: s.online ? '#10b981' : '#ef4444' }}>
+                    {s.online ? `${s.latency}ms` : 'OFF'}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -606,6 +630,15 @@ function Home() {
           <p style={{margin: '4px 0 0 0', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)'}}>Baixe as ferramentas necessárias para configurar os PCs dos clientes.</p>
         </div>
         <div style={{display: 'flex', gap: '12px', flexWrap: 'wrap'}}>
+
+          <button
+            onClick={downloadRepair}
+            title="Baixar o Klarke Repair (utilitário portable de diagnóstico e otimização)"
+            style={{display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', width: 'auto', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem', color: 'white', border: '1px solid rgba(16,185,129,0.5)', borderRadius: '4px', background: 'linear-gradient(135deg, #10b981, #059669)'}}
+          >
+            <Wrench size={18} />
+            BAIXAR KLARKE REPAIR
+          </button>
 
           <button className="btn btn-primary" onClick={() => navigate('/control/users')} style={{display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', width: 'auto'}}>
             <ShieldCheck size={18} />

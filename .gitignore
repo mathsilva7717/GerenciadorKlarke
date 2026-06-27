@@ -7,5 +7,18 @@ dist/
 *.sqlite-journal
 .DS_Store
 Thumbs.db
+desktop.ini
 .vscode/
 .claude/
+
+# Electron build output (Klarke Repair) — não versionar, é gerado pelo build
+repair-tool/electron/dist-electron/
+
+# Artefatos do PyInstaller / Python (gerados pelo build, regeneráveis)
+repair-tool/build/
+repair-tool/dist/
+__pycache__/
+*.pyc
+
+# Uploads gerados em runtime (fotos de chamados, snapshots) — não versionar
+backend/uploads/

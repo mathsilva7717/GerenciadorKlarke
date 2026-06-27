@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Klarke Repair</title>
+<style>
+:root{
+  --bg:#0a0b10; --bg2:#0f1118; --card:#14161f; --card2:#181b26; --line:#21242f; --line2:#1a1d27;
+  --text:#f3f5fb; --t2:#9aa0b3; --t3:#636979; --cyan:#00d4ff; --royal:#2563ff;
+  --green:#10e07f; --amber:#ffc53d; --red:#ff4d4f; --grad:linear-gradient(135deg,#00d4ff,#2563ff);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:radial-gradient(1200px 600px at 80% -10%,rgba(37,99,255,.10),transparent 60%),var(--bg);
+  color:var(--text);font-family:"Segoe UI",system-ui,sans-serif;font-size:14px;overflow:hidden;
+  display:flex;flex-direction:column;height:100vh;
+}
+.topbar{height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;
+  background:var(--bg2);border-bottom:1px solid var(--line);flex-shrink:0}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:15px;height:15px;border-radius:4px;background:var(--grad);box-shadow:0 0 12px rgba(0,212,255,.6)}
+.bname{font-weight:800;letter-spacing:1.5px;font-size:15px}
+.bacc{color:var(--cyan);margin-left:2px}
+.btag{color:var(--t3);font-size:11px;border-left:1px solid var(--line);padding-left:10px}
+.tright{display:flex;align-items:center;gap:10px}
+.pill{font-size:11px;font-weight:700;letter-spacing:.5px;padding:4px 12px;border-radius:20px;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.pill-admin{color:var(--green);background:rgba(16,224,127,.12);border:1px solid rgba(16,224,127,.3)}
+.pill-user{color:var(--amber);background:rgba(255,197,61,.12);border:1px solid rgba(255,197,61,.3)}
+.pill-muted{color:var(--t3);background:rgba(255,255,255,.04);border:1px solid var(--line)}
+.lnk{font-size:11px;font-weight:700;padding:4px 11px;border-radius:20px;cursor:pointer;text-transform:uppercase;letter-spacing:.5px;border:1px solid}
+.lnk-cyan{color:var(--cyan);background:rgba(0,212,255,.1);border-color:rgba(0,212,255,.3)}
+.lnk-red{color:var(--red);background:rgba(255,77,79,.08);border-color:rgba(255,77,79,.3)}
+.lnk:hover{filter:brightness(1.25)}
+.shell{flex:1;display:flex;min-height:0}
+.side{width:208px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:16px 12px;gap:4px}
+.nav{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:11px 14px;border-radius:9px;border:1px solid transparent;background:transparent;color:var(--t2);font-size:14px;font-weight:600;cursor:pointer;transition:all .15s}
+.nav:hover{background:var(--card);color:var(--text)}
+.nav.active{background:var(--card2);color:#fff;border-color:var(--line)}
+.nav.active .ico{background:var(--grad)}
+.ico{width:18px;height:18px;border-radius:5px;flex-shrink:0;background:var(--t3);-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center}
+.sfoot{margin-top:auto;padding:12px 10px 4px;border-top:1px solid var(--line)}
+.content{flex:1;overflow-y:auto;padding:24px 28px;min-width:0}
+.content::-webkit-scrollbar{width:10px}
+.content::-webkit-scrollbar-thumb{background:#2a2e3a;border-radius:6px;border:2px solid var(--bg)}
+.phead{margin-bottom:20px}
+.phead h1{font-size:22px;font-weight:800}
+.phead p{color:var(--t2);font-size:13px;margin-top:4px}
+.muted{color:var(--t2)}.small{font-size:12px}.xsmall{font-size:10.5px}.mb{margin-bottom:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
+.ctitle{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--cyan);margin-bottom:16px}
+.grid{display:grid;gap:16px}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}
+@media(max-width:1020px){.g2,.g3{grid-template-columns:1fr 1fr}}
+.row{display:flex;justify-content:space-between;gap:16px;padding:9px 0;border-bottom:1px solid var(--line2)}
+.row:last-child{border-bottom:none}
+.row .k{color:var(--t2);font-size:12.5px}
+.row .v{color:var(--text);font-size:13px;font-weight:600;text-align:right;word-break:break-word}
+.gwrap{display:flex;align-items:center;gap:18px}
+.gauge{position:relative;width:92px;height:92px;flex-shrink:0}
+.gauge svg{transform:rotate(-90deg)}
+.gval{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:800}
+.gmeta .lbl{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--t2);font-weight:700}
+.gmeta .sub{font-size:12px;color:var(--t3);margin-top:4px}
+.arow{display:flex;align-items:center;gap:16px;padding:14px 16px;border-radius:11px;background:var(--card2);border:1px solid var(--line2);margin-bottom:10px}
+.arow .meta{flex:1;min-width:0}.arow .meta h4{font-size:14px;font-weight:700}.arow .meta p{font-size:12.5px;color:var(--t2);margin-top:3px}
+.btn{border:none;cursor:pointer;font-weight:700;font-size:13px;padding:10px 18px;border-radius:9px;color:#fff;background:var(--grad);transition:transform .12s,filter .15s;white-space:nowrap}
+.btn:hover{filter:brightness(1.1)}.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.45;cursor:not-allowed;filter:grayscale(.5)}
+.btn-ghost{background:var(--card);border:1px solid var(--line);color:var(--text)}
+.btn-danger{background:linear-gradient(135deg,#ff6b6b,var(--red))}
+.tool{display:flex;flex-direction:column;gap:6px;padding:16px;background:var(--card2);border:1px solid var(--line2);border-radius:11px;cursor:pointer;color:var(--text);text-align:left;transition:all .15s}
+.tool:hover{border-color:var(--royal);background:var(--card);transform:translateY(-2px)}
+.tool b{font-size:13.5px}.tool span{font-size:11.5px;color:var(--t3)}
+.chk{display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:10px;background:var(--card2);border:1px solid var(--line2);margin-bottom:8px;cursor:pointer}
+.chk input{width:17px;height:17px;accent-color:var(--cyan);cursor:pointer}
+.chk .info{flex:1}.chk .info b{font-size:13.5px}.chk .info p{font-size:12px;color:var(--t3);margin-top:2px}
+.chk .size{font-weight:800;font-size:13px;color:var(--cyan);white-space:nowrap}
+.chk.empty{opacity:.5}
+.sum{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:18px 20px;border-radius:12px;margin-bottom:18px;background:linear-gradient(135deg,rgba(0,212,255,.08),rgba(37,99,255,.05));border:1px solid rgba(0,212,255,.2)}
+.sum .big{font-size:26px;font-weight:800}.sum .big small{font-size:13px;color:var(--t2);font-weight:600}
+.chip{font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px}
+.chip-green{color:var(--green);background:rgba(16,224,127,.12)}.chip-amber{color:var(--amber);background:rgba(255,197,61,.12)}
+.chip-red{color:var(--red);background:rgba(255,77,79,.12)}
+.console{flex-shrink:0;background:var(--bg2);border-top:1px solid var(--line)}
+.console.collapsed .cbody{display:none}
+.chead{display:flex;align-items:center;justify-content:space-between;padding:8px 16px}
+.ctit{font-size:12px;font-weight:700;color:var(--cyan);display:flex;align-items:center;gap:8px;text-transform:uppercase;letter-spacing:1px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.gbtn{background:var(--card);border:1px solid var(--line);color:var(--t2);font-size:11.5px;padding:5px 11px;border-radius:7px;cursor:pointer;font-weight:600}
+.gbtn:hover{color:var(--text);background:var(--card2)}
+.cbody{height:148px;overflow-y:auto;padding:4px 16px 14px;font-family:"Cascadia Code",Consolas,monospace;font-size:12px;line-height:1.7;color:#cfd3e0;white-space:pre-wrap;word-break:break-word}
+.cbody::-webkit-scrollbar{width:9px}.cbody::-webkit-scrollbar-thumb{background:#2a2e3a;border-radius:6px}
+.lt{color:var(--t3)}.ls{color:var(--green)}.le{color:var(--red)}.li{color:var(--cyan)}.lw{color:var(--amber)}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:rot .7s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes rot{to{transform:rotate(360deg)}}
+.skel{color:var(--t3);font-style:italic;padding:20px;text-align:center}
+.rf{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><div class="logo"></div><span class="bname">KLARKE<span class="bacc">REPAIR</span></span><span class="btag">System Utility</span></div>
+  <div class="tright" id="tright"><span class="pill pill-muted" id="admin">verificando...</span></div>
+</header>
+<div class="shell">
+  <nav class="side">
+    <button class="nav active" data-page="dashboard"><span class="ico" data-i="grid"></span>Visao Geral</button>
+    <button class="nav" data-page="hardware"><span class="ico" data-i="cpu"></span>Hardware</button>
+    <button class="nav" data-page="network"><span class="ico" data-i="net"></span>Rede</button>
+    <button class="nav" data-page="repair"><span class="ico" data-i="wrench"></span>Reparo</button>
+    <button class="nav" data-page="cleanup"><span class="ico" data-i="broom"></span>Limpeza</button>
+    <button class="nav" data-page="tools"><span class="ico" data-i="tools"></span>Ferramentas</button>
+    <div class="sfoot"><div class="muted small" id="hostline">-</div><div class="muted xsmall">v2.0 portable</div></div>
+  </nav>
+  <main class="content" id="content"></main>
+</div>
+<section class="console" id="console">
+  <div class="chead">
+    <div class="ctit"><span class="dot"></span>Terminal de Atividades</div>
+    <div class="rf">
+      <button class="gbtn" id="c-toggle">Recolher</button>
+      <button class="gbtn" id="c-clear">Limpar</button>
+    </div>
+  </div>
+  <pre class="cbody" id="cbody"></pre>
+</section>
+
+<script>
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const ICONS={
+  grid:'M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z',
+  cpu:'M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2M6 6h12v12H6zM10 10h4v4h-4z',
+  net:'M5 12.55a11 11 0 0 1 14 0M8.5 16.1a6 6 0 0 1 7 0M2 8.82a15 15 0 0 1 20 0M12 20h.01',
+  wrench:'M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2-2 2.6-2.6z',
+  broom:'M19 3l-7 7M12 10l-7 7c-1 1-1 3 0 4s3 1 4 0l7-7M9 13l2 2',
+  tools:'M3 6h18M3 12h18M3 18h18'
+};
+function paintIcons(){$$('.ico[data-i]').forEach(el=>{const d=ICONS[el.dataset.i];if(!d)return;
+  const svg="<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='"+d+"'/></svg>";
+  const u="url(\"data:image/svg+xml,"+encodeURIComponent(svg)+"\")";el.style.maskImage=u;el.style.webkitMaskImage=u;});}
+
+function fmtBytes(b){if(!b||b<0)return'0 B';const u=['B','KB','MB','GB','TB'];const i=Math.floor(Math.log(b)/Math.log(1024));return (b/Math.pow(1024,i)).toFixed(i===0?0:1)+' '+u[i];}
+function fmtUp(s){const d=Math.floor(s/86400),h=Math.floor((s%86400)/3600),m=Math.floor((s%3600)/60);return d>=1?d+'d '+h+'h '+m+'m':h+'h '+m+'m';}
+function esc(s){return String(s==null?'':s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));}
+function val(v,f){f=f||'-';return(v===undefined||v===null||v===''||v===-1)?f:v;}
+function arr(x){return Array.isArray(x)?x:(x?[x]:[]);}
+async function api(path,body){const o={};if(body){o.method='POST';o.headers={'Content-Type':'application/json'};o.body=JSON.stringify(body);}const r=await fetch(path,o);return r.json();}
+
+// console
+const cbody=$('#cbody');
+function log(msg,tag){const t=new Date().toLocaleTimeString('pt-BR');const span=document.createElement('span');if(tag)span.className=tag;span.textContent=msg;
+  const line=document.createElement('div');line.innerHTML='<span class="lt">['+t+']</span> ';line.appendChild(span);cbody.appendChild(line);cbody.scrollTop=cbody.scrollHeight;}
+function printRaw(text){text.split(/\r?\n/).forEach(l=>{if(l==='')return;let tag='';if(/\[OK\]|SUCESSO/.test(l))tag='ls';else if(/\[ERRO\]|ERROR|falh/i.test(l))tag='le';else if(/^---/.test(l))tag='li';else if(/NOTA|AVISO/.test(l))tag='lw';
+  const span=document.createElement('span');if(tag)span.className=tag;span.textContent=l;const div=document.createElement('div');div.appendChild(span);cbody.appendChild(div);});cbody.scrollTop=cbody.scrollHeight;}
+$('#c-clear').onclick=()=>cbody.innerHTML='';
+$('#c-toggle').onclick=()=>{const c=$('#console');c.classList.toggle('collapsed');$('#c-toggle').textContent=c.classList.contains('collapsed')?'Expandir':'Recolher';};
+
+let busy=false;
+function pollJob(id,btn,orig,after){let last=0;const t=setInterval(async()=>{
+  let r;try{r=await api('/api/job/log?id='+id);}catch(e){return;}
+  const txt=r.text||'';if(txt.length>last){printRaw(txt.slice(last));last=txt.length;}
+  if(r.done){clearInterval(t);busy=false;if(btn){btn.disabled=false;btn.innerHTML=orig;}if(after)after();}
+},600);}
+async function runCmd(command,label,btn){if(busy){log('Aguarde a operacao atual terminar.','lw');return;}busy=true;
+  const orig=btn?btn.innerHTML:null;if(btn){btn.disabled=true;btn.innerHTML='<span class="spin"></span>Executando';}
+  const r=await api('/api/job',{command,label});pollJob(r.id,btn,orig);}
+
+// admin
+let isAdmin=false;
+function renderAdmin(){const tr=$('#tright');
+  tr.innerHTML=(isAdmin?'<span class="pill pill-admin">Administrador</span>':'<span class="pill pill-user">Usuario</span><button class="lnk lnk-cyan" id="elev">Elevar</button>')
+    +'<button class="lnk lnk-red" id="quit">Encerrar</button>';
+  const e=$('#elev');if(e)e.onclick=async()=>{log('Solicitando elevacao... a janela atual sera reaberta.','li');await api('/api/elevate',{});};
+  $('#quit').onclick=async()=>{log('Encerrando servidor...','lw');await api('/api/quit',{});document.body.innerHTML='<div style="display:flex;height:100vh;align-items:center;justify-content:center;color:#9aa0b3;font-size:18px;">Klarke Repair encerrado. Pode fechar esta aba.</div>';};}
+
+// router
+const content=$('#content');const PAGES={};let liveTimer=null;
+function go(page){$$('.nav').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
+  if(liveTimer){clearInterval(liveTimer);liveTimer=null;}content.scrollTop=0;content.innerHTML='<div class="skel">Carregando...</div>';PAGES[page]();}
+$$('.nav').forEach(b=>b.onclick=()=>go(b.dataset.page));
+
+function gauge(pct,label,sub,color){pct=Math.max(0,Math.min(100,pct||0));const r=40,c=2*Math.PI*r,off=c*(1-pct/100);
+  return '<div class="gwrap"><div class="gauge"><svg width="92" height="92" viewBox="0 0 100 100">'
+   +'<circle cx="50" cy="50" r="40" stroke="rgba(255,255,255,.06)" stroke-width="9" fill="none"/>'
+   +'<circle cx="50" cy="50" r="40" stroke="'+color+'" stroke-width="9" fill="none" stroke-linecap="round" stroke-dasharray="'+c+'" stroke-dashoffset="'+off+'" style="transition:stroke-dashoffset .5s"/>'
+   +'</svg><div class="gval">'+Math.round(pct)+'%</div></div><div class="gmeta"><div class="lbl">'+label+'</div><div class="sub">'+sub+'</div></div></div>';}
+function rows(a){return a.map(([k,v])=>'<div class="row"><span class="k">'+k+'</span><span class="v">'+esc(val(v))+'</span></div>').join('');}
+
+// ---- DASHBOARD ----
+PAGES.dashboard=async()=>{
+  const i=await api('/api/sysinfo');
+  $('#hostline').textContent=(i.system.maker?(i.system.maker+' '+i.system.model):i.os.hostname).trim()||i.os.hostname;
+  const g=arr(i.gpu)[0]||{};const d=arr(i.disk)[0]||{};
+  content.innerHTML='<div class="phead"><h1>Visao Geral</h1><p>Status do sistema em tempo real.</p></div>'
+   +'<div class="grid g3 mb"><div class="card" id="gc"></div><div class="card" id="gr"></div><div class="card" id="gd"></div></div>'
+   +'<div class="grid g2 mb"><div class="card"><div class="ctitle">Identidade do Sistema</div>'
+   +rows([['Maquina',i.os.hostname],['Sistema',i.os.caption],['Build',i.os.build],['Arquitetura',i.os.arch],['Fabricante',(val(i.system.maker)+' '+val(i.system.model,''))],['Tempo ligado',fmtUp(i.os.uptime)]])
+   +'</div><div class="card"><div class="ctitle">Componentes Principais</div>'
+   +rows([['Processador',i.cpu.name],['Nucleos / Threads',i.cpu.cores+' / '+i.cpu.threads],['Placa-mae',(val(i.board.maker)+' '+val(i.board.model,''))],['Memoria',fmtBytes(i.system.ram)],['Grafico',g.model],['Disco',(val(d.model,'')+' '+(d.size?'('+fmtBytes(d.size)+')':''))]])
+   +'</div></div>';
+  const tick=async()=>{let l;try{l=await api('/api/live');}catch(e){return;}
+    const cpuP=l.cpu||0,ramP=l.memTotal?l.memUsed/l.memTotal*100:0,diskP=l.diskTotal?l.diskUsed/l.diskTotal*100:0;
+    const temp=(l.temp!=null)?l.temp+'C':'n/d';
+    $('#gc').innerHTML=gauge(cpuP,'CPU','Carga atual - '+temp,cpuP>85?'#ff4d4f':'#00d4ff');
+    $('#gr').innerHTML=gauge(ramP,'Memoria',fmtBytes(l.memUsed)+' / '+fmtBytes(l.memTotal),ramP>85?'#ffc53d':'#2563ff');
+    $('#gd').innerHTML=gauge(diskP,'Disco','Livre '+fmtBytes(l.diskFree),diskP>90?'#ff4d4f':'#10e07f');};
+  await tick();liveTimer=setInterval(tick,2000);
+};
+
+// ---- HARDWARE ----
+PAGES.hardware=async()=>{
+  const i=await api('/api/sysinfo');const c=i.cpu,b=i.board,bi=i.bios;
+  const mem=arr(i.mem),gpu=arr(i.gpu),disk=arr(i.disk);
+  content.innerHTML='<div class="phead"><h1>Hardware</h1><p>Especificacoes detalhadas dos componentes.</p></div>'
+   +'<div class="grid g2 mb"><div class="card"><div class="ctitle">Processador</div>'
+   +rows([['Modelo',c.name],['Fabricante',c.maker],['Soquete',c.socket],['Nucleos',c.cores],['Threads',c.threads],
+     ['Clock max',c.maxClk?(c.maxClk/1000).toFixed(2)+' GHz':'-'],['Clock atual',c.curClk?(c.curClk/1000).toFixed(2)+' GHz':'-'],
+     ['Cache L2',c.l2?fmtBytes(c.l2*1024):'-'],['Cache L3',c.l3?fmtBytes(c.l3*1024):'-'],['Arquitetura',c.bits?c.bits+' bits':'-'],['Virtualizacao',c.virt?'Habilitada':'n/d']])
+   +'</div><div class="card"><div class="ctitle">Placa-mae &amp; BIOS</div>'
+   +rows([['Fabricante',b.maker],['Modelo',b.model],['Versao',b.ver],['Serial',b.serial],['BIOS Vendor',bi.maker],['BIOS Versao',bi.ver],['BIOS Data',bi.date],['Sistema',(val(i.system.maker)+' '+val(i.system.model,''))]])
+   +'</div></div>'
+   +'<div class="card mb"><div class="ctitle">Memoria - '+mem.length+' modulo(s) - '+fmtBytes(i.system.ram)+' total</div><div class="grid g2">'
+   +(mem.length?mem.map((m,n)=>'<div style="background:var(--card2);border:1px solid var(--line2);border-radius:10px;padding:14px"><div style="font-weight:700;margin-bottom:8px;color:var(--cyan)">Slot '+(n+1)+' - '+esc(val(m.bank,''))+'</div>'
+     +rows([['Capacidade',m.size?fmtBytes(m.size):'-'],['Tipo',m.type],['Velocidade',m.speed?m.speed+' MHz':'-'],['Fabricante',m.maker],['Part Number',m.part],['Voltagem',m.volt?m.volt+' V':'-']])+'</div>').join(''):'<p class="muted small">Sem dados de modulos.</p>')
+   +'</div></div>'
+   +'<div class="grid g2 mb"><div class="card"><div class="ctitle">Graficos</div>'
+   +(gpu.length?gpu.map(x=>rows([['Modelo',x.model],['Processador',x.proc],['VRAM',x.vram?fmtBytes(x.vram):'-'],['Driver',x.driver]])).join('<div style="height:1px;background:var(--line);margin:10px 0"></div>'):'<p class="muted small">-</p>')
+   +'</div><div class="card"><div class="ctitle">Armazenamento</div>'
+   +(disk.length?disk.map(x=>rows([['Modelo',x.model],['Tipo',x.media],['Interface',x.iface],['Capacidade',x.size?fmtBytes(x.size):'-'],['Serial',x.serial]])).join('<div style="height:1px;background:var(--line);margin:10px 0"></div>'):'<p class="muted small">-</p>')
+   +'</div></div>';
+};
+
+// ---- NETWORK ----
+PAGES.network=async()=>{
+  const i=await api('/api/sysinfo');const nets=arr(i.net);
+  const diag=[
+    ['Limpar Cache DNS','Esvazia o resolvedor DNS local.','ipconfig /flushdns','Flush DNS'],
+    ['Resetar TCP/IP &amp; Winsock','Redefine a pilha de rede ao padrao.','netsh winsock reset & netsh int ip reset','Reset TCP/IP'],
+    ['Renovar IP (DHCP)','Libera e solicita um novo IP local.','ipconfig /release & ipconfig /renew','Renovar IP'],
+    ['Teste de Ping','Envia 4 pacotes ao DNS do Google.','ping -n 4 8.8.8.8','Ping 8.8.8.8'],
+    ['Limpar Tabela ARP','Remove enderecos fisicos obsoletos.','arp -d *','Limpar ARP'],
+    ['Rastrear Rota','Caminho ate a Cloudflare (1.1.1.1).','tracert -d -w 100 1.1.1.1','Tracert']
+  ];
+  content.innerHTML='<div class="phead"><h1>Rede</h1><p>Interfaces ativas e ferramentas de diagnostico.</p></div>'
+   +'<div class="card mb"><div class="ctitle">Interfaces Ativas</div><div class="grid g2">'
+   +(nets.length?nets.map(n=>'<div style="background:var(--card2);border:1px solid var(--line2);border-radius:10px;padding:14px"><div style="font-weight:700;margin-bottom:8px;color:var(--cyan)">'+esc(n.desc)+'</div>'
+     +rows([['IP (v4)',n.ip],['Mascara',n.mask],['MAC',n.mac],['Gateway',n.gw],['DHCP',n.dhcp?'Sim':'Nao']])+'</div>').join(''):'<p class="muted small">Nenhuma interface ativa.</p>')
+   +'</div></div>'
+   +'<div class="card"><div class="ctitle">Diagnostico &amp; Reparo de Rede</div>'
+   +diag.map(([t,d,cmd,lb])=>'<div class="arow"><div class="meta"><h4>'+t+'</h4><p>'+d+'</p></div><button class="btn" data-cmd="'+esc(cmd)+'" data-label="'+esc(lb)+'">Executar</button></div>').join('')
+   +'</div>';
+  bindCmd();
+};
+
+// ---- REPAIR ----
+PAGES.repair=async()=>{
+  const tasks=[
+    ['SFC /scannow','Verifica e repara arquivos de sistema corrompidos.','sfc /scannow','SFC Scannow',true],
+    ['DISM RestoreHealth','Restaura a imagem do Windows via Update.','DISM /Online /Cleanup-Image /RestoreHealth','DISM Restore',true],
+    ['CHKDSK C:','Analisa a unidade C: em busca de erros logicos.','chkdsk c:','CHKDSK',false],
+    ['Reset Windows Update','Reinicia servicos e limpa downloads pendentes.','net stop wuauserv & net stop bits & net stop cryptsvc & net start wuauserv & net start bits & net start cryptsvc','Reset WU',true],
+    ['Reset Microsoft Store','Limpa o cache da Store.','wsreset.exe','Reset Store',false],
+    ['Reset Spooler de Impressao','Destrava a fila de impressao.','net stop spooler & net start spooler','Reset Spooler',true],
+    ['Reconstruir Cache de Icones','Corrige icones em branco no Explorer.','ie4uinit.exe -show & taskkill /IM explorer.exe /F & del /A /Q "%localappdata%\\IconCache.db" & start explorer.exe','Reset Icones',false]
+  ];
+  content.innerHTML='<div class="phead"><h1>Reparo do Sistema</h1><p>Rotinas de correcao de integridade do Windows.</p></div>'
+   +(!isAdmin?'<div class="sum" style="border-color:rgba(255,197,61,.3);background:rgba(255,197,61,.07)"><div><b>Privilegios limitados.</b> <span class="muted small">Varias rotinas exigem Administrador. Use "Elevar" no topo.</span></div></div>':'')
+   +'<div class="card"><div class="ctitle">Rotinas Disponiveis</div>'
+   +tasks.map(([t,d,cmd,lb,adm])=>'<div class="arow"><div class="meta"><h4>'+t+(adm?' <span class="chip chip-amber">admin</span>':'')+'</h4><p>'+d+'</p></div><button class="btn" data-cmd="'+esc(cmd)+'" data-label="'+esc(lb)+'">Executar</button></div>').join('')
+   +'</div>';
+  bindCmd();
+};
+
+// ---- CLEANUP ----
+PAGES.cleanup=async()=>{
+  content.innerHTML='<div class="phead"><h1>Limpeza &amp; Otimizacao</h1><p>Libere espaco removendo arquivos temporarios e caches.</p></div>'
+   +'<div class="sum"><div class="big" id="cltot">- <small>analisando...</small></div><div class="rf"><button class="btn btn-ghost" id="clscan">Reanalisar</button><button class="btn btn-danger" id="clclean" disabled>Limpar Selecionados</button></div></div>'
+   +'<div class="card"><div class="ctitle">Categorias</div><div id="cllist"><div class="skel">Analisando disco...</div></div></div>';
+  async function scan(){$('#cllist').innerHTML='<div class="skel">Analisando disco...</div>';$('#cltot').innerHTML='- <small>analisando...</small>';
+    const cats=await api('/api/cleanup/scan');cats.push({id:'recycle_bin',label:'Lixeira',desc:'Esvaziar a lixeira de todos os discos',bytes:0,files:0,available:true});
+    $('#cllist').innerHTML=cats.map(c=>'<label class="chk '+(c.available?'':'empty')+'"><input type="checkbox" data-id="'+c.id+'" data-bytes="'+c.bytes+'" '+(c.available?'checked':'disabled')+'/><div class="info"><b>'+c.label+'</b><p>'+c.desc+'</p></div><div class="size">'+(c.id==='recycle_bin'?'-':(c.available?fmtBytes(c.bytes):'vazio'))+'</div></label>').join('');
+    $$('#cllist input').forEach(x=>x.onchange=recalc);recalc();log('Analise de limpeza concluida.','li');}
+  function recalc(){let t=0,n=0;$$('#cllist input:checked').forEach(x=>{t+=Number(x.dataset.bytes);n++;});$('#cltot').innerHTML=fmtBytes(t)+' <small>em '+n+' categoria(s)</small>';$('#clclean').disabled=(n===0||busy);}
+  $('#clscan').onclick=scan;
+  $('#clclean').onclick=async()=>{const ids=$$('#cllist input:checked').map(x=>x.dataset.id);if(!ids.length||busy)return;busy=true;
+    const btn=$('#clclean');btn.disabled=true;btn.innerHTML='<span class="spin"></span>Limpando';
+    const r=await api('/api/cleanup',{ids});pollJob(r.id,btn,'Limpar Selecionados',scan);};
+  await scan();
+};
+
+// ---- TOOLS ----
+PAGES.tools=async()=>{
+  const tools=[['Gerenciador de Dispositivos','devmgmt.msc'],['Gerenciador de Tarefas','taskmgr.exe'],['Gerenciamento de Disco','diskmgmt.msc'],['Editor de Registro','regedit.exe'],['Painel de Controle','control.exe'],['Visualizador de Eventos','eventvwr.msc'],['Configuracao do Sistema','msconfig.exe'],['Servicos','services.msc'],['Informacoes do Sistema','msinfo32.exe'],['Diagnostico DirectX','dxdiag.exe'],['Politicas de Grupo','gpedit.msc'],['Limpeza de Disco','cleanmgr.exe']];
+  content.innerHTML='<div class="phead"><h1>Ferramentas Nativas</h1><p>Atalhos rapidos para os paineis do Windows.</p></div>'
+   +'<div class="card"><div class="ctitle">Paineis do Sistema</div><div class="grid g3">'
+   +tools.map(([n,cmd])=>'<button class="tool" data-launch="'+esc(cmd)+'"><b>'+n+'</b><span>'+cmd+'</span></button>').join('')+'</div></div>';
+  $$('[data-launch]').forEach(b=>b.onclick=async()=>{log('Abrindo: '+b.querySelector('b').textContent,'li');const r=await api('/api/tool',{command:b.dataset.launch});if(!r.ok)log('Falha ao abrir: '+(r.error||''),'le');});
+};
+
+function bindCmd(){$$('[data-cmd]').forEach(b=>b.onclick=()=>runCmd(b.dataset.cmd.replace(/&amp;/g,'&'),b.dataset.label,b));}
+
+(async()=>{paintIcons();try{const a=await api('/api/admin');isAdmin=!!a.admin;}catch(e){}renderAdmin();go('dashboard');
+  log('Klarke Repair inicializado. Sistema operacional nominal.','ls');
+  if(!isAdmin)log('AVISO: rodando como Usuario padrao. Algumas rotinas exigem elevacao.','lw');})();
+</script>
+</body>
+</html>

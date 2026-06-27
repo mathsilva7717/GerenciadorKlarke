@@ -106,8 +106,8 @@ app.use((req, res, next) => {
   res.setHeader('Content-Security-Policy', [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' https://unpkg.com",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' data: https://fonts.gstatic.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com",
+    "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com",
     "img-src 'self' data: blob:",
     "connect-src 'self'",
     "object-src 'none'",
@@ -1080,14 +1080,14 @@ app.post('/api/monitoring/snapshot', verifyMonitoringToken, (req, res) => {
     });
   });
 });
-// Rota para baixar o Klarke Repair.exe
+// Rota para baixar o Klarke Repair (app Electron portable, distribuído como .zip)
 app.get('/api/monitoring/repair-download', (req, res) => {
-  const repairPath = path.join(__dirname, '../repair-tool/Klarke Repair.exe');
+  const repairPath = path.join(__dirname, '../repair-tool/Klarke Repair.zip');
   if (!fs.existsSync(repairPath)) {
     return res.status(404).send('Ferramenta de reparo não encontrada no servidor');
   }
-  res.setHeader('Content-Type', 'application/octet-stream');
-  res.setHeader('Content-Disposition', 'attachment; filename="Klarke Repair.exe"');
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', 'attachment; filename="Klarke Repair.zip"');
   res.sendFile(repairPath);
 });
 
@@ -1263,8 +1263,87 @@ app.post('/api/tickets/:id/comments', authenticate, (req, res) => {
   });
 });
 
-// Rota de status do sistema (Disco e Latência)
+// ==========================================
+// MONITORAMENTO DE LOCAIS (PING DE IPs PÚBLICOS)
+// ==========================================
 const { exec } = require('child_process');
+
+// >>> ADICIONE NOVOS LOCAIS AQUI <<<
+// Cada item é um ponto público (loja/filial) que será pingado periodicamente.
+// Alternativa: definir a env MANAGED_SITES = "Nome|IP, Nome2|IP2" para sobrescrever.
+const DEFAULT_SITES = [
+  { label: 'Local Principal', ip: '45.161.6.51' },
+  // { label: 'Filial 02', ip: '0.0.0.0' },
+  // { label: 'Filial 03', ip: '0.0.0.0' },
+];
+
+function loadManagedSites() {
+  if (process.env.MANAGED_SITES) {
+    return process.env.MANAGED_SITES.split(',')
+      .map((s) => {
+        const [label, ip] = s.split('|').map((x) => (x || '').trim());
+        return { label: label || ip, ip };
+      })
+      .filter((s) => s.ip);
+  }
+  return DEFAULT_SITES;
+}
+const MANAGED_SITES = loadManagedSites();
+
+// Estado em memória do último ping de cada IP.
+const siteStatus = new Map(); // ip -> { label, ip, online, latency, lastCheck }
+MANAGED_SITES.forEach((s) =>
+  siteStatus.set(s.ip, { ...s, online: false, latency: 0, lastCheck: null })
+);
+
+function pingHost(ip) {
+  return new Promise((resolve) => {
+    // Sanitização defensiva: só hostnames/IPs válidos (evita injeção de shell no exec).
+    if (!/^[a-zA-Z0-9.:_-]{1,253}$/.test(ip)) {
+      return resolve({ online: false, latency: 0 });
+    }
+    const isWin = process.platform === 'win32';
+    const cmd = isWin ? `ping -n 1 -w 2000 ${ip}` : `ping -c 1 -W 2 ${ip}`;
+    const start = Date.now();
+    exec(cmd, { timeout: 4000 }, (err, stdout) => {
+      if (err) return resolve({ online: false, latency: 0 });
+      // Extrai a latência real do output ("time=12.3 ms" / "tempo=12ms"); fallback: tempo decorrido.
+      const m = (stdout || '').match(/(?:time|tempo)[=<]\s*([\d.,]+)\s*ms/i);
+      const latency = m ? Math.round(parseFloat(m[1].replace(',', '.'))) : (Date.now() - start);
+      resolve({ online: true, latency });
+    });
+  });
+}
+
+async function pollSites() {
+  for (const site of MANAGED_SITES) {
+    const r = await pingHost(site.ip);
+    siteStatus.set(site.ip, { ...site, ...r, lastCheck: new Date().toISOString() });
+  }
+}
+// Primeira coleta + polling contínuo a cada 60s.
+if (MANAGED_SITES.length > 0) {
+  pollSites().catch(() => {});
+  setInterval(() => pollSites().catch(() => {}), 60 * 1000);
+}
+
+function getSitesSummary() {
+  const sites = MANAGED_SITES.map(
+    (s) => siteStatus.get(s.ip) || { ...s, online: false, latency: 0, lastCheck: null }
+  );
+  const onlineSites = sites.filter((s) => s.online);
+  const avgLatency = onlineSites.length
+    ? Math.round(onlineSites.reduce((a, b) => a + (b.latency || 0), 0) / onlineSites.length)
+    : 0;
+  return { sites, sitesOnline: onlineSites.length, sitesTotal: sites.length, avgLatency };
+}
+
+// Endpoint dedicado (detalhe de cada local gerenciado).
+app.get('/api/monitoring/sites', authenticate, (req, res) => {
+  res.json(getSitesSummary());
+});
+
+// Rota de status do sistema (Disco + Latência dos locais gerenciados).
 app.get('/api/system-status', authenticate, (req, res) => {
   exec('df -h / --output=size,used,avail,pcent | tail -1', (err, stdout) => {
     let disk = { size: '0', used: '0', avail: '0', percent: '0%' };
@@ -1274,11 +1353,8 @@ app.get('/api/system-status', authenticate, (req, res) => {
         disk = { size: parts[0], used: parts[1], avail: parts[2], percent: parts[3] };
       }
     }
-    const start = Date.now();
-    exec('ping -c 1 8.8.8.8', (pErr) => {
-      const latency = !pErr ? (Date.now() - start) : 0;
-      res.json({ disk, latency });
-    });
+    const { sites, sitesOnline, sitesTotal, avgLatency } = getSitesSummary();
+    res.json({ disk, latency: avgLatency, sites, sitesOnline, sitesTotal });
   });
 });
 
