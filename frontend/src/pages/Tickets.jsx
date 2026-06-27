@@ -8,6 +8,14 @@ import {
 import toast from 'react-hot-toast';
 import { getAuthConfig } from '../utils/auth';
 
+// Resolve a URL de uma foto: aceita nome de arquivo (servido em /uploads),
+// data URL (base64 legado) ou caminho/URL ja completo.
+const resolveUploadUrl = (photo) => {
+  if (!photo) return '';
+  if (photo.startsWith('data:') || photo.startsWith('http') || photo.startsWith('/uploads/')) return photo;
+  return `/uploads/${photo.replace(/^\/?uploads\//, '')}`;
+};
+
 function Tickets() {
   const [tickets, setTickets] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -562,15 +570,15 @@ function Tickets() {
                     }}>
                       {photos.map((photo, index) => (
                         <div key={index} style={{ border: '1px solid var(--color-border)', padding: '6px', background: 'var(--color-surface)', textAlign: 'center', minWidth: '120px', flex: '1 1 120px', maxWidth: '200px' }}>
-                          <a href={`/uploads/${photo}`} target="_blank" rel="noopener noreferrer">
-                            <img 
-                              src={`/uploads/${photo}`} 
-                              alt={`Evidência ${index + 1}`} 
-                              style={{ width: '100%', height: '120px', objectFit: 'cover', cursor: 'zoom-in', borderRadius: '4px' }} 
+                          <a href={resolveUploadUrl(photo)} target="_blank" rel="noopener noreferrer">
+                            <img
+                              src={resolveUploadUrl(photo)}
+                              alt={`Evidência ${index + 1}`}
+                              style={{ width: '100%', height: '120px', objectFit: 'cover', cursor: 'zoom-in', borderRadius: '4px' }}
                             />
                           </a>
                           <div style={{ marginTop: '6px', fontSize: '0.75rem' }}>
-                            <a href={`/uploads/${photo}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'var(--color-accent)', fontWeight: '600' }}>
+                            <a href={resolveUploadUrl(photo)} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'var(--color-accent)', fontWeight: '600' }}>
                               Ver foto completa
                             </a>
                           </div>
@@ -614,8 +622,8 @@ function Tickets() {
                             <p style={{ fontSize: '0.9rem', margin: 0, whiteSpace: 'pre-wrap', color: 'var(--color-text)' }}>{c.text}</p>
                             {c.image && (
                               <div style={{ marginTop: '8px', border: '1px solid var(--color-border)', borderRadius: '0px', overflow: 'hidden', maxWidth: '120px' }}>
-                                <a href={`/uploads/${c.image}`} target="_blank" rel="noopener noreferrer">
-                                  <img src={`/uploads/${c.image}`} alt="Anexo do comentário" style={{ width: '100%', height: '80px', objectFit: 'cover' }} />
+                                <a href={resolveUploadUrl(c.image)} target="_blank" rel="noopener noreferrer">
+                                  <img src={resolveUploadUrl(c.image)} alt="Anexo do comentário" style={{ width: '100%', height: '80px', objectFit: 'cover' }} />
                                 </a>
                               </div>
                             )}

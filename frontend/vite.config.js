@@ -33,6 +33,12 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3001',
         changeOrigin: true
+      },
+      // Sem este proxy, as fotos de chamados/snapshots (servidas pelo backend em
+      // /uploads) ficam invisiveis no dev server do Vite (404).
+      '/uploads': {
+        target: 'http://localhost:3001',
+        changeOrigin: true
       }
     }
   }

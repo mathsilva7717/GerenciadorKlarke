@@ -142,25 +142,6 @@ function Home() {
     toast.success('Iniciando download do Klarke Repair...');
   };
 
-  const downloadAgent = async () => {
-    try {
-      const response = await axios.get('/api/monitoring/agent-download', {
-        ...getAuthConfig(),
-        responseType: 'blob'
-      });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', 'klarke-agent.js');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast.success('Agente baixado com sucesso!');
-    } catch (e) {
-      toast.error('Erro ao baixar agente');
-    }
-  };
-
   const handleAddSite = async (e) => {
     e.preventDefault();
     if (!newSiteLabel.trim() || !newSiteIp.trim()) {

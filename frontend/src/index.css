@@ -426,11 +426,14 @@ body.dark .machine-card:hover {
   background-color: rgba(2, 6, 23, 0.8);
   display: flex;
   justify-content: center;
-  align-items: center;
+  /* flex-start + margin:auto no conteudo evita o bug de centralizacao do flexbox,
+     onde o topo do modal fica inacessivel quando o conteudo passa da altura da tela */
+  align-items: flex-start;
   z-index: 99999;
   padding: 20px;
   backdrop-filter: blur(8px);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   cursor: pointer;
 }
 
@@ -440,7 +443,10 @@ body.dark .machine-card:hover {
   padding: 24px 28px;
   width: 100%;
   max-width: 550px;
+  /* centraliza verticalmente quando cabe, e permite rolar sem cortar o topo quando nao cabe */
+  margin: auto;
   max-height: 90vh;
+  max-height: calc(100dvh - 40px);
   overflow-y: auto;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   animation: slideUp 0.3s ease-out;
@@ -525,6 +531,7 @@ body.dark .machine-card:hover {
   z-index: 100000;
   backdrop-filter: blur(8px);
   padding: 20px;
+  overflow-y: auto;
 }
 
 .confirm-modal-content {
@@ -533,6 +540,9 @@ body.dark .machine-card:hover {
   width: 100%;
   max-width: 400px;
   padding: 32px;
+  margin: auto;
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
   border-radius: 0px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   position: relative;
@@ -1297,6 +1307,7 @@ body.dark .machine-card:hover {
     width: 100%;
     padding: 24px 16px;
     margin: 0;
+    max-height: calc(100dvh - 90px); /* respeita o padding 60+30 do overlay no mobile */
     border-radius: 0px;
   }
 
@@ -2255,16 +2266,6 @@ body.dark .status-badge {
   .machines-grid, .selection-grid-industrial, .users-grid {
     grid-template-columns: 1fr;
     gap: 16px;
-  }
-
-  .modal-overlay {
-    padding: 20px;
-  }
-
-  .modal-content {
-    width: 100%;
-    max-height: 90vh;
-    padding: 20px;
   }
 }
 

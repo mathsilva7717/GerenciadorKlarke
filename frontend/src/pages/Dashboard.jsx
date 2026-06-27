@@ -212,124 +212,99 @@ function Dashboard() {
     toast.success('Dados completos copiados!');
   };
 
+  // Etiqueta para impressora termica: papel 82x25mm, layout em DUAS COLUNAS.
+  // Coluna esquerda = nome da maquina; coluna direita = RustDesk e AnyDesk.
   const handlePrintLabel = (machine) => {
     const printWindow = window.open('', '_blank');
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(machine.serial_number || machine.name)}`;
-    const kCode = machine.serial_number || `K${String(machine.id).padStart(3, '0')}`;
+    if (!printWindow) {
+      toast.error('Permita pop-ups para imprimir a etiqueta.');
+      return;
+    }
+    const esc = (s) => String(s ?? '').replace(/[<>&"]/g, (c) => (
+      { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]
+    ));
+    const name = esc(machine.name || 'SEM NOME');
+    const rust = esc(machine.rustdesk_id || '---');
+    const any = esc(machine.anydesk_id || '---');
 
     printWindow.document.write(`
       <html>
         <head>
-          <title>ETIQUETA - ${kCode}</title>
+          <title>Etiqueta - ${name}</title>
           <style>
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-            body { 
-              margin: 0; 
-              padding: 0; 
-              display: flex; 
-              justify-content: center; 
-              align-items: center; 
-              height: 100vh; 
-              background: #fff;
-              font-family: 'Inter', sans-serif;
+            /* Tamanho fisico do papel termico */
+            @page { size: 82mm 25mm; margin: 0; }
+            * { box-sizing: border-box; }
+            html, body { margin: 0; padding: 0; background: #fff; }
+            body {
+              font-family: Arial, Helvetica, sans-serif;
+              color: #000;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
             }
-            .sticker {
-              width: 350px;
-              height: 200px;
-              border: 3px solid #0f172a;
-              padding: 0;
-              position: relative;
-              overflow: hidden;
-              background: white;
-            }
-            .header-bar {
-              background: #0f172a;
-              color: white;
-              padding: 8px;
-              text-align: center;
-              font-weight: 900;
-              font-size: 14px;
-              letter-spacing: 2px;
+            .label {
+              width: 82mm;
+              height: 25mm;
               display: flex;
-              align-items: center;
-              justify-content: center;
-              gap: 10px;
+              align-items: stretch;
+              padding: 1.5mm 2mm;
+              gap: 2mm;
             }
-            .main-content {
-              display: flex;
-              padding: 10px;
-              height: 135px;
-            }
-            .qr-side {
-              flex: 0 0 130px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-            }
-            .info-side {
-              flex: 1;
+            .col-left {
+              flex: 1 1 44%;
               display: flex;
               flex-direction: column;
               justify-content: center;
-              padding-left: 15px;
-              border-left: 1px dashed #cbd5e1;
+              border-right: 0.4mm solid #000;
+              padding-right: 2mm;
+              min-width: 0;
             }
-            .k-number {
-              font-size: 32px;
-              font-weight: 900;
-              color: #0f172a;
-              margin: 0;
-              line-height: 1;
-            }
-            .machine-name {
-              font-size: 14px;
-              font-weight: 700;
-              color: #475569;
-              margin-top: 5px;
-              text-transform: uppercase;
-              overflow: hidden;
-              white-space: nowrap;
-              text-overflow: ellipsis;
-            }
-            .footer-tags {
-              position: absolute;
-              bottom: 0;
-              width: 100%;
-              background: #f8fafc;
-              border-top: 1px solid #0f172a;
+            .col-right {
+              flex: 1 1 56%;
               display: flex;
-              justify-content: space-between;
-              padding: 4px 10px;
-              font-size: 9px;
+              flex-direction: column;
+              justify-content: center;
+              gap: 1.2mm;
+              min-width: 0;
+            }
+            .brand { font-size: 6pt; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 0.8mm; }
+            .m-name {
+              font-size: 13pt;
               font-weight: 800;
-              color: #0f172a;
-              box-sizing: border-box;
+              text-transform: uppercase;
+              line-height: 1.02;
+              word-break: break-word;
+              overflow: hidden;
+            }
+            .field { display: flex; flex-direction: column; line-height: 1; min-width: 0; }
+            .field .k { font-size: 6pt; font-weight: 700; letter-spacing: 0.5px; }
+            .field .v {
+              font-family: 'Consolas', 'Courier New', monospace;
+              font-size: 11pt;
+              font-weight: 700;
+              line-height: 1.05;
+              word-break: break-all;
             }
             @media print {
-              body { background: none; }
-              .sticker { border: 4px solid #000; }
+              html, body { width: 82mm; height: 25mm; }
             }
           </style>
         </head>
-        <body onload="setTimeout(() => { window.print(); window.close(); }, 500);">
-          <div class="sticker">
-            <div class="header-bar">
-              KLARKE SOLUTIONS
+        <body onload="setTimeout(function(){ window.print(); window.close(); }, 250);">
+          <div class="label">
+            <div class="col-left">
+              <div class="brand">KLARKE</div>
+              <div class="m-name">${name}</div>
             </div>
-            <div class="main-content">
-              <div class="qr-side">
-                <img src="${qrUrl}" width="110" height="110" />
+            <div class="col-right">
+              <div class="field">
+                <span class="k">RUSTDESK</span>
+                <span class="v">${rust}</span>
               </div>
-              <div class="info-side">
-                <div style="font-size: 10px; font-weight: 700; color: #64748b; margin-bottom: 2px;">PATRIMÔNIO / ID</div>
-                <div class="k-number">${kCode}</div>
-                <div class="machine-name">${machine.name}</div>
-                <div style="font-size: 10px; font-weight: 600; color: #94a3b8; margin-top: 8px;">IP: ${machine.ip || '---'}</div>
+              <div class="field">
+                <span class="k">ANYDESK</span>
+                <span class="v">${any}</span>
               </div>
-            </div>
-            <div class="footer-tags">
-              <span>GERENCIAMENTO DE INFRAESTRUTURA</span>
-              <span>VERIFICADO</span>
             </div>
           </div>
         </body>
