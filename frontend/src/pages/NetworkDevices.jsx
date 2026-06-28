@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, Plus, X, Copy, Router as RouterIcon, MapPin, Check, Download, Clipboard, Trash2, QrCode, ChevronLeft, ChevronRight, RotateCw } from 'lucide-react';
+import { Search, Plus, X, Copy, Router as RouterIcon, MapPin, Check, Download, Clipboard, Trash2, QrCode, RotateCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { getAuthConfig } from '../utils/auth';
@@ -168,49 +168,6 @@ function NetworkDevices() {
     const text = `Nome: ${device.name}\nTipo: ${device.type}\nSérie: ${device.serial_number || '-'}\nIP: ${device.ip}\nLocal: ${device.location}\nOperadora: ${device.isp}\nUsuário: ${device.username}\nSenha: ${device.password}`;
     navigator.clipboard.writeText(text);
     toast.success('Dados completos copiados!');
-  };
-
-  const handlePrintLabel = (device) => {
-    const printWindow = window.open('', '_blank');
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(device.serial_number || device.name)}`;
-    const kCode = device.serial_number || `N${String(device.id).padStart(3, '0')}`;
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>ETIQUETA - ${kCode}</title>
-          <style>
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-            body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background: #fff; font-family: 'Inter', sans-serif; }
-            .sticker { width: 350px; height: 200px; border: 3px solid #0f172a; position: relative; overflow: hidden; background: white; }
-            .header-bar { background: #0f172a; color: white; padding: 8px; text-align: center; font-weight: 900; font-size: 14px; letter-spacing: 2px; }
-            .main-content { display: flex; padding: 10px; height: 135px; }
-            .qr-side { flex: 0 0 130px; display: flex; align-items: center; justify-content: center; }
-            .info-side { flex: 1; display: flex; flex-direction: column; justify-content: center; padding-left: 15px; border-left: 1px dashed #cbd5e1; }
-            .k-number { font-size: 32px; font-weight: 900; color: #0f172a; margin: 0; line-height: 1; }
-            .machine-name { font-size: 14px; font-weight: 700; color: #475569; margin-top: 5px; text-transform: uppercase; }
-            .footer-tags { position: absolute; bottom: 0; width: 100%; background: #f8fafc; border-top: 1px solid #0f172a; display: flex; justify-content: space-between; padding: 4px 10px; font-size: 9px; font-weight: 800; color: #0f172a; box-sizing: border-box; }
-            @media print { .sticker { border: 4px solid #000; } }
-          </style>
-        </head>
-        <body onload="setTimeout(() => { window.print(); window.close(); }, 500);">
-          <div class="sticker">
-            <div class="header-bar">KLARKE SOLUTIONS - INFRA REDE</div>
-            <div class="main-content">
-              <div class="qr-side"><img src="${qrUrl}" width="110" height="110" /></div>
-              <div class="info-side">
-                <div style="font-size: 10px; font-weight: 700; color: #64748b; margin-bottom: 2px;">PATRIMÔNIO / ID</div>
-                <div class="k-number">${kCode}</div>
-                <div class="machine-name">${device.name}</div>
-                <div style="font-size: 10px; font-weight: 600; color: #94a3b8; margin-top: 8px;">IP: ${device.ip || '---'}</div>
-              </div>
-            </div>
-            <div class="footer-tags"><span>CONECTIVIDADE GARANTIDA</span><span>KLARKE</span></div>
-          </div>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
   };
 
   const exportToCSV = () => {

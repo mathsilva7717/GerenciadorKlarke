@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, Plus, X, Copy, Monitor, MapPin, Check, Download, Clipboard, Trash2, QrCode, Activity, Edit, Printer, ChevronLeft, ChevronRight, RotateCw, Database, Wifi, Globe, Wrench } from 'lucide-react';
+import { Search, Plus, X, Copy, Monitor, MapPin, Check, Download, Clipboard, Trash2, QrCode, Activity, Edit, Printer, RotateCw, Database, Globe, Wrench } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { getAuthConfig } from '../utils/auth';
@@ -371,7 +371,6 @@ function Dashboard() {
   };
 
   const onlineCount = machines.filter(m => isOnline(m.last_seen)).length;
-  const offlineCount = machines.length - onlineCount;
 
   const filteredMachines = machines.filter(m => 
     m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

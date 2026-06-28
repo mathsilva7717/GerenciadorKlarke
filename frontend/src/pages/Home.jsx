@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Monitor, Camera, Router as RouterIcon, ListTodo, ChevronRight, Activity, ShieldCheck, Cpu, Database, RotateCw, BookOpen, Phone, Package, Key, Globe, MessageSquare, Wrench, Download, Trash2, Plus } from 'lucide-react';
+import { Monitor, Camera, Router as RouterIcon, ListTodo, ChevronRight, Activity, ShieldCheck, Database, RotateCw, BookOpen, Phone, Package, Key, MessageSquare, Wrench, Trash2, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getAuthConfig } from '../utils/auth';
 
@@ -9,6 +9,15 @@ import { getAuthConfig } from '../utils/auth';
 const isOnline = (lastSeen) => {
   if (!lastSeen) return false;
   return (Date.now() - new Date(lastSeen).getTime()) < 5 * 60 * 1000;
+};
+
+// Converte o tamanho cru do `df -h` (ex: "112G", "1.5T", "500M") para algo legível ("112 GB")
+const formatDiskSize = (v) => {
+  if (!v || v === '0') return '—';
+  const m = String(v).trim().match(/^([\d.]+)\s*([KMGTP])?i?B?$/i);
+  if (!m) return v;
+  const units = { K: 'KB', M: 'MB', G: 'GB', T: 'TB', P: 'PB' };
+  return `${m[1]} ${m[2] ? units[m[2].toUpperCase()] : 'B'}`;
 };
 
 // Saudação em inglês conforme o horário do dia
@@ -49,7 +58,6 @@ function Home() {
   const [recentTickets, setRecentTickets] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [systemStatus, setSystemStatus] = useState({ disk: { percent: '0%', avail: '0' }, latency: 0, sites: [], sitesOnline: 0, sitesTotal: 0 });
-  const [isAddingSite, setIsAddingSite] = useState(false);
   const [newSiteLabel, setNewSiteLabel] = useState('');
   const [newSiteIp, setNewSiteIp] = useState('');
   const [isSitesModalOpen, setIsSitesModalOpen] = useState(false);
@@ -156,7 +164,6 @@ function Home() {
       toast.success('IP público adicionado com sucesso!');
       setNewSiteLabel('');
       setNewSiteIp('');
-      setIsAddingSite(false);
       fetchStats();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Erro ao adicionar IP público');
@@ -203,29 +210,27 @@ function Home() {
           </div>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', marginBottom: '32px' }}>
-          {/* Card 1: Saúde Global */}
-          <div className="stat-box-industrial" style={{ flex: '1 1 260px', minHeight: '180px', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '15px', padding: '20px', position: 'relative' }}>
-            {/* Botão de adicionar/gerenciar IPs públicos */}
-            <button 
+          {/* Card 1: Saúde Global (medida pelo ping dos locais públicos) */}
+          <div className="stat-box-industrial" style={{ flex: '1 1 260px', minHeight: '180px', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '20px', padding: '24px', position: 'relative' }}>
+            {/* Botão discreto para gerenciar os IPs públicos monitorados */}
+            <button
               onClick={() => setIsSitesModalOpen(true)}
-              style={{ position: 'absolute', top: '12px', right: '12px', background: 'none', border: 'none', color: 'var(--color-accent)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              title="Gerenciar IPs Públicos"
+              style={{ position: 'absolute', top: '12px', right: '12px', background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              title="Gerenciar IPs públicos (ping)"
             >
               <Plus size={16} />
             </button>
 
-            <div style={{ position: 'relative', width: '70px', height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <svg width="70" height="70" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
-                {/* Background circle */}
+            <div style={{ position: 'relative', width: '90px', height: '90px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="90" height="90" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
                 <circle cx="50" cy="50" r="40" stroke="rgba(255,255,255,0.05)" strokeWidth="8" fill="transparent" />
-                {/* Progress circle */}
-                <circle 
-                  cx="50" 
-                  cy="50" 
-                  r="40" 
-                  stroke={healthPct === 0 ? "#ef4444" : "#10b981"} 
-                  strokeWidth="8" 
-                  fill="transparent" 
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="40"
+                  stroke={healthPct === 100 ? '#10b981' : (healthPct === 0 ? '#ef4444' : '#f59e0b')}
+                  strokeWidth="8"
+                  fill="transparent"
                   strokeDasharray={2 * Math.PI * 40}
                   strokeDashoffset={2 * Math.PI * 40 * (1 - sitesOnline / (sitesTotal || 1))}
                   strokeLinecap="round"
@@ -233,33 +238,21 @@ function Home() {
                 />
               </svg>
               <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: '1.05rem', fontWeight: '800', color: 'var(--color-text)' }}>
+                <span style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--color-text)' }}>
                   {healthPct}%
                 </span>
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0, flex: 1 }}>
-              <span className="stat-label" style={{ letterSpacing: '0.5px', whiteSpace: 'nowrap', fontSize: '0.62rem' }}>SAÚDE GLOBAL</span>
-              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: '500' }}>
-                <strong>{sitesOnline}</strong> de <strong>{sitesTotal}</strong> locais ok.
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <span className="stat-label" style={{ letterSpacing: '1px', whiteSpace: 'nowrap' }}>SAÚDE GLOBAL</span>
+              <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                <strong>{sitesOnline}</strong> de <strong>{sitesTotal}</strong> locais online.
               </span>
-              
-              {/* Contadores compactos inline dos ativos */}
-              <div style={{ display: 'flex', gap: '10px', marginTop: '6px', background: 'rgba(0,0,0,0.02)', padding: '4px 8px', border: '1px solid var(--color-border)', width: 'fit-content' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }} title={`${stats.machines} PCs Cadastrados`}>
-                  <Monitor size={10} color="#64748b" />
-                  <span style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--color-text)' }}>{stats.machines}</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }} title={`${stats.cameras} Câmeras`}>
-                  <Camera size={10} color="#64748b" />
-                  <span style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--color-text)' }}>{stats.cameras}</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }} title={`${stats.voip || 0} Ramais VOIP`}>
-                  <Phone size={10} color="#64748b" />
-                  <span style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--color-text)' }}>{stats.voip || 0}</span>
-                </div>
-              </div>
+              <span style={{ fontSize: '0.7rem', color: healthPct === 100 ? '#10b981' : '#f59e0b', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600', marginTop: '6px' }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: healthPct === 100 ? '#10b981' : '#f59e0b', display: 'inline-block' }}></span>
+                {sitesTotal === 0 ? 'Nenhum local monitorado' : (healthPct === 100 ? 'Locais operando normalmente' : 'Instabilidade em algum local')}
+              </span>
             </div>
           </div>
 
@@ -282,9 +275,21 @@ function Home() {
               }}></div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-              <span>Em uso: {systemStatus?.disk?.percent || '0%'}</span>
-              <span>Livre: {systemStatus?.disk?.avail || '0'}</span>
+            <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', background: 'rgba(0,0,0,0.04)', border: '1px solid var(--color-border)', padding: '7px 10px' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)', fontWeight: '700', whiteSpace: 'nowrap' }}>
+                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: parseInt(systemStatus?.disk?.percent) > 90 ? '#ef4444' : '#3b82f6', flexShrink: 0 }}></span>
+                  Em uso
+                </span>
+                <span style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--color-text)' }}>{systemStatus?.disk?.percent || '0%'}</span>
+              </div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', background: 'rgba(0,0,0,0.04)', border: '1px solid var(--color-border)', padding: '7px 10px' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)', fontWeight: '700', whiteSpace: 'nowrap' }}>
+                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', flexShrink: 0 }}></span>
+                  Livre
+                </span>
+                <span style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--color-text)' }}>{formatDiskSize(systemStatus?.disk?.avail)}</span>
+              </div>
             </div>
             
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>

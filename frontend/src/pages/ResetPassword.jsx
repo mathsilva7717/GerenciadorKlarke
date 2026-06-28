@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, Check, ShieldAlert } from 'lucide-react';
+import { Lock, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 

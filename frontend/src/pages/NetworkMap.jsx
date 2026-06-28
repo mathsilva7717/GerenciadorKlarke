@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { 
   Building2, Store, Factory, Server, Globe, Home as HomeIcon, 
-  Plus, X, Trash2, Monitor, Router as RouterIcon, 
-  Network, AlertTriangle, ChevronRight, Activity, Search,
+  Plus, X, Monitor, Router as RouterIcon,
+  Network,
   Camera, Phone, Clipboard, Check, RefreshCw
 } from 'lucide-react';
 import toast from 'react-hot-toast';

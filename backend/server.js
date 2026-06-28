@@ -515,21 +515,6 @@ app.get('/api/machines', authenticate, (req, res) => {
 });
 
 // Get machine by id
-app.get('/api/machines/:id', authenticate, (req, res) => {
-  const { id } = req.params;
-  db.get('SELECT * FROM machines WHERE id = ?', [id], (err, row) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-      return;
-    }
-    if (!row) {
-      res.status(404).json({ error: 'Máquina não encontrada' });
-      return;
-    }
-    res.json(decryptRows(row));
-  });
-});
-
 // Create new machine
 app.post('/api/machines', authenticate, (req, res) => {
   const { name, mac, ip, location, rustdesk_id, anydesk_id, password, serial_number, created_by } = req.body;
@@ -1348,28 +1333,6 @@ async function pollSites() {
 // Primeira coleta + polling contínuo a cada 60s.
 pollSites().catch(() => {});
 setInterval(() => pollSites().catch(() => {}), 60 * 1000);
-
-// Endpoint dedicado para obter locais gerenciados com status de ping
-app.get('/api/monitoring/sites', authenticate, (req, res) => {
-  db.all('SELECT * FROM managed_sites ORDER BY created_at DESC', [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    const sites = (rows || []).map(row => {
-      const ip = (row.ip || '').trim();
-      const cached = pingCache.get(ip) || { online: false, latency: 0, lastCheck: null };
-      return {
-        ...row,
-        online: cached.online,
-        latency: cached.latency,
-        lastCheck: cached.lastCheck
-      };
-    });
-    const onlineSites = sites.filter(s => s.online);
-    const avgLatency = onlineSites.length
-      ? Math.round(onlineSites.reduce((a, b) => a + (b.latency || 0), 0) / onlineSites.length)
-      : 0;
-    res.json({ sites, sitesOnline: onlineSites.length, sitesTotal: sites.length, avgLatency });
-  });
-});
 
 // Adicionar local gerenciado
 app.post('/api/monitoring/sites', authenticate, (req, res) => {

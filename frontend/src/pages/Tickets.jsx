@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
-  Search, Trash2, CheckCircle2, Clock, Filter, AlertCircle,
-  MessageSquare, User, Tag, Shield, Calendar, RefreshCw, Camera,
+  Search, Trash2, Filter, AlertCircle,
+  MessageSquare, User, Tag, Calendar, RefreshCw, Camera,
   FileText, Download
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -158,7 +158,7 @@ function Tickets() {
   // Exporta os chamados filtrados em CSV (compatível com Excel)
   const exportCsv = () => {
     if (filteredTickets.length === 0) { toast.error('Nenhum chamado para exportar'); return; }
-    const headers = ['ID', 'Data', 'Solicitante', 'Categoria', 'Prioridade', 'Status', 'Assunto', 'Descrição'];
+    const headers = ['ID', 'Data', 'Solicitante', 'Categoria', 'Status', 'Assunto', 'Descrição'];
     const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const lines = [headers.join(';')];
     filteredTickets.forEach(t => {
@@ -167,7 +167,6 @@ function Tickets() {
         new Date(t.created_at).toLocaleString('pt-BR'),
         t.requester,
         t.category,
-        t.priority,
         t.status,
         t.title,
         (t.description || '').replace(/\s+/g, ' '),
@@ -196,7 +195,6 @@ function Tickets() {
       <td>${new Date(t.created_at).toLocaleDateString('pt-BR')}</td>
       <td>${escHtml(t.requester)}</td>
       <td>${escHtml(t.category)}</td>
-      <td class="prio-${escHtml(t.priority)}">${escHtml(t.priority)}</td>
       <td><span class="badge ${badgeClass(t.status)}">${escHtml(t.status)}</span></td>
       <td>${escHtml(t.title)}</td>
     </tr>`).join('');
@@ -219,7 +217,6 @@ function Tickets() {
   tr:nth-child(even) td{background:#f8fafc;}
   .badge{padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;white-space:nowrap;}
   .b-pend{background:#fef3c7;color:#92400e;} .b-atend{background:#dbeafe;color:#1e40af;} .b-resol{background:#d1fae5;color:#065f46;}
-  .prio-Alta{color:#dc2626;font-weight:700;} .prio-Média{color:#d97706;font-weight:700;} .prio-Baixa{color:#059669;font-weight:700;}
   .ft{margin-top:32px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;text-align:center;}
   @media print{body{padding:0;} @page{margin:1.2cm;}}
 </style></head><body>
@@ -235,7 +232,7 @@ function Tickets() {
     <div class="card"><div class="n" style="color:#2563eb">${summary.atendimento}</div><div class="l">Em Atendimento</div></div>
     <div class="card"><div class="n" style="color:#059669">${summary.resolvido}</div><div class="l">Resolvidos</div></div>
   </div>
-  <table><thead><tr><th>#</th><th>Data</th><th>Solicitante</th><th>Categoria</th><th>Prioridade</th><th>Status</th><th>Assunto</th></tr></thead><tbody>${rowsHtml}</tbody></table>
+  <table><thead><tr><th>#</th><th>Data</th><th>Solicitante</th><th>Categoria</th><th>Status</th><th>Assunto</th></tr></thead><tbody>${rowsHtml}</tbody></table>
   <div class="ft">Relatório gerado automaticamente pelo Klarke Control · ${new Date().getFullYear()} · Klarke Solutions</div>
 </body></html>`;
 
@@ -275,16 +272,14 @@ function Tickets() {
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <button
             onClick={generatePdfReport}
-            className="add-btn"
-            style={{ background: '#0f172a' }}
+            className="add-btn is-neutral"
             title="Gerar relatório em PDF dos chamados filtrados"
           >
-            <FileText size={16} /> <span className="hide-mobile">RELATÓRIO PDF</span>
+            <FileText size={16} /> <span className="hide-mobile">Relatório PDF</span>
           </button>
           <button
             onClick={exportCsv}
-            className="add-btn"
-            style={{ background: '#059669' }}
+            className="add-btn is-success"
             title="Exportar os chamados filtrados em CSV"
           >
             <Download size={16} /> <span className="hide-mobile">CSV</span>

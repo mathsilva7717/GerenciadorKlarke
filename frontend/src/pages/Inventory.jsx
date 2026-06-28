@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Package, Plus, Search, Box, Database, Trash2, Edit, X, Minus, PlusCircle, MapPin, Tag } from 'lucide-react';
+import { Package, Plus, Search, Box, Trash2, Edit, X, Minus, PlusCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getAuthConfig } from '../utils/auth';
 
@@ -130,7 +130,7 @@ function Inventory() {
           </div>
         </div>
         <button className="add-btn" onClick={() => openModal()}>
-          <Plus size={16} /> <span className="hide-mobile">ADICIONAR ITEM</span>
+          <Plus size={16} /> <span className="hide-mobile">Adicionar Item</span>
         </button>
       </div>
 

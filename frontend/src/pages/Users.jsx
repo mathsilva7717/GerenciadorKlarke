@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { UserPlus, Trash2, Shield, User, RotateCcw } from 'lucide-react';
+import { UserPlus, Trash2, User, RotateCcw } from 'lucide-react';
 import { getAuthConfig } from '../utils/auth';
 
 const Users = () => {

@@ -3,7 +3,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { 
   LogOut, Monitor, Camera, Router as RouterIcon, Moon, Sun, 
   ListTodo, ArrowLeft, Home, History, BookOpen, 
-  ChevronDown, Phone, Package, Key, ShieldCheck, MapPin, Mail, MessageSquare 
+  ChevronDown, Phone, Package, Key, MapPin, Mail, MessageSquare
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 

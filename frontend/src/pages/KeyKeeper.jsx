@@ -132,7 +132,7 @@ function KeyKeeper() {
           </div>
         </div>
         <button className="add-btn" onClick={() => openModal()}>
-          <Plus size={16} /> <span className="hide-mobile">NOVA SENHA</span>
+          <Plus size={16} /> <span className="hide-mobile">Nova Senha</span>
         </button>
       </div>
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { History, User, Clock, Info, Search } from 'lucide-react';
+import { History, User, Clock, Search } from 'lucide-react';
 import { getAuthConfig } from '../utils/auth';
 
 const AuditLogs = () => {

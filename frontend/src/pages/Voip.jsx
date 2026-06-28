@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Phone, Plus, Search, Activity, Trash2, Edit, X, Copy, ExternalLink, Shield, Check } from 'lucide-react';
+import { Phone, Plus, Search, Activity, Trash2, Edit, X, Copy, ExternalLink, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getAuthConfig } from '../utils/auth';
 
@@ -140,7 +140,7 @@ function Voip() {
           </div>
         </div>
         <button className="add-btn" onClick={() => openModal()}>
-          <Plus size={16} /> <span className="hide-mobile">NOVO RAMAL</span>
+          <Plus size={16} /> <span className="hide-mobile">Novo Ramal</span>
         </button>
       </div>
 

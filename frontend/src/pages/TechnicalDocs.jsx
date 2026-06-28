@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
-  BookOpen, FileText, Download, ExternalLink, Search, 
-  Plus, X, Upload, Image as ImageIcon, Trash2, 
-  Folder, FolderPlus, ChevronRight, MoreVertical, Edit 
+  BookOpen, FileText, ExternalLink, Search,
+  Plus, X, Upload, Image as ImageIcon, Trash2,
+  Folder, FolderPlus, ChevronRight, Edit
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
@@ -180,11 +180,11 @@ function TechnicalDocs() {
           </div>
         </div>
         <div style={{display: 'flex', gap: '10px', flexWrap: 'wrap'}}>
-          <button className="add-btn" onClick={() => setIsFolderModalOpen(true)} style={{background: 'var(--color-accent)'}}>
-            <FolderPlus size={16} /> <span className="hide-mobile">NOVA PASTA</span>
+          <button className="add-btn is-neutral" onClick={() => setIsFolderModalOpen(true)}>
+            <FolderPlus size={16} /> <span className="hide-mobile">Nova Pasta</span>
           </button>
-          <button className="add-btn" onClick={() => openModal()} style={{background: 'var(--color-primary)'}}>
-            <Plus size={16} /> <span className="hide-mobile">NOVO ITEM</span>
+          <button className="add-btn" onClick={() => openModal()}>
+            <Plus size={16} /> <span className="hide-mobile">Novo Item</span>
           </button>
         </div>
       </div>
