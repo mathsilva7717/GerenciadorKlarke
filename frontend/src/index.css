@@ -724,32 +724,57 @@ body.dark .machine-card:hover {
   color: var(--color-text-muted);
 }
 
+/* Botão pill outline (accent). Variantes tonais via .is-success / .is-neutral */
 .add-btn {
-  background: var(--color-primary) !important;
-  color: white !important;
-  border: none !important;
-  padding: 11px 20px !important;
-  border-radius: 8px !important;
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--color-accent) !important;
+  border: 1px solid rgba(59, 130, 246, 0.4) !important;
+  padding: 7px 15px !important;
+  border-radius: 20px !important;
   cursor: pointer !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 8px !important;
-  font-weight: 700 !important;
+  gap: 6px !important;
+  font-weight: 600 !important;
   font-size: 0.8rem !important;
-  transition: all 0.2s !important;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12) !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.5px !important;
   white-space: nowrap !important;
   height: fit-content !important;
   align-self: center !important;
+  transition: all 0.15s ease !important;
+}
+.add-btn:hover {
+  background: rgba(59, 130, 246, 0.18) !important;
+  border-color: var(--color-accent) !important;
+  transform: translateY(-1px) !important;
+}
+.add-btn.is-success {
+  background: rgba(5, 150, 105, 0.1);
+  color: #059669 !important;
+  border-color: rgba(5, 150, 105, 0.4) !important;
+}
+.add-btn.is-success:hover {
+  background: rgba(5, 150, 105, 0.18) !important;
+  border-color: #059669 !important;
+}
+.add-btn.is-neutral {
+  background: #e2e8f0 !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+.add-btn.is-neutral:hover {
+  background: #cbd5e1 !important;
+  border-color: #94a3b8 !important;
 }
 
-.add-btn:hover {
-  transform: translateY(-1px) !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-  background: var(--color-primary) !important;
+body.dark .add-btn.is-neutral {
+  background: #1e293b !important;
+  color: #f1f5f9 !important;
+  border-color: #475569 !important;
+}
+body.dark .add-btn.is-neutral:hover {
+  background: #334155 !important;
+  border-color: #64748b !important;
 }
 
 .page-header {
