@@ -66,7 +66,6 @@ function ActionPlan() {
 
   const toggleTask = async (id, currentStatus) => {
     try {
-      console.log(`[DEBUG] Tentando alternar tarefa ${id}. Status atual: ${currentStatus}`);
       const userData = localStorage.getItem('klarke_user');
       let userName = 'Sistema';
       
