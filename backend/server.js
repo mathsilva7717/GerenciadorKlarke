@@ -1370,8 +1370,10 @@ app.delete('/api/monitoring/sites/:id', authenticate, (req, res) => {
   });
 });
 
-// Rota de status do sistema (Disco + Latência dos locais gerenciados).
+// Rota de status do sistema (Disco + Latência dos locais gerenciados + Memória e Uptime).
 app.get('/api/system-status', authenticate, (req, res) => {
+  const os = require('os');
+  
   db.all('SELECT * FROM managed_sites', [], (errSites, rowsSites) => {
     exec('df -h / --output=size,used,avail,pcent | tail -1', (errDisk, stdout) => {
       let disk = { size: '0', used: '0', avail: '0', percent: '0%' };
@@ -1381,6 +1383,23 @@ app.get('/api/system-status', authenticate, (req, res) => {
           disk = { size: parts[0], used: parts[1], avail: parts[2], percent: parts[3] };
         }
       }
+
+      // Cálculo de memória
+      const totalMem = os.totalmem();
+      const freeMem = os.freemem();
+      const usedMem = totalMem - freeMem;
+      const memPercent = Math.round((usedMem / totalMem) * 100);
+      
+      const memory = {
+        total: totalMem,
+        used: usedMem,
+        free: freeMem,
+        percent: memPercent + '%'
+      };
+      
+      const uptimeSecs = os.uptime();
+      const uptimeHours = Math.floor(uptimeSecs / 3600);
+      const uptimeDays = Math.floor(uptimeHours / 24);
 
       const sites = (rowsSites || []).map(row => {
         const ip = (row.ip || '').trim();
@@ -1400,6 +1419,12 @@ app.get('/api/system-status', authenticate, (req, res) => {
 
       res.json({
         disk,
+        memory,
+        uptime: {
+          seconds: uptimeSecs,
+          hours: uptimeHours,
+          days: uptimeDays
+        },
         latency: avgLatency,
         sites,
         sitesOnline: onlineSites.length,

@@ -20,6 +20,11 @@ const formatDiskSize = (v) => {
   return `${m[1]} ${m[2] ? units[m[2].toUpperCase()] : 'B'}`;
 };
 
+const formatBytes = (bytes) => {
+  if (!bytes) return '0 GB';
+  return (bytes / (1024 ** 3)).toFixed(1) + ' GB';
+};
+
 // Saudação em inglês conforme o horário do dia
 const getGreeting = () => {
   const h = new Date().getHours();
@@ -300,6 +305,47 @@ function Home() {
                 <Database size={12} />
                 BAIXAR BACKUP
               </button>
+            </div>
+          </div>
+
+          {/* Card 2.5: Memória do Servidor (VPS) */}
+          <div className="stat-box-industrial" style={{ flex: '1 1 260px', minHeight: '180px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '12px', padding: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', width: '100%' }}>
+              <span className="stat-label" style={{ whiteSpace: 'nowrap' }}>MEMÓRIA DA VPS</span>
+              <span style={{ fontSize: '1.15rem', fontWeight: '800', color: parseInt(systemStatus?.memory?.percent) > 90 ? '#ef4444' : 'var(--color-text)', whiteSpace: 'nowrap' }}>
+                {systemStatus?.memory?.percent || '0%'}
+              </span>
+            </div>
+            
+            <div style={{ width: '100%', height: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '5px', overflow: 'hidden', border: '1px solid var(--color-border)' }}>
+              <div style={{ 
+                width: systemStatus?.memory?.percent || '0%', 
+                height: '100%', 
+                background: parseInt(systemStatus?.memory?.percent) > 90 ? 'linear-gradient(90deg, #ef4444, #f43f5e)' : 'linear-gradient(90deg, #a855f7, #d946ef)',
+                transition: 'width 0.5s ease-out'
+              }}></div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', background: 'rgba(0,0,0,0.04)', border: '1px solid var(--color-border)', padding: '7px 10px' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)', fontWeight: '700', whiteSpace: 'nowrap' }}>
+                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: parseInt(systemStatus?.memory?.percent) > 90 ? '#ef4444' : '#a855f7', flexShrink: 0 }}></span>
+                  Usada
+                </span>
+                <span style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--color-text)' }}>{formatBytes(systemStatus?.memory?.used)}</span>
+              </div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', background: 'rgba(0,0,0,0.04)', border: '1px solid var(--color-border)', padding: '7px 10px' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)', fontWeight: '700', whiteSpace: 'nowrap' }}>
+                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', flexShrink: 0 }}></span>
+                  Livre
+                </span>
+                <span style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--color-text)' }}>{formatBytes(systemStatus?.memory?.free)}</span>
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
+               <Activity size={12} color="var(--color-text-muted)" />
+               <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 'bold' }}>UPTIME: {systemStatus?.uptime?.days || 0}d {systemStatus?.uptime?.hours % 24 || 0}h</span>
             </div>
           </div>
 
