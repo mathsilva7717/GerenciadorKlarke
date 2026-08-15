@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, CheckCircle2, Circle, ListTodo, Trash2, Calendar } from 'lucide-react';
+import { Plus, CheckCircle2, Circle, ListTodo, Trash2, Calendar, User, CheckCheck, Layers } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
 import { getAuthConfig } from '../utils/auth';
@@ -152,174 +152,128 @@ function ActionPlan() {
 
   const paginate = (pageNumber) => {
     setCurrentPage(pageNumber);
-    // Scroll suave para o topo da lista de concluídas
-    const listElement = document.querySelector('.task-list.mt-24');
-    if (listElement) listElement.scrollIntoView({ behavior: 'smooth' });
   };
 
-  return (
-    <div className="action-plan-container">
-      <div className="progress-section">
-        <div className="progress-header">
-          <h2>Monitor de Tarefas</h2>
-          <span className="progress-badge">{progressPercent}%</span>
+  // Card de tarefa reutilizável (pendente ou concluída)
+  const TaskCard = ({ task, done }) => (
+    <div className={`ap-card ${done ? 'done' : ''}`}>
+      <button className="ap-check" onClick={() => toggleTask(task.id, task.is_completed)} title={done ? 'Reabrir' : 'Concluir'}>
+        {done ? <CheckCircle2 size={22} color="#10b981" /> : <Circle size={22} />}
+      </button>
+      <div className="ap-card-body">
+        <span className="ap-card-title">{task.title}</span>
+        <div className="ap-card-meta">
+          {task.assigned_to && (
+            <span className="ap-chip user"><User size={10} />{task.assigned_to.toUpperCase()}</span>
+          )}
+          {done && (
+            <span className="ap-chip green"><CheckCheck size={10} />{task.completed_by || 'Sistema'}</span>
+          )}
+          <span className="ap-chip date"><Calendar size={10} />{formatDate(done ? (task.completed_at || task.created_at) : task.created_at)}</span>
         </div>
-        <div className="progress-bar-bg">
-          <div className="progress-bar-fill" style={{ width: `${progressPercent}%` }}></div>
+      </div>
+      {loggedInRole === 'admin' && (
+        <button className="ap-del" onClick={() => deleteStaticTask(task.id)} title="Excluir"><Trash2 size={15} /></button>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="ap-wrap">
+      {/* CABEÇALHO COM ANEL DE PROGRESSO */}
+      <div className="ap-top">
+        <div className="ap-top-title">
+          <h1>Plano de Ação</h1>
+          <p>Checklist de tarefas e pendências da equipe.</p>
+        </div>
+        <div className="ap-progress">
+          <div className="ap-ring" style={{ background: `conic-gradient(#10b981 ${progressPercent * 3.6}deg, rgba(120,120,120,0.22) 0)` }}>
+            <div className="ap-ring-inner">{progressPercent}<small>%</small></div>
+          </div>
+          <div className="ap-progress-info">
+            <span className="ap-progress-lbl">Progresso geral</span>
+            <span className="ap-progress-sub">{completedCount} de {tasks.length} concluídas</span>
+          </div>
         </div>
       </div>
 
+      {/* STATS RÁPIDOS */}
+      <div className="ap-stats">
+        <div className="ap-stat"><span className="ap-stat-num">{pendingTasks.length}</span><span className="ap-stat-lbl">Pendentes</span></div>
+        <div className="ap-stat accent"><span className="ap-stat-num">{myPendingTasks.length}</span><span className="ap-stat-lbl">Minhas</span></div>
+        <div className="ap-stat green"><span className="ap-stat-num">{completedCount}</span><span className="ap-stat-lbl">Concluídas</span></div>
+        <div className="ap-stat"><span className="ap-stat-num">{tasks.length}</span><span className="ap-stat-lbl">Total</span></div>
+      </div>
+
+      {/* COMPOSER (ADMIN) */}
       {loggedInRole === 'admin' && (
-        <div className="new-task-section">
-          <form onSubmit={addTask} className="new-task-form" style={{ display: 'flex', gap: '12px', width: '100%', flexWrap: 'wrap' }}>
-            <input 
-              type="text" 
-              placeholder="Nova tarefa..." 
-              value={newTaskTitle} 
-              onChange={e => setNewTaskTitle(e.target.value)} 
-              required 
-              className="form-input"
-              style={{ flex: 1, minWidth: '200px' }}
-            />
-            <select
-              value={assignedTo}
-              onChange={e => setAssignedTo(e.target.value)}
-              className="form-input"
-              style={{ width: 'auto', minWidth: '180px' }}
-            >
-              <option value="">Atribuir a... (Ninguém)</option>
-              {users.map(u => (
-                <option key={u.id} value={u.username}>{u.username.toUpperCase()}</option>
-              ))}
-            </select>
-            <button type="submit" className="btn btn-primary" style={{marginTop: 0, padding: '12px 24px', width: 'auto'}}>
-              <Plus size={20} />
-            </button>
-          </form>
-        </div>
+        <form onSubmit={addTask} className="ap-composer">
+          <input
+            type="text"
+            placeholder="Escreva uma nova tarefa..."
+            value={newTaskTitle}
+            onChange={e => setNewTaskTitle(e.target.value)}
+            required
+            className="form-input ap-composer-input"
+          />
+          <select value={assignedTo} onChange={e => setAssignedTo(e.target.value)} className="form-input ap-composer-select">
+            <option value="">Atribuir a... (ninguém)</option>
+            {users.map(u => <option key={u.id} value={u.username}>{u.username.toUpperCase()}</option>)}
+          </select>
+          <button type="submit" className="ap-composer-btn"><Plus size={18} /> Adicionar</button>
+        </form>
       )}
 
-      <div className="tasks-lists">
-        {/* COLUNA 1: MINHAS TAREFAS PENDENTES */}
-        <div className="task-list">
-          <h3 className="task-list-title" style={{ color: 'var(--color-accent)' }}>
-            <ListTodo size={18}/> Minhas Tarefas ({myPendingTasks.length})
-          </h3>
-          {myPendingTasks.length === 0 && <div className="empty-tasks">Nenhuma tarefa atribuída a você! 🎉</div>}
-          {myPendingTasks.map(task => (
-            <div key={task.id} className="task-item pending" style={{ borderLeft: '4px solid var(--color-accent)' }}>
-              <button className="task-check-btn" onClick={() => toggleTask(task.id, task.is_completed)}>
-                <Circle size={24} color="var(--color-text-muted)" />
-              </button>
-              <div className="task-content">
-                <span className="task-title" style={{ fontWeight: 'bold' }}>{task.title}</span>
-                <div style={{display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px', flexWrap: 'wrap'}}>
-                  <span style={{fontSize: '0.65rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px'}}>
-                    <Calendar size={10} />
-                    Criado: {formatDate(task.created_at)}
-                  </span>
-                </div>
-              </div>
-              {loggedInRole === 'admin' && (
-                <button className="delete-btn" onClick={() => deleteStaticTask(task.id)} style={{background: 'transparent', padding: '8px'}}>
-                  <Trash2 size={16} />
-                </button>
-              )}
-            </div>
-          ))}
+      {/* QUADRO KANBAN */}
+      <div className="ap-board">
+        {/* MINHAS */}
+        <div className="ap-col accent">
+          <div className="ap-col-head">
+            <span className="ap-col-title"><ListTodo size={16} /> Minhas Tarefas</span>
+            <span className="ap-col-count">{myPendingTasks.length}</span>
+          </div>
+          <div className="ap-col-body">
+            {myPendingTasks.length === 0
+              ? <div className="ap-empty">Nada atribuído a você.</div>
+              : myPendingTasks.map(task => <TaskCard key={task.id} task={task} done={false} />)}
+          </div>
         </div>
 
-        {/* COLUNA 2: OUTRAS TAREFAS PENDENTES / GERAIS */}
-        <div className="task-list">
-          <h3 className="task-list-title">
-            <ListTodo size={18}/> Outras Tarefas ({otherPendingTasks.length})
-          </h3>
-          {otherPendingTasks.length === 0 && <div className="empty-tasks">Nenhuma outra tarefa pendente! ✅</div>}
-          {otherPendingTasks.map(task => (
-            <div key={task.id} className="task-item pending">
-              <button className="task-check-btn" onClick={() => toggleTask(task.id, task.is_completed)}>
-                <Circle size={24} color="var(--color-text-muted)" />
-              </button>
-              <div className="task-content">
-                <span className="task-title">{task.title}</span>
-                <div style={{display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px', flexWrap: 'wrap'}}>
-                  <span style={{fontSize: '0.65rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px'}}>
-                    <Calendar size={10} />
-                    Criado: {formatDate(task.created_at)}
-                  </span>
-                  {task.assigned_to && (
-                    <span style={{fontSize: '0.65rem', color: 'white', background: '#475569', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold'}}>
-                      PARA: {task.assigned_to.toUpperCase()}
-                    </span>
-                  )}
-                </div>
-              </div>
-              {loggedInRole === 'admin' && (
-                <button className="delete-btn" onClick={() => deleteStaticTask(task.id)} style={{background: 'transparent', padding: '8px'}}>
-                  <Trash2 size={16} />
-                </button>
-              )}
-            </div>
-          ))}
+        {/* GERAIS */}
+        <div className="ap-col neutral">
+          <div className="ap-col-head">
+            <span className="ap-col-title"><Layers size={16} /> Gerais</span>
+            <span className="ap-col-count">{otherPendingTasks.length}</span>
+          </div>
+          <div className="ap-col-body">
+            {otherPendingTasks.length === 0
+              ? <div className="ap-empty">Nenhuma pendência geral.</div>
+              : otherPendingTasks.map(task => <TaskCard key={task.id} task={task} done={false} />)}
+          </div>
         </div>
-      </div>
 
-        {completedTasks.length > 0 && (
-          <div className="task-list mt-24">
-            <h3 className="task-list-title">Histórico de Conclusão</h3>
-            {completedTasks.map(task => (
-              <div key={task.id} className="task-item completed">
-                <button className="task-check-btn" onClick={() => toggleTask(task.id, task.is_completed)}>
-                  <CheckCircle2 size={24} color="#2ecc71" />
-                </button>
-                <div className="task-content">
-                  <span className="task-title" style={{textDecoration: 'line-through', opacity: 0.6}}>{task.title}</span>
-                  <div style={{marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px'}}>
-                    {task.assigned_to && (
-                      <span style={{fontSize: '0.65rem', color: 'var(--color-accent)', fontWeight: 'bold'}}>
-                        ATRIBUÍDO A: {task.assigned_to.toUpperCase()}
-                      </span>
-                    )}
-                    <span style={{fontSize: '0.65rem', color: '#10b981', fontWeight: 'bold'}}>
-                      FEITO POR: {task.completed_by || 'Sistema'}
-                    </span>
-                    <span style={{fontSize: '0.65rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '4px'}}>
-                      <Calendar size={10} />
-                      Concluído em: {formatDate(task.completed_at || task.created_at)}
-                    </span>
-                  </div>
-                </div>
-                {loggedInRole === 'admin' && (
-                  <button className="delete-btn" onClick={() => deleteStaticTask(task.id)} style={{background: 'transparent', padding: '8px'}}>
-                    <Trash2 size={16} />
-                  </button>
-                )}
-              </div>
-            ))}
+        {/* CONCLUÍDAS */}
+        <div className="ap-col green">
+          <div className="ap-col-head">
+            <span className="ap-col-title"><CheckCheck size={16} /> Concluídas</span>
+            <span className="ap-col-count">{allCompletedTasks.length}</span>
+          </div>
+          <div className="ap-col-body">
+            {allCompletedTasks.length === 0
+              ? <div className="ap-empty">Nenhuma tarefa concluída ainda</div>
+              : completedTasks.map(task => <TaskCard key={task.id} task={task} done={true} />)}
             {totalPages > 1 && (
-              <div className="pagination-industrial">
-                <button 
-                  disabled={currentPage === 1}
-                  onClick={() => paginate(currentPage - 1)}
-                  className="page-btn"
-                >
-                  Anterior
-                </button>
-                <div className="page-info">
-                  Página <span>{currentPage}</span> de {totalPages}
-                </div>
-                <button 
-                  disabled={currentPage === totalPages}
-                  onClick={() => paginate(currentPage + 1)}
-                  className="page-btn"
-                >
-                  Próxima
-                </button>
+              <div className="ap-pager">
+                <button disabled={currentPage === 1} onClick={() => paginate(currentPage - 1)} className="page-btn">‹</button>
+                <span className="ap-pager-info">{currentPage}/{totalPages}</span>
+                <button disabled={currentPage === totalPages} onClick={() => paginate(currentPage + 1)} className="page-btn">›</button>
               </div>
             )}
           </div>
-        )}
-      <ConfirmModal 
+        </div>
+      </div>
+
+      <ConfirmModal
         isOpen={showConfirm}
         onClose={() => setShowConfirm(false)}
         onConfirm={confirmDelete}
