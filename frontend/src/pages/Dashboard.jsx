@@ -470,7 +470,7 @@ function Dashboard() {
 
               <div className="tile-chips">
                 <Chip id={`ad-${machine.id}`} label="AnyDesk" value={machine.anydesk_id} icon={<img src="/anydesk.svg" alt="" className="tile-chip-img" />} />
-                <Chip id={`rd-${machine.id}`} label="RustDesk" value={machine.rustdesk_id} icon={<img src="/rustdesk.png" alt="" className="tile-chip-img" />} />
+                <Chip id={`rd-${machine.id}`} label="RustDesk" value={machine.rustdesk_id} icon={<img src="/rustdesk.svg" alt="" className="tile-chip-img" />} />
                 <Chip id={`pw-${machine.id}`} label="Senha" value={machine.password} secret icon={<KeyRound size={16} />} />
               </div>
             </div>
