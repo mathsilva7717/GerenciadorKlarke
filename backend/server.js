@@ -4,9 +4,10 @@ const { DatabaseSync } = require('node:sqlite');
 const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
-const multer = require('multer');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const os = require('os');
+const { execSync } = require('child_process');
 require('dotenv').config();
 
 const SECRET_KEY = process.env.SECRET_KEY;
@@ -110,14 +111,15 @@ app.use((req, res, next) => {
     "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com",
     "img-src 'self' data: blob:",
     "connect-src 'self'",
-    "object-src 'none'",
+    "object-src 'self' blob:",
+    "frame-src 'self' blob:",
     "base-uri 'self'",
     "frame-ancestors 'self'",
   ].join('; '));
   next();
 });
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
 
 // Database setup
 const dbPath = path.join(__dirname, 'database.sqlite');
@@ -215,25 +217,6 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
-  CREATE TABLE IF NOT EXISTS technical_docs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT,
-    type TEXT,
-    content TEXT,
-    file_path TEXT,
-    file_size TEXT,
-    amount REAL,
-    folder_id INTEGER,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-
-  CREATE TABLE IF NOT EXISTS vault_folders (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT,
-    parent_id INTEGER,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-
   CREATE TABLE IF NOT EXISTS credentials (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT,
@@ -292,6 +275,12 @@ db.exec(`
     ip TEXT UNIQUE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS attendance (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT,
+    checked_in_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 try {
@@ -314,10 +303,68 @@ try { db.exec("ALTER TABLE tasks ADD COLUMN completed_at DATETIME"); } catch(e) 
 try { db.exec("ALTER TABLE tasks ADD COLUMN assigned_to TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE machines ADD COLUMN created_by TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE machines ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"); } catch(e) {}
+try { db.exec("ALTER TABLE machines ADD COLUMN company TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE cameras ADD COLUMN created_by TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE cameras ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"); } catch(e) {}
+try { db.exec("ALTER TABLE cameras ADD COLUMN company TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE cameras ADD COLUMN type TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE cameras ADD COLUMN parent_id INTEGER"); } catch(e) {}
 try { db.exec("ALTER TABLE network_devices ADD COLUMN created_by TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE network_devices ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"); } catch(e) {}
+try { db.exec("ALTER TABLE network_devices ADD COLUMN company TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE voip_extensions ADD COLUMN model TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE voip_extensions ADD COLUMN queue TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE voip_extensions ADD COLUMN trunk TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE voip_extensions ADD COLUMN company TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE voip_extensions ADD COLUMN mac TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE voip_extensions ADD COLUMN type TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE voip_extensions ADD COLUMN parent_id INTEGER"); } catch(e) {}
+
+// Inventário: colunas para equipamentos (computadores/monitores/periféricos) além dos insumos.
+// 'kind' = 'equipamento' | 'insumo' (linhas antigas ficam como insumo por padrão).
+try { db.exec("ALTER TABLE inventory ADD COLUMN kind TEXT DEFAULT 'insumo'"); } catch(e) {}
+try { db.exec("ALTER TABLE inventory ADD COLUMN type TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE inventory ADD COLUMN brand TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE inventory ADD COLUMN model TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE inventory ADD COLUMN cpu TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE inventory ADD COLUMN ram TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE inventory ADD COLUMN storage TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE inventory ADD COLUMN serial_number TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE inventory ADD COLUMN status TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE inventory ADD COLUMN company TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE inventory ADD COLUMN created_by TEXT"); } catch(e) {}
+
+// Key Keeper: URL do painel/serviço, empresa e autor.
+try { db.exec("ALTER TABLE credentials ADD COLUMN url TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE credentials ADD COLUMN company TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE credentials ADD COLUMN created_by TEXT"); } catch(e) {}
+
+// Documentos, Entra ID, Licenças & Apps e Links
+db.exec(`
+  CREATE TABLE IF NOT EXISTS documents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT, category TEXT, company TEXT, description TEXT,
+    file_name TEXT, file_path TEXT, mime TEXT, size INTEGER,
+    created_by TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE TABLE IF NOT EXISTS entra_objects (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    display_name TEXT, object_type TEXT, upn TEXT, license TEXT,
+    mfa INTEGER DEFAULT 0, status TEXT, department TEXT,
+    company TEXT, notes TEXT, created_by TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE TABLE IF NOT EXISTS software_licenses (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT, vendor TEXT, version TEXT, license_type TEXT, license_key TEXT,
+    seats INTEGER, expires_at TEXT, used_on TEXT, company TEXT, notes TEXT,
+    created_by TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE TABLE IF NOT EXISTS links (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT, url TEXT, category TEXT, description TEXT, company TEXT,
+    created_by TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+`);
 
 // Criar admin se não existir
 db.get("SELECT * FROM users WHERE username = 'admin'", (err, row) => {
@@ -332,15 +379,28 @@ db.get("SELECT * FROM users WHERE username = 'admin'", (err, row) => {
 });
 
 // Middleware de Autenticação
+// "Usuários logados": último acesso por usuário (em memória). Como o JWT é
+// stateless, consideramos "online" quem fez alguma requisição autenticada nos
+// últimos ACTIVE_WINDOW_MS.
+const ACTIVE_WINDOW_MS = 10 * 60 * 1000; // 10 min
+const lastSeen = new Map(); // username -> timestamp
+function contarUsuariosAtivos() {
+  const limite = Date.now() - ACTIVE_WINDOW_MS;
+  let n = 0;
+  for (const ts of lastSeen.values()) if (ts >= limite) n++;
+  return n;
+}
+
 const authenticate = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) return res.status(401).json({ error: 'Não autorizado' });
-  
+
   const token = authHeader.split(' ')[1];
 
   jwt.verify(token, SECRET_KEY, (err, user) => {
     if (err) return res.status(403).json({ error: 'Token inválido' });
     req.user = user;
+    if (user && user.username) lastSeen.set(user.username, Date.now());
     next();
   });
 };
@@ -411,6 +471,16 @@ app.get('/api/audit-logs', authenticate, (req, res) => {
   });
 });
 
+// Zerar todo o histórico de auditoria (somente admin). Registra o próprio ato de limpeza.
+app.delete('/api/audit-logs', authenticate, requireAdmin, (req, res) => {
+  db.run('DELETE FROM audit_logs', [], function (err) {
+    if (err) return res.status(500).json({ error: err.message });
+    const removed = this.changes;
+    try { logAction(req, 'LIMPEZA', `Zerou o histórico de auditoria (${removed} registros)`); } catch (e) {}
+    res.json({ message: 'Histórico limpo', removed });
+  });
+});
+
 // Routes
 
 // Login
@@ -475,6 +545,21 @@ app.post('/api/users', authenticate, requireAdmin, async (req, res) => {
   );
 });
 
+app.put('/api/users/:id', authenticate, requireAdmin, (req, res) => {
+  const { role } = req.body;
+  if (!['admin', 'funcionario', 'user'].includes(role)) {
+    return res.status(400).json({ error: 'Nível de acesso inválido' });
+  }
+  db.get('SELECT username FROM users WHERE id = ?', [req.params.id], (err, row) => {
+    if (!row) return res.status(404).json({ error: 'Usuário não encontrado' });
+    db.run('UPDATE users SET role = ? WHERE id = ?', [role, req.params.id], function(err2) {
+      if (err2) return res.status(500).json({ error: err2.message });
+      logAction(req, 'USUÁRIO', `Alterou nível de ${row.username} para ${role}`);
+      res.json({ message: 'Nível de acesso atualizado' });
+    });
+  });
+});
+
 app.delete('/api/users/:id', authenticate, requireAdmin, (req, res) => {
   const { id } = req.params;
   db.get('SELECT username FROM users WHERE id = ?', [id], (err, row) => {
@@ -503,6 +588,44 @@ app.post('/api/users/:id/reset-password', authenticate, requireAdmin, async (req
 });
 
 
+// --- PONTO (check-in de presença) ---
+// Compara datas em UTC-3 (Brasil, sem horário de verão) pra decidir "hoje".
+app.get('/api/attendance/today', authenticate, (req, res) => {
+  db.get(
+    `SELECT * FROM attendance WHERE username = ? AND date(checked_in_at, '-3 hours') = date('now', '-3 hours') ORDER BY checked_in_at DESC LIMIT 1`,
+    [req.user.username],
+    (err, row) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ checkedIn: !!row, record: row || null });
+    }
+  );
+});
+
+app.post('/api/attendance', authenticate, (req, res) => {
+  db.get(
+    `SELECT * FROM attendance WHERE username = ? AND date(checked_in_at, '-3 hours') = date('now', '-3 hours') ORDER BY checked_in_at DESC LIMIT 1`,
+    [req.user.username],
+    (err, existing) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (existing) return res.json({ checkedIn: true, record: existing });
+      db.run('INSERT INTO attendance (username) VALUES (?)', [req.user.username], function(err2) {
+        if (err2) return res.status(500).json({ error: err2.message });
+        db.get('SELECT * FROM attendance WHERE id = ?', [this.lastID], (err3, row) => {
+          logAction(req, 'PONTO', `Confirmou presença`);
+          res.status(201).json({ checkedIn: true, record: row });
+        });
+      });
+    }
+  );
+});
+
+app.get('/api/attendance', authenticate, requireAdmin, (req, res) => {
+  db.all('SELECT * FROM attendance ORDER BY checked_in_at DESC LIMIT 300', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
 // Get all machines
 app.get('/api/machines', authenticate, (req, res) => {
   db.all('SELECT * FROM machines', [], (err, rows) => {
@@ -517,13 +640,13 @@ app.get('/api/machines', authenticate, (req, res) => {
 // Get machine by id
 // Create new machine
 app.post('/api/machines', authenticate, (req, res) => {
-  const { name, mac, ip, location, rustdesk_id, anydesk_id, password, serial_number, created_by } = req.body;
+  const { name, mac, ip, location, company, rustdesk_id, anydesk_id, password, serial_number, created_by } = req.body;
   const encPwd = encryptSecret(password);
-  const sqlWithAudit = `INSERT INTO machines (name, mac, ip, location, rustdesk_id, anydesk_id, password, serial_number, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+  const sqlWithAudit = `INSERT INTO machines (name, mac, ip, location, company, rustdesk_id, anydesk_id, password, serial_number, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
   const sqlSimple = `INSERT INTO machines (name, mac, ip, location, rustdesk_id, anydesk_id, password, serial_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
 
   // Tenta com auditoria, se falhar (ex: coluna não existe), tenta sem.
-  db.run(sqlWithAudit, [name, mac, ip, location, rustdesk_id, anydesk_id, encPwd, serial_number, created_by || 'Sistema'], function (err) {
+  db.run(sqlWithAudit, [name, mac, ip, location, company || null, rustdesk_id, anydesk_id, encPwd, serial_number, created_by || 'Sistema'], function (err) {
     if (err && (err.message.includes('no such column') || err.message.includes('has no column'))) {
       console.warn('Banco desatualizado, salvando sem auditoria...');
       db.run(sqlSimple, [name, mac, ip, location, rustdesk_id, anydesk_id, encPwd, serial_number], function (err2) {
@@ -542,13 +665,13 @@ app.post('/api/machines', authenticate, (req, res) => {
 // Update machine
 app.put('/api/machines/:id', authenticate, (req, res) => {
   const { id } = req.params;
-  const { name, mac, ip, location, rustdesk_id, anydesk_id, password, serial_number } = req.body;
+  const { name, mac, ip, location, company, rustdesk_id, anydesk_id, password, serial_number } = req.body;
   const sql = `
     UPDATE machines
-    SET name = ?, mac = ?, ip = ?, location = ?, rustdesk_id = ?, anydesk_id = ?, password = ?, serial_number = ?
+    SET name = ?, mac = ?, ip = ?, location = ?, company = ?, rustdesk_id = ?, anydesk_id = ?, password = ?, serial_number = ?
     WHERE id = ?
   `;
-  db.run(sql, [name, mac, ip, location, rustdesk_id, anydesk_id, encryptSecret(password), serial_number, id], function (err) {
+  db.run(sql, [name, mac, ip, location, company || null, rustdesk_id, anydesk_id, encryptSecret(password), serial_number, id], function (err) {
     if (err) return res.status(500).json({ error: err.message });
     logAction(req, 'EDIÇÃO', `Alterou máquina: ${name}`);
     res.json({ message: 'Máquina atualizada com sucesso' });
@@ -580,12 +703,12 @@ app.get('/api/cameras', authenticate, (req, res) => {
 });
 
 app.post('/api/cameras', authenticate, (req, res) => {
-  const { name, ip, port, username, password, location, serial_number, rtsp_link, created_by } = req.body;
+  const { name, ip, port, username, password, location, company, type, parent_id, serial_number, rtsp_link, created_by } = req.body;
   const encPwd = encryptSecret(password);
-  const sqlWithAudit = `INSERT INTO cameras (name, ip, port, username, password, location, serial_number, rtsp_link, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+  const sqlWithAudit = `INSERT INTO cameras (name, ip, port, username, password, location, company, type, parent_id, serial_number, rtsp_link, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
   const sqlSimple = `INSERT INTO cameras (name, ip, port, username, password, location, serial_number, rtsp_link) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
 
-  db.run(sqlWithAudit, [name, ip, port, username, encPwd, location, serial_number, rtsp_link, created_by || 'Sistema'], function (err) {
+  db.run(sqlWithAudit, [name, ip, port, username, encPwd, location, company || null, type || null, parent_id || null, serial_number, rtsp_link, created_by || 'Sistema'], function (err) {
     if (err && (err.message.includes('no such column') || err.message.includes('has no column'))) {
       db.run(sqlSimple, [name, ip, port, username, encPwd, location, serial_number, rtsp_link], function (err2) {
         if (err2) return res.status(500).json({ error: `Simples Cam: ${err2.message}` });
@@ -601,9 +724,9 @@ app.post('/api/cameras', authenticate, (req, res) => {
 });
 
 app.put('/api/cameras/:id', authenticate, (req, res) => {
-  const { name, ip, port, username, password, location, serial_number, rtsp_link } = req.body;
-  const sql = `UPDATE cameras SET name = ?, ip = ?, port = ?, username = ?, password = ?, location = ?, serial_number = ?, rtsp_link = ? WHERE id = ?`;
-  db.run(sql, [name, ip, port, username, encryptSecret(password), location, serial_number, rtsp_link, req.params.id], function (err) {
+  const { name, ip, port, username, password, location, company, type, parent_id, serial_number, rtsp_link } = req.body;
+  const sql = `UPDATE cameras SET name = ?, ip = ?, port = ?, username = ?, password = ?, location = ?, company = ?, type = ?, parent_id = ?, serial_number = ?, rtsp_link = ? WHERE id = ?`;
+  db.run(sql, [name, ip, port, username, encryptSecret(password), location, company || null, type || null, parent_id || null, serial_number, rtsp_link, req.params.id], function (err) {
     if (err) return res.status(500).json({ error: err.message });
     logAction(req, 'EDIÇÃO', `Alterou câmera: ${name}`);
     res.json({ message: 'Câmera atualizada com sucesso' });
@@ -622,6 +745,30 @@ app.delete('/api/cameras/:id', authenticate, (req, res) => {
   });
 });
 
+// Upload manual de foto da câmera pelo painel (usuário autenticado — sem token de agente).
+// image: base64 (com ou sem o header data:image/...). Salva em /uploads e atualiza last_snapshot.
+app.post('/api/cameras/:id/snapshot', authenticate, (req, res) => {
+  const { id } = req.params;
+  const { image } = req.body;
+  if (!image) return res.status(400).json({ error: 'Imagem ausente' });
+  db.get('SELECT id, serial_number FROM cameras WHERE id = ?', [id], (err, cam) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!cam) return res.status(404).json({ error: 'Câmera não encontrada' });
+    const safeSerial = String(cam.serial_number || `id${cam.id}`).replace(/[^a-zA-Z0-9-]/g, '') || `id${cam.id}`;
+    const fileName = `cam_${safeSerial}_${Date.now()}.jpg`;
+    const filePath = path.join(__dirname, 'uploads', fileName);
+    const base64Data = String(image).replace(/^data:image\/\w+;base64,/, '');
+    fs.writeFile(filePath, base64Data, 'base64', (werr) => {
+      if (werr) return res.status(500).json({ error: 'Erro ao salvar imagem' });
+      db.run('UPDATE cameras SET last_snapshot = ? WHERE id = ?', [fileName, id], (uerr) => {
+        if (uerr) return res.status(500).json({ error: uerr.message });
+        try { logAction(req, 'FOTO CÂMERA', `Atualizou foto da câmera #${id}`); } catch (e) {}
+        res.json({ status: 'success', last_snapshot: fileName });
+      });
+    });
+  });
+});
+
 // ==========================================
 // ROUTES: NETWORK DEVICES
 // ==========================================
@@ -634,12 +781,12 @@ app.get('/api/network-devices', authenticate, (req, res) => {
 });
 
 app.post('/api/network-devices', authenticate, (req, res) => {
-  const { name, type, ip, username, password, location, isp, serial_number, created_by } = req.body;
+  const { name, type, ip, username, password, location, isp, company, serial_number, created_by } = req.body;
   const encPwd = encryptSecret(password);
-  const sqlWithAudit = `INSERT INTO network_devices (name, type, ip, username, password, location, isp, serial_number, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+  const sqlWithAudit = `INSERT INTO network_devices (name, type, ip, username, password, location, isp, company, serial_number, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
   const sqlSimple = `INSERT INTO network_devices (name, type, ip, username, password, location, isp, serial_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
 
-  db.run(sqlWithAudit, [name, type, ip, username, encPwd, location, isp, serial_number, created_by || 'Sistema'], function (err) {
+  db.run(sqlWithAudit, [name, type, ip, username, encPwd, location, isp, company || null, serial_number, created_by || 'Sistema'], function (err) {
     if (err && (err.message.includes('no such column') || err.message.includes('has no column'))) {
       db.run(sqlSimple, [name, type, ip, username, encPwd, location, isp, serial_number], function (err2) {
         if (err2) return res.status(500).json({ error: `Simples Net: ${err2.message}` });
@@ -655,9 +802,9 @@ app.post('/api/network-devices', authenticate, (req, res) => {
 });
 
 app.put('/api/network-devices/:id', authenticate, (req, res) => {
-  const { name, type, ip, username, password, location, isp, serial_number } = req.body;
-  const sql = `UPDATE network_devices SET name = ?, type = ?, ip = ?, username = ?, password = ?, location = ?, isp = ?, serial_number = ? WHERE id = ?`;
-  db.run(sql, [name, type, ip, username, encryptSecret(password), location, isp, serial_number, req.params.id], function (err) {
+  const { name, type, ip, username, password, location, isp, company, serial_number } = req.body;
+  const sql = `UPDATE network_devices SET name = ?, type = ?, ip = ?, username = ?, password = ?, location = ?, isp = ?, company = ?, serial_number = ? WHERE id = ?`;
+  db.run(sql, [name, type, ip, username, encryptSecret(password), location, isp, company || null, serial_number, req.params.id], function (err) {
     if (err) return res.status(500).json({ error: err.message });
     logAction(req, 'EDIÇÃO', `Alterou dispositivo de rede: ${name}`);
     res.json({ message: 'Dispositivo atualizado com sucesso' });
@@ -784,6 +931,51 @@ app.post('/api/monitoring/heartbeat', verifyMonitoringToken, (req, res) => {
 // PRODUCTION & UTILS
 // ==========================================
 
+// ==========================================
+// MONITORING: VPS  (coleta + alertas Telegram em backend/vps-monitor.js)
+// ==========================================
+const vpsMonitor = require('./vps-monitor');
+// Alimenta o relatório da VPS com a contagem de usuários logados no Klarke Control.
+vpsMonitor.setActiveUsersProvider(contarUsuariosAtivos);
+
+// Estatísticas ao vivo da VPS
+app.get('/api/vps-stats', authenticate, requireAdmin, (req, res) => {
+  try {
+    res.json(vpsMonitor.getVpsStats());
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Quantos usuários estão logados agora (ativos nos últimos 10 min) + lista.
+app.get('/api/active-users', authenticate, requireAdmin, (req, res) => {
+  const limite = Date.now() - ACTIVE_WINDOW_MS;
+  const ativos = [...lastSeen.entries()]
+    .filter(([, ts]) => ts >= limite)
+    .map(([username, ts]) => ({ username, secondsAgo: Math.round((Date.now() - ts) / 1000) }))
+    .sort((a, b) => a.secondsAgo - b.secondsAgo);
+  res.json({ count: ativos.length, windowMinutes: ACTIVE_WINDOW_MS / 60000, users: ativos });
+});
+
+// Config dos alertas (para a tela) — não expõe o token
+app.get('/api/vps-stats/config', authenticate, requireAdmin, (req, res) => {
+  res.json({
+    telegramConfigured: vpsMonitor.telegramConfigured(),
+    ...vpsMonitor.alertConfig,
+  });
+});
+
+// Enviar relatório agora (usa as credenciais do .env — nada de token no frontend)
+app.post('/api/vps-stats/telegram', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const r = await vpsMonitor.sendReport('Relatório VPS Klarke (manual)');
+    if (!r.ok) return res.status(400).json({ error: r.error });
+    res.json({ success: true, message: 'Relatório enviado com sucesso!' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Servir arquivos estáticos do Frontend (Vite build)
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
@@ -803,70 +995,188 @@ app.get('/api/backup', authenticate, requireAdmin, (req, res) => {
 // Servir arquivos estáticos (Snapshots e Documentos)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// ==========================================
-// ROUTES: TECHNICAL DOCS (ACERVO)
-// ==========================================
-
-// Config Multer para Acervo
-const docStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = path.join(__dirname, 'uploads/docs');
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    cb(null, `doc_${Date.now()}_${file.originalname.replace(/\s+/g, '_')}`);
-  }
-});
-// Bloqueia extensões executáveis/scripts que poderiam ser servidas pelo /uploads
-const BLOCKED_EXT = new Set([
-  '.php', '.phtml', '.html', '.htm', '.js', '.mjs', '.exe', '.sh', '.bat',
-  '.cmd', '.com', '.cgi', '.pl', '.py', '.jsp', '.asp', '.aspx', '.svg'
-]);
-const uploadDoc = multer({
-  storage: docStorage,
-  limits: { fileSize: 25 * 1024 * 1024 }, // 25 MB
-  fileFilter: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    if (BLOCKED_EXT.has(ext)) {
-      return cb(new Error('Tipo de arquivo não permitido'));
-    }
-    cb(null, true);
-  },
-});
-
-app.get('/api/technical-docs', authenticate, (req, res) => {
-  db.all('SELECT * FROM technical_docs ORDER BY created_at DESC', [], (err, rows) => {
+// --- DOCUMENTOS ---
+app.get('/api/documents', authenticate, (req, res) => {
+  db.all('SELECT * FROM documents ORDER BY created_at DESC', [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
 });
-
-app.post('/api/technical-docs', authenticate, uploadDoc.single('file'), (req, res) => {
-  const { title, type, content, amount, folder_id } = req.body;
-  const filePath = req.file ? req.file.filename : null;
-  const fileSize = req.file ? `${(req.file.size / 1024).toFixed(1)} KB` : null;
-
+app.post('/api/documents', authenticate, (req, res) => {
+  const { title, category, company, description, fileData, fileName } = req.body;
+  if (!title) return res.status(400).json({ error: 'Informe o título' });
+  let file_name = null, file_path = null, mime = null, size = 0;
+  if (fileData) {
+    const m = /^data:([^;]+);base64,(.+)$/.exec(fileData);
+    if (!m) return res.status(400).json({ error: 'Arquivo inválido' });
+    mime = m[1];
+    const buf = Buffer.from(m[2], 'base64');
+    size = buf.length;
+    file_name = fileName || 'documento';
+    const safe = file_name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-120);
+    file_path = `doc-${Date.now()}-${safe}`;
+    try { fs.writeFileSync(path.join(__dirname, 'uploads', file_path), buf); }
+    catch (e) { return res.status(500).json({ error: 'Falha ao salvar o arquivo' }); }
+  }
   db.run(
-    "INSERT INTO technical_docs (title, type, content, file_path, file_size, amount, folder_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
-    [title, type || 'Nota', content, filePath, fileSize, amount ? parseFloat(amount) : null, folder_id || null],
+    `INSERT INTO documents (title, category, company, description, file_name, file_path, mime, size, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [title, category || 'Outros', company || null, description || null, file_name, file_path, mime, size, (req.user && req.user.username) || null],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
-      res.status(201).json({ id: this.lastID, title, filePath });
+      logAction(req, 'DOCUMENTOS', `Adicionou documento: ${title}`);
+      res.status(201).json({ id: this.lastID, file_path });
     }
   );
 });
-app.put('/api/technical-docs/:id', authenticate, (req, res) => {
-  const { title, type, content, amount, folder_id } = req.body;
+app.put('/api/documents/:id', authenticate, (req, res) => {
+  const { title, category, company, description } = req.body;
   db.run(
-    "UPDATE technical_docs SET title = ?, type = ?, content = ?, amount = ?, folder_id = ? WHERE id = ?",
-    [title, type, content, amount ? parseFloat(amount) : null, folder_id || null, req.params.id],
+    'UPDATE documents SET title = ?, category = ?, company = ?, description = ? WHERE id = ?',
+    [title, category || 'Outros', company || null, description || null, req.params.id],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
       logAction(req, 'EDIÇÃO', `Alterou documento: ${title}`);
       res.json({ message: 'Documento atualizado' });
     }
   );
+});
+app.delete('/api/documents/:id', authenticate, (req, res) => {
+  db.get('SELECT title, file_path FROM documents WHERE id = ?', [req.params.id], (err, row) => {
+    if (row && row.file_path) {
+      try { fs.unlinkSync(path.join(__dirname, 'uploads', row.file_path)); } catch (e) { /* ignora */ }
+    }
+    db.run('DELETE FROM documents WHERE id = ?', [req.params.id], (err2) => {
+      if (err2) return res.status(500).json({ error: err2.message });
+      logAction(req, 'EXCLUSÃO', `Removeu documento: ${row ? row.title : req.params.id}`);
+      res.json({ message: 'Documento removido' });
+    });
+  });
+});
+
+// --- ENTRA ID (cadastro manual) ---
+app.get('/api/entra', authenticate, (req, res) => {
+  db.all('SELECT * FROM entra_objects ORDER BY display_name ASC', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+app.post('/api/entra', authenticate, (req, res) => {
+  const { display_name, object_type, upn, license, mfa, status, department, company, notes } = req.body;
+  db.run(
+    `INSERT INTO entra_objects (display_name, object_type, upn, license, mfa, status, department, company, notes, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [display_name, object_type || 'Usuário', upn || null, license || null, mfa ? 1 : 0, status || 'Ativo', department || null, company || null, notes || null, (req.user && req.user.username) || null],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      logAction(req, 'ENTRA_ID', `Cadastrou ${object_type || 'objeto'}: ${display_name}`);
+      res.status(201).json({ id: this.lastID });
+    }
+  );
+});
+app.put('/api/entra/:id', authenticate, (req, res) => {
+  const { display_name, object_type, upn, license, mfa, status, department, company, notes } = req.body;
+  db.run(
+    `UPDATE entra_objects SET display_name = ?, object_type = ?, upn = ?, license = ?, mfa = ?, status = ?, department = ?, company = ?, notes = ? WHERE id = ?`,
+    [display_name, object_type || 'Usuário', upn || null, license || null, mfa ? 1 : 0, status || 'Ativo', department || null, company || null, notes || null, req.params.id],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      logAction(req, 'EDIÇÃO', `Alterou Entra ID: ${display_name}`);
+      res.json({ message: 'Atualizado' });
+    }
+  );
+});
+app.delete('/api/entra/:id', authenticate, (req, res) => {
+  db.get('SELECT display_name FROM entra_objects WHERE id = ?', [req.params.id], (err, row) => {
+    db.run('DELETE FROM entra_objects WHERE id = ?', [req.params.id], (err2) => {
+      if (err2) return res.status(500).json({ error: err2.message });
+      logAction(req, 'EXCLUSÃO', `Removeu Entra ID: ${row ? row.display_name : req.params.id}`);
+      res.json({ message: 'Removido' });
+    });
+  });
+});
+
+// --- LICENÇAS & APPS ---
+app.get('/api/licenses', authenticate, (req, res) => {
+  db.all('SELECT * FROM software_licenses ORDER BY name ASC', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+app.post('/api/licenses', authenticate, (req, res) => {
+  const { name, vendor, version, license_type, license_key, seats, expires_at, used_on, company, notes } = req.body;
+  db.run(
+    `INSERT INTO software_licenses (name, vendor, version, license_type, license_key, seats, expires_at, used_on, company, notes, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [name, vendor || null, version || null, license_type || null, license_key || null, seats || null, expires_at || null, used_on || null, company || null, notes || null, (req.user && req.user.username) || null],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      logAction(req, 'LICENÇAS', `Cadastrou software: ${name}`);
+      res.status(201).json({ id: this.lastID });
+    }
+  );
+});
+app.put('/api/licenses/:id', authenticate, (req, res) => {
+  const { name, vendor, version, license_type, license_key, seats, expires_at, used_on, company, notes } = req.body;
+  db.run(
+    `UPDATE software_licenses SET name = ?, vendor = ?, version = ?, license_type = ?, license_key = ?, seats = ?, expires_at = ?, used_on = ?, company = ?, notes = ? WHERE id = ?`,
+    [name, vendor || null, version || null, license_type || null, license_key || null, seats || null, expires_at || null, used_on || null, company || null, notes || null, req.params.id],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      logAction(req, 'EDIÇÃO', `Alterou software: ${name}`);
+      res.json({ message: 'Atualizado' });
+    }
+  );
+});
+app.delete('/api/licenses/:id', authenticate, (req, res) => {
+  db.get('SELECT name FROM software_licenses WHERE id = ?', [req.params.id], (err, row) => {
+    db.run('DELETE FROM software_licenses WHERE id = ?', [req.params.id], (err2) => {
+      if (err2) return res.status(500).json({ error: err2.message });
+      logAction(req, 'EXCLUSÃO', `Removeu software: ${row ? row.name : req.params.id}`);
+      res.json({ message: 'Removido' });
+    });
+  });
+});
+
+// --- LINKS ---
+app.get('/api/links', authenticate, (req, res) => {
+  db.all('SELECT * FROM links ORDER BY title ASC', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+app.post('/api/links', authenticate, (req, res) => {
+  const { title, url, category, description, company } = req.body;
+  db.run(
+    `INSERT INTO links (title, url, category, description, company, created_by) VALUES (?, ?, ?, ?, ?, ?)`,
+    [title, url || null, category || 'Outros', description || null, company || null, (req.user && req.user.username) || null],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      logAction(req, 'LINKS', `Adicionou link: ${title}`);
+      res.status(201).json({ id: this.lastID });
+    }
+  );
+});
+app.put('/api/links/:id', authenticate, (req, res) => {
+  const { title, url, category, description, company } = req.body;
+  db.run(
+    `UPDATE links SET title = ?, url = ?, category = ?, description = ?, company = ? WHERE id = ?`,
+    [title, url || null, category || 'Outros', description || null, company || null, req.params.id],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      logAction(req, 'EDIÇÃO', `Alterou link: ${title}`);
+      res.json({ message: 'Atualizado' });
+    }
+  );
+});
+app.delete('/api/links/:id', authenticate, (req, res) => {
+  db.get('SELECT title FROM links WHERE id = ?', [req.params.id], (err, row) => {
+    db.run('DELETE FROM links WHERE id = ?', [req.params.id], (err2) => {
+      if (err2) return res.status(500).json({ error: err2.message });
+      logAction(req, 'EXCLUSÃO', `Removeu link: ${row ? row.title : req.params.id}`);
+      res.json({ message: 'Removido' });
+    });
+  });
 });
 
 // --- KEY KEEPER (CREDENTIALS) ---
@@ -878,10 +1188,11 @@ app.get('/api/credentials', authenticate, (req, res) => {
 });
 
 app.post('/api/credentials', authenticate, (req, res) => {
-  const { title, username, password, category, notes } = req.body;
+  const { title, username, password, category, notes, url, company } = req.body;
+  const user = req.headers['x-user'] || null;
   db.run(
-    "INSERT INTO credentials (title, username, password, category, notes) VALUES (?, ?, ?, ?, ?)",
-    [title, username, encryptSecret(password), category || 'Geral', notes],
+    "INSERT INTO credentials (title, username, password, category, notes, url, company, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    [title, username, encryptSecret(password), category || 'Geral', notes, url || null, company || null, user],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
       logAction(req, 'CREDENCIAIS', `Adicionou nova credencial: ${title}`);
@@ -891,10 +1202,10 @@ app.post('/api/credentials', authenticate, (req, res) => {
 });
 
 app.put('/api/credentials/:id', authenticate, (req, res) => {
-  const { title, username, password, category, notes } = req.body;
+  const { title, username, password, category, notes, url, company } = req.body;
   db.run(
-    "UPDATE credentials SET title = ?, username = ?, password = ?, category = ?, notes = ? WHERE id = ?",
-    [title, username, encryptSecret(password), category, notes, req.params.id],
+    "UPDATE credentials SET title = ?, username = ?, password = ?, category = ?, notes = ?, url = ?, company = ? WHERE id = ?",
+    [title, username, encryptSecret(password), category, notes, url || null, company || null, req.params.id],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
       logAction(req, 'EDIÇÃO', `Alterou credencial: ${title}`);
@@ -912,26 +1223,42 @@ app.get('/api/inventory', authenticate, (req, res) => {
 });
 
 app.post('/api/inventory', authenticate, (req, res) => {
-  const { name, quantity, unit, category, location, notes } = req.body;
+  const {
+    name, quantity, unit, category, location, notes,
+    kind, type, brand, model, cpu, ram, storage, serial_number, status, company
+  } = req.body;
+  const user = req.headers['x-user'] || null;
   db.run(
-    "INSERT INTO inventory (name, quantity, unit, category, location, notes) VALUES (?, ?, ?, ?, ?, ?)",
-    [name, quantity || 0, unit || 'un', category || 'Geral', location, notes],
+    `INSERT INTO inventory
+      (name, quantity, unit, category, location, notes, kind, type, brand, model, cpu, ram, storage, serial_number, status, company, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [name, quantity || 0, unit || 'un', category || 'Geral', location, notes,
+     kind || 'insumo', type || null, brand || null, model || null, cpu || null, ram || null,
+     storage || null, serial_number || null, status || null, company || null, user],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
-      logAction(req, 'ESTOQUE', `Adicionou item: ${name} (${quantity} ${unit})`);
+      logAction(req, 'ESTOQUE', `Adicionou ${kind === 'equipamento' ? 'equipamento' : 'item'}: ${name}`);
       res.status(201).json({ id: this.lastID });
     }
   );
 });
 
 app.put('/api/inventory/:id', authenticate, (req, res) => {
-  const { name, quantity, unit, category, location, notes } = req.body;
+  const {
+    name, quantity, unit, category, location, notes,
+    kind, type, brand, model, cpu, ram, storage, serial_number, status, company
+  } = req.body;
   db.run(
-    "UPDATE inventory SET name = ?, quantity = ?, unit = ?, category = ?, location = ?, notes = ? WHERE id = ?",
-    [name, quantity, unit, category, location, notes, req.params.id],
+    `UPDATE inventory SET
+      name = ?, quantity = ?, unit = ?, category = ?, location = ?, notes = ?,
+      kind = ?, type = ?, brand = ?, model = ?, cpu = ?, ram = ?, storage = ?, serial_number = ?, status = ?, company = ?
+     WHERE id = ?`,
+    [name, quantity, unit, category, location, notes,
+     kind || 'insumo', type || null, brand || null, model || null, cpu || null, ram || null,
+     storage || null, serial_number || null, status || null, company || null, req.params.id],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
-      logAction(req, 'EDIÇÃO', `Alterou item do estoque: ${name}`);
+      logAction(req, 'EDIÇÃO', `Alterou item do inventário: ${name}`);
       res.json({ message: 'Item atualizado' });
     }
   );
@@ -946,10 +1273,10 @@ app.get('/api/voip', authenticate, (req, res) => {
 });
 
 app.post('/api/voip', authenticate, (req, res) => {
-  const { extension, name, password, ip_address, pabx_ip, status, notes } = req.body;
+  const { extension, name, password, ip_address, pabx_ip, status, notes, model, queue, trunk, company, mac, type, parent_id } = req.body;
   db.run(
-    "INSERT INTO voip_extensions (extension, name, password, ip_address, pabx_ip, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?)",
-    [extension, name, encryptSecret(password), ip_address, pabx_ip, status || 'Ativo', notes],
+    "INSERT INTO voip_extensions (extension, name, password, ip_address, pabx_ip, status, notes, model, queue, trunk, company, mac, type, parent_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    [extension, name, encryptSecret(password), ip_address, pabx_ip, status || 'Ativo', notes, model || null, queue || null, trunk || null, company || null, mac || null, type || null, parent_id || null],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
       logAction(req, 'VOIP', `Cadastrou ramal: ${extension} - ${name}`);
@@ -959,10 +1286,10 @@ app.post('/api/voip', authenticate, (req, res) => {
 });
 
 app.put('/api/voip/:id', authenticate, (req, res) => {
-  const { extension, name, password, ip_address, pabx_ip, status, notes } = req.body;
+  const { extension, name, password, ip_address, pabx_ip, status, notes, model, queue, trunk, company, mac, type, parent_id } = req.body;
   db.run(
-    "UPDATE voip_extensions SET extension = ?, name = ?, password = ?, ip_address = ?, pabx_ip = ?, status = ?, notes = ? WHERE id = ?",
-    [extension, name, encryptSecret(password), ip_address, pabx_ip, status, notes, req.params.id],
+    "UPDATE voip_extensions SET extension = ?, name = ?, password = ?, ip_address = ?, pabx_ip = ?, status = ?, notes = ?, model = ?, queue = ?, trunk = ?, company = ?, mac = ?, type = ?, parent_id = ? WHERE id = ?",
+    [extension, name, encryptSecret(password), ip_address, pabx_ip, status, notes, model || null, queue || null, trunk || null, company || null, mac || null, type || null, parent_id || null, req.params.id],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
       logAction(req, 'EDIÇÃO', `Alterou ramal: ${extension}`);
@@ -1007,54 +1334,6 @@ app.delete('/api/credentials/:id', authenticate, (req, res) => {
   });
 });
 
-app.delete('/api/technical-docs/:id', authenticate, (req, res) => {
-  const { id } = req.params;
-  db.get("SELECT title, file_path FROM technical_docs WHERE id = ?", [id], (err, row) => {
-    if (err) return res.status(500).json({ error: err.message });
-    const docTitle = row ? row.title : id;
-    if (row && row.file_path) {
-      const fullPath = path.join(__dirname, 'uploads/docs', row.file_path);
-      if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
-    }
-    db.run("DELETE FROM technical_docs WHERE id = ?", [id], (err) => {
-      if (err) return res.status(500).json({ error: err.message });
-      logAction(req, 'EXCLUSÃO', `Removeu documento: ${docTitle}`);
-      res.json({ message: 'Documento deletado' });
-    });
-  });
-});
-
-// --- VAULT FOLDERS ---
-app.get('/api/vault-folders', authenticate, (req, res) => {
-  db.all('SELECT * FROM vault_folders ORDER BY name ASC', [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
-});
-
-app.post('/api/vault-folders', authenticate, (req, res) => {
-  const { name, parent_id } = req.body;
-  db.run("INSERT INTO vault_folders (name, parent_id) VALUES (?, ?)", [name, parent_id], function(err) {
-    if (err) return res.status(500).json({ error: err.message });
-    logAction(req, 'CRIAÇÃO', `Criou pasta: ${name}`);
-    res.json({ id: this.lastID, name, parent_id });
-  });
-});
-
-app.delete('/api/vault-folders/:id', authenticate, (req, res) => {
-  const { id } = req.params;
-  db.get('SELECT name FROM vault_folders WHERE id = ?', [id], (err, row) => {
-    const folderName = row ? row.name : id;
-    db.run("DELETE FROM vault_folders WHERE id = ?", [id], (err) => {
-      if (err) return res.status(500).json({ error: err.message });
-      // Opcional: Mover arquivos da pasta para o root ou deletar? 
-      // Por segurança, vamos apenas desvincular os arquivos
-      db.run("UPDATE technical_docs SET folder_id = NULL WHERE folder_id = ?", [id]);
-      logAction(req, 'EXCLUSÃO', `Removeu pasta: ${folderName}`);
-      res.json({ message: 'Pasta removida' });
-    });
-  });
-});
 
 // Rota para o Agente enviar fotos
 app.post('/api/monitoring/snapshot', verifyMonitoringToken, (req, res) => {
@@ -1370,8 +1649,10 @@ app.delete('/api/monitoring/sites/:id', authenticate, (req, res) => {
   });
 });
 
-// Rota de status do sistema (Disco + Latência dos locais gerenciados).
+// Rota de status do sistema (Disco + Latência dos locais gerenciados + Memória e Uptime).
 app.get('/api/system-status', authenticate, (req, res) => {
+  const os = require('os');
+  
   db.all('SELECT * FROM managed_sites', [], (errSites, rowsSites) => {
     exec('df -h / --output=size,used,avail,pcent | tail -1', (errDisk, stdout) => {
       let disk = { size: '0', used: '0', avail: '0', percent: '0%' };
@@ -1381,6 +1662,33 @@ app.get('/api/system-status', authenticate, (req, res) => {
           disk = { size: parts[0], used: parts[1], avail: parts[2], percent: parts[3] };
         }
       }
+
+      // Cálculo de memória
+      const totalMem = os.totalmem();
+      const freeMem = os.freemem();
+      const usedMem = totalMem - freeMem;
+      const memPercent = Math.round((usedMem / totalMem) * 100);
+      
+      const memory = {
+        total: totalMem,
+        used: usedMem,
+        free: freeMem,
+        percent: memPercent + '%'
+      };
+      
+      const uptimeSecs = os.uptime();
+      const uptimeHours = Math.floor(uptimeSecs / 3600);
+      const uptimeDays = Math.floor(uptimeHours / 24);
+
+      // Carga de CPU: load average de 1 min normalizado pelo nº de núcleos
+      const cpuCount = os.cpus().length || 1;
+      const load1 = os.loadavg()[0] || 0;
+      const cpuPercent = Math.min(100, Math.round((load1 / cpuCount) * 100));
+      const cpu = {
+        cores: cpuCount,
+        load: Number(load1.toFixed(2)),
+        percent: cpuPercent + '%'
+      };
 
       const sites = (rowsSites || []).map(row => {
         const ip = (row.ip || '').trim();
@@ -1400,6 +1708,13 @@ app.get('/api/system-status', authenticate, (req, res) => {
 
       res.json({
         disk,
+        memory,
+        cpu,
+        uptime: {
+          seconds: uptimeSecs,
+          hours: uptimeHours,
+          days: uptimeDays
+        },
         latency: avgLatency,
         sites,
         sitesOnline: onlineSites.length,
@@ -1416,4 +1731,6 @@ app.use((req, res) => {
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Servidor rodando em http://0.0.0.0:${PORT}`);
+  // Agendador de alertas da VPS (relatórios coordenados + limites) no Telegram.
+  try { vpsMonitor.startVpsAlerts(); } catch (e) { console.warn('Falha ao iniciar alertas da VPS:', e.message); }
 });

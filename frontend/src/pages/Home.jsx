@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Monitor, Camera, Router as RouterIcon, ListTodo, ChevronRight, Activity, ShieldCheck, Database, RotateCw, BookOpen, Phone, Package, Key, MessageSquare, Wrench, Trash2, Plus } from 'lucide-react';
+import { Monitor, Camera, Router as RouterIcon, ListTodo, ChevronRight, Activity, ShieldCheck, Database, RotateCw, FileText, Phone, Package, Key, MessageSquare, Wrench, Trash2, Plus, UserSquare2, KeyRound, Link2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getAuthConfig } from '../utils/auth';
 
@@ -18,6 +18,11 @@ const formatDiskSize = (v) => {
   if (!m) return v;
   const units = { K: 'KB', M: 'MB', G: 'GB', T: 'TB', P: 'PB' };
   return `${m[1]} ${m[2] ? units[m[2].toUpperCase()] : 'B'}`;
+};
+
+const formatBytes = (bytes) => {
+  if (!bytes) return '0 GB';
+  return (bytes / (1024 ** 3)).toFixed(1) + ' GB';
 };
 
 // Saudação em inglês conforme o horário do dia
@@ -50,6 +55,9 @@ function Home() {
     tasks: 0,
     users: 0,
     docs: 0,
+    entra: 0,
+    licenses: 0,
+    links: 0,
     logsTotal: 0,
     ticketsPending: 0,
     ticketsActive: 0,
@@ -65,19 +73,21 @@ function Home() {
   const fetchStats = async (manual = false) => {
     if (manual) setIsRefreshing(true);
     try {
-      const [m, c, n, t, u, logs, creds, inv, voip, docs, ticketsRes, sys] = await Promise.all([
+      const [m, c, n, t, logs, creds, inv, voip, docs, ticketsRes, sys, entra, licenses, links] = await Promise.all([
         axios.get('/api/machines', getAuthConfig()).catch(() => ({ data: [] })),
         axios.get('/api/cameras', getAuthConfig()).catch(() => ({ data: [] })),
         axios.get('/api/network-devices', getAuthConfig()).catch(() => ({ data: [] })),
         axios.get('/api/tasks', getAuthConfig()).catch(() => ({ data: [] })),
-        axios.get('/api/users', getAuthConfig()).catch(() => ({ data: [] })),
         axios.get('/api/audit-logs', getAuthConfig()).catch(() => ({ data: [] })),
         axios.get('/api/credentials', getAuthConfig()).catch(() => ({ data: [] })),
         axios.get('/api/inventory', getAuthConfig()).catch(() => ({ data: [] })),
         axios.get('/api/voip', getAuthConfig()).catch(() => ({ data: [] })),
-        axios.get('/api/technical-docs', getAuthConfig()).catch(() => ({ data: [] })),
+        axios.get('/api/documents', getAuthConfig()).catch(() => ({ data: [] })),
         axios.get('/api/tickets', getAuthConfig()).catch(() => ({ data: [] })),
-        axios.get('/api/system-status', getAuthConfig()).catch(() => ({ data: { disk: { percent: '0%', avail: '0' }, latency: 0, sites: [], sitesOnline: 0, sitesTotal: 0 } }))
+        axios.get('/api/system-status', getAuthConfig()).catch(() => ({ data: { disk: { percent: '0%', avail: '0' }, latency: 0, sites: [], sitesOnline: 0, sitesTotal: 0 } })),
+        axios.get('/api/entra', getAuthConfig()).catch(() => ({ data: [] })),
+        axios.get('/api/licenses', getAuthConfig()).catch(() => ({ data: [] })),
+        axios.get('/api/links', getAuthConfig()).catch(() => ({ data: [] }))
       ]);
       
       const allTickets = ticketsRes.data || [];
@@ -95,12 +105,14 @@ function Home() {
         network: n.data?.length || 0,
         networkOnline: (n.data || []).filter(x => isOnline(x.last_seen)).length,
         tasks: (t.data || []).filter(x => Number(x.is_completed) === 0).length,
-        users: u.data?.length || 0,
         logsTotal: logs.data?.length || 0,
         credentials: creds.data?.length || 0,
         inventory: inv.data?.length || 0,
         voip: voip.data?.length || 0,
         docs: docs.data?.length || 0,
+        entra: entra.data?.length || 0,
+        licenses: licenses.data?.length || 0,
+        links: links.data?.length || 0,
         ticketsPending: pendingTickets.length,
         ticketsActive: activeTickets.length,
         ticketsResolved: resolvedTickets.length
@@ -303,6 +315,47 @@ function Home() {
             </div>
           </div>
 
+          {/* Card 2.5: Memória do Servidor (VPS) */}
+          <div className="stat-box-industrial" style={{ flex: '1 1 260px', minHeight: '180px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '12px', padding: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', width: '100%' }}>
+              <span className="stat-label" style={{ whiteSpace: 'nowrap' }}>MEMÓRIA DA VPS</span>
+              <span style={{ fontSize: '1.15rem', fontWeight: '800', color: parseInt(systemStatus?.memory?.percent) > 90 ? '#ef4444' : 'var(--color-text)', whiteSpace: 'nowrap' }}>
+                {systemStatus?.memory?.percent || '0%'}
+              </span>
+            </div>
+
+            <div style={{ width: '100%', height: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '5px', overflow: 'hidden', border: '1px solid var(--color-border)' }}>
+              <div style={{
+                width: systemStatus?.memory?.percent || '0%',
+                height: '100%',
+                background: parseInt(systemStatus?.memory?.percent) > 90 ? 'linear-gradient(90deg, #ef4444, #f43f5e)' : 'linear-gradient(90deg, #a855f7, #d946ef)',
+                transition: 'width 0.5s ease-out'
+              }}></div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', background: 'rgba(0,0,0,0.04)', border: '1px solid var(--color-border)', padding: '7px 10px' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)', fontWeight: '700', whiteSpace: 'nowrap' }}>
+                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: parseInt(systemStatus?.memory?.percent) > 90 ? '#ef4444' : '#a855f7', flexShrink: 0 }}></span>
+                  Usada
+                </span>
+                <span style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--color-text)' }}>{formatBytes(systemStatus?.memory?.used)}</span>
+              </div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', background: 'rgba(0,0,0,0.04)', border: '1px solid var(--color-border)', padding: '7px 10px' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)', fontWeight: '700', whiteSpace: 'nowrap' }}>
+                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', flexShrink: 0 }}></span>
+                  Livre
+                </span>
+                <span style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--color-text)' }}>{formatBytes(systemStatus?.memory?.free)}</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
+               <Activity size={12} color="var(--color-text-muted)" />
+               <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 'bold' }}>UPTIME: {systemStatus?.uptime?.days || 0}d {systemStatus?.uptime?.hours % 24 || 0}h</span>
+            </div>
+          </div>
+
           {/* Card 3: Suporte Flow */}
           <div className="stat-box-industrial" onClick={() => navigate('/control/tickets')} style={{ flex: '1 1 260px', minHeight: '180px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '12px', padding: '24px', cursor: 'pointer' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', width: '100%' }}>
@@ -487,20 +540,68 @@ function Home() {
           <div className="industrial-footer"><span>auditoria</span><ChevronRight size={14} /></div>
         </div>
 
-        <div className="card-industrial" onClick={() => navigate('/control/technical-docs')}>
+        <div className="card-industrial" onClick={() => navigate('/control/documents')}>
           <div className="card-industrial-header">
-            <div className="industrial-icon"><BookOpen size={22} /></div>
+            <div className="industrial-icon"><FileText size={22} /></div>
             <div className="industrial-badge">{stats.docs || 0}</div>
           </div>
           <div className="industrial-body">
-            <h3>Tech Vault</h3>
-            <p>Repositório central de manuais e procedimentos.</p>
+            <h3>Documentos</h3>
+            <p>Contratos, notas fiscais, manuais e procedimentos.</p>
             <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
               <Database size={12} color="#64748b" />
               <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Central de documentação</span>
             </div>
           </div>
           <div className="industrial-footer"><span>ver acervo</span><ChevronRight size={14} /></div>
+        </div>
+
+        <div className="card-industrial" onClick={() => navigate('/control/entra')}>
+          <div className="card-industrial-header">
+            <div className="industrial-icon"><UserSquare2 size={22} /></div>
+            <div className="industrial-badge">{stats.entra || 0}</div>
+          </div>
+          <div className="industrial-body">
+            <h3>Entra ID</h3>
+            <p>Usuários, grupos e dispositivos do Microsoft Entra ID.</p>
+            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <Activity size={12} color="#64748b" />
+              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Identidade e acesso</span>
+            </div>
+          </div>
+          <div className="industrial-footer"><span>gerenciar</span><ChevronRight size={14} /></div>
+        </div>
+
+        <div className="card-industrial" onClick={() => navigate('/control/licenses')}>
+          <div className="card-industrial-header">
+            <div className="industrial-icon"><KeyRound size={22} /></div>
+            <div className="industrial-badge">{stats.licenses || 0}</div>
+          </div>
+          <div className="industrial-body">
+            <h3>Licenças & Apps</h3>
+            <p>Controle de licenças de software e validades.</p>
+            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <Database size={12} color="#64748b" />
+              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Software gerenciado</span>
+            </div>
+          </div>
+          <div className="industrial-footer"><span>ver licenças</span><ChevronRight size={14} /></div>
+        </div>
+
+        <div className="card-industrial" onClick={() => navigate('/control/links')}>
+          <div className="card-industrial-header">
+            <div className="industrial-icon"><Link2 size={22} /></div>
+            <div className="industrial-badge">{stats.links || 0}</div>
+          </div>
+          <div className="industrial-body">
+            <h3>Links</h3>
+            <p>Atalhos para painéis, portais e ferramentas.</p>
+            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <Activity size={12} color="#64748b" />
+              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Acesso rápido</span>
+            </div>
+          </div>
+          <div className="industrial-footer"><span>ver links</span><ChevronRight size={14} /></div>
         </div>
 
         <div className="card-industrial" onClick={() => navigate('/control/voip')}>
@@ -656,10 +757,17 @@ function Home() {
             BAIXAR KLARKE REPAIR
           </button>
 
-          <button className="btn btn-primary" onClick={() => navigate('/control/users')} style={{display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', width: 'auto'}}>
-            <ShieldCheck size={18} />
-            GERENCIAR ACESSOS
-          </button>
+          {(() => {
+            let user = {};
+            try { user = JSON.parse(localStorage.getItem('klarke_user') || '{}'); } catch (e) { /* ignore */ }
+            if (user.role === 'funcionario') return null;
+            return (
+              <button className="btn btn-primary" onClick={() => navigate('/control/users')} style={{display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', width: 'auto'}}>
+                <ShieldCheck size={18} />
+                GERENCIAR ACESSOS
+              </button>
+            );
+          })()}
         </div>
       </div>
 

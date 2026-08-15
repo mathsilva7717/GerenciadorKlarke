@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Outlet } from 'react-router-dom';
 import Navbar from './Navbar';
+import CheckInModal from './CheckInModal';
 import axios from 'axios';
 
 function Layout() {
@@ -50,6 +51,7 @@ function Layout() {
         <div className="shape shape-3"></div>
       </div>
       <Navbar />
+      <CheckInModal />
       <div className="app-container">
         <Outlet />
       </div>

@@ -452,9 +452,9 @@ function Dashboard() {
         </div>
       </div>
 
-      <header className="page-header" style={{marginBottom: '32px'}}>
-        <h1 style={{marginBottom: '8px'}}>Gerenciamento de Máquinas</h1>
-        <p>Controle de inventário e acessos remotos.</p>
+      <header style={{marginBottom: '32px', paddingBottom: '16px', borderBottom: '1px solid rgba(0,0,0,0.05)'}}>
+        <h1 style={{fontSize: '2rem', color: 'var(--color-primary)', marginBottom: '8px'}}>Gerenciamento de Máquinas</h1>
+        <p style={{color: 'var(--color-text-muted)', margin: 0}}>Controle de inventário e acessos remotos.</p>
       </header>
       <div className="search-wrapper">
         <div className="search-container">

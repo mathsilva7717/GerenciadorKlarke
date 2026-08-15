@@ -22,3 +22,8 @@ __pycache__/
 
 # Uploads gerados em runtime (fotos de chamados, snapshots) — não versionar
 backend/uploads/
+
+# Backups temporarios (gerados durante debug/deploy)
+.env.bak*
+.env.save
+*.sqlite.bak*

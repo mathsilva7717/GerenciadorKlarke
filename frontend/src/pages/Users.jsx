@@ -79,6 +79,16 @@ const Users = () => {
     });
   };
 
+  const handleChangeRole = async (id, role) => {
+    try {
+      await axios.put(`${API_URL}/api/users/${id}`, { role }, getAuthConfig());
+      setUsers(prev => prev.map(u => (u.id === id ? { ...u, role } : u)));
+      setMessage({ type: 'success', text: 'Nível de acesso atualizado!' });
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Erro ao atualizar nível de acesso.' });
+    }
+  };
+
   const handleDeleteUser = async (id) => {
     setConfirmDialog({
       open: true,
@@ -145,6 +155,7 @@ const Users = () => {
                 onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
               >
                 <option value="user">Usuário Comum</option>
+                <option value="funcionario">Funcionário</option>
                 <option value="admin">Administrador</option>
               </select>
             </div>
@@ -201,11 +212,20 @@ const Users = () => {
                         </div>
                       </td>
                       <td>
-                        <span className={`role-badge ${
-                          user.role === 'admin' ? 'role-admin' : 'role-user'
-                        }`}>
-                          {user.role}
-                        </span>
+                        {user.username === 'admin' ? (
+                          <span className="role-badge role-admin">{user.role}</span>
+                        ) : (
+                          <select
+                            className="form-input"
+                            style={{padding: '4px 8px', fontSize: '0.8rem', width: 'auto'}}
+                            value={user.role}
+                            onChange={(e) => handleChangeRole(user.id, e.target.value)}
+                          >
+                            <option value="user">user</option>
+                            <option value="funcionario">funcionario</option>
+                            <option value="admin">admin</option>
+                          </select>
+                        )}
                       </td>
                       <td style={{textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '8px'}}>
                         {user.username !== 'admin' && (

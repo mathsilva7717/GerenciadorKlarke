@@ -11,7 +11,6 @@ import ActionPlan from './pages/ActionPlan';
 import Home from './pages/Home';
 import AuditLogs from './pages/AuditLogs';
 import Users from './pages/Users';
-import TechnicalDocs from './pages/TechnicalDocs';
 import Voip from './pages/Voip';
 import Inventory from './pages/Inventory';
 import KeyKeeper from './pages/KeyKeeper';
@@ -19,6 +18,10 @@ import MailPage from './pages/Mail';
 import ResetPassword from './pages/ResetPassword';
 import NetworkMap from './pages/NetworkMap';
 import Tickets from './pages/Tickets';
+import Documents from './pages/Documents';
+import EntraID from './pages/EntraID';
+import Licenses from './pages/Licenses';
+import LinksPage from './pages/LinksPage';
 
 // Interceptor global para injetar headers em todas as requisições
 axios.interceptors.request.use(
@@ -79,6 +82,19 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+// Bloqueia rotas restritas a admin (ex: gerenciamento de usuários) para o papel "funcionario".
+function AdminRoute({ children }) {
+  const userData = localStorage.getItem('klarke_user');
+  let user = {};
+  try {
+    user = JSON.parse(userData || '{}');
+  } catch (e) {
+    user = {};
+  }
+  if (user.role === 'funcionario') return <Navigate to="/control" replace />;
+  return children;
+}
+
 function App() {
   return (
     <Router>
@@ -95,8 +111,11 @@ function App() {
             <Route path="network" element={<NetworkDevices />} />
             <Route path="action-plan" element={<ActionPlan />} />
             <Route path="audit-logs" element={<AuditLogs />} />
-            <Route path="users" element={<Users />} />
-            <Route path="technical-docs" element={<TechnicalDocs />} />
+            <Route path="users" element={<AdminRoute><Users /></AdminRoute>} />
+            <Route path="documents" element={<Documents />} />
+            <Route path="entra" element={<EntraID />} />
+            <Route path="licenses" element={<Licenses />} />
+            <Route path="links" element={<LinksPage />} />
             <Route path="voip" element={<Voip />} />
             <Route path="inventory" element={<Inventory />} />
             <Route path="key-keeper" element={<KeyKeeper />} />
