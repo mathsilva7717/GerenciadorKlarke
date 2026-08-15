@@ -19,9 +19,10 @@ import ResetPassword from './pages/ResetPassword';
 import NetworkMap from './pages/NetworkMap';
 import Tickets from './pages/Tickets';
 import Documents from './pages/Documents';
-import EntraID from './pages/EntraID';
+import EntraId from './pages/EntraId';
 import Licenses from './pages/Licenses';
-import LinksPage from './pages/LinksPage';
+import Links from './pages/Links';
+import VPSMonitor from './pages/VPSMonitor';
 
 // Interceptor global para injetar headers em todas as requisições
 axios.interceptors.request.use(
@@ -113,9 +114,10 @@ function App() {
             <Route path="audit-logs" element={<AuditLogs />} />
             <Route path="users" element={<AdminRoute><Users /></AdminRoute>} />
             <Route path="documents" element={<Documents />} />
-            <Route path="entra" element={<EntraID />} />
+            <Route path="entra-id" element={<EntraId />} />
             <Route path="licenses" element={<Licenses />} />
-            <Route path="links" element={<LinksPage />} />
+            <Route path="links" element={<Links />} />
+            <Route path="vps-monitor" element={<AdminRoute><VPSMonitor /></AdminRoute>} />
             <Route path="voip" element={<Voip />} />
             <Route path="inventory" element={<Inventory />} />
             <Route path="key-keeper" element={<KeyKeeper />} />

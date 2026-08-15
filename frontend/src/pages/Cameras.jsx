@@ -1,11 +1,22 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
-import { Search, Plus, X, Copy, Camera, MapPin, Check, Download, Clipboard, Trash2, QrCode, RotateCw } from 'lucide-react';
+import { Search, Plus, X, Copy, Camera, MapPin, Check, Download, Clipboard, Trash2, QrCode, RotateCw, Upload, ImageOff, Edit, HardDrive } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { getAuthConfig } from '../utils/auth';
+import { COMPANY_OPTIONS, companyBadge } from '../utils/companies';
 
 const API_URL = '/api/cameras';
+
+// Tipos de equipamento (badge de diferenciação no card).
+const TYPE_OPTIONS = [
+  { value: 'CAMERA', label: 'Câmera' },
+  { value: 'NVR', label: 'NVR / DVR' },
+];
+const typeMeta = (t) => (String(t || '').toUpperCase() === 'NVR')
+  ? { label: 'NVR', cls: 'nvr' }
+  : { label: 'Câmera', cls: 'cam' };
 
 function Cameras() {
   const [cameras, setCameras] = useState([]);
@@ -18,10 +29,40 @@ function Cameras() {
   const [copiedField, setCopiedField] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', message: '', onConfirm: null });
+  const [snapshotPreview, setSnapshotPreview] = useState(null); // base64 da nova foto a enviar
+  const [savingPhoto, setSavingPhoto] = useState(false);
+  const [lightbox, setLightbox] = useState(null); // URL da foto ampliada
   const navigate = useNavigate();
 
+  // Fecha o lightbox com a tecla Esc
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e) => { if (e.key === 'Escape') setLightbox(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [lightbox]);
+
+  // Extrai a data de captura do nome do arquivo (cam_serial_TIMESTAMP.jpg) de forma robusta.
+  const snapTime = (fileName) => {
+    const m = String(fileName || '').match(/_(\d+)\.jpg$/);
+    return m ? new Date(parseInt(m[1])) : null;
+  };
+
+  // Lê o arquivo escolhido como base64, sem redimensionar (mantém a foto original).
+  // O envio acontece ao salvar a câmera.
+  const handlePhotoSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast.error('Selecione um arquivo de imagem.'); return; }
+    if (file.size > 25 * 1024 * 1024) { toast.error('Imagem muito grande (máx. 25MB).'); return; }
+    const reader = new FileReader();
+    reader.onload = () => setSnapshotPreview(reader.result);
+    reader.onerror = () => toast.error('Falha ao ler o arquivo.');
+    reader.readAsDataURL(file);
+  };
+
   const [formData, setFormData] = useState({
-    name: '', ip: '', port: '', username: '', password: '', location: '', serial_number: '', rtsp_link: ''
+    name: '', ip: '', port: '', username: '', password: '', location: '', company: '', type: 'CAMERA', parent_id: '', serial_number: '', rtsp_link: ''
   });
 
   useEffect(() => {
@@ -101,12 +142,13 @@ function Cameras() {
   };
 
   const openModal = (camera = null) => {
+    setSnapshotPreview(null);
     if (camera) {
       setEditingCamera(camera);
       setFormData(camera);
     } else {
       setEditingCamera(null);
-      setFormData({ name: '', ip: '', port: '', username: '', password: '', location: '', serial_number: '', rtsp_link: '' });
+      setFormData({ name: '', ip: '', port: '', username: '', password: '', location: '', company: '', type: 'CAMERA', parent_id: '', serial_number: '', rtsp_link: '' });
     }
     setIsModalOpen(true);
   };
@@ -114,6 +156,7 @@ function Cameras() {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingCamera(null);
+    setSnapshotPreview(null);
   };
 
   const saveCamera = async (e) => {
@@ -128,17 +171,27 @@ function Cameras() {
         user = userData || 'Desconhecido';
       }
 
+      let camId = editingCamera?.id;
       if (editingCamera) {
         await axios.put(`${API_URL}/${editingCamera.id}`, formData, getAuthConfig());
-        toast.success('Câmera atualizada!');
       } else {
-        await axios.post(API_URL, { ...formData, created_by: user }, getAuthConfig());
-        toast.success('Câmera cadastrada!');
+        const res = await axios.post(API_URL, { ...formData, created_by: user }, getAuthConfig());
+        camId = res.data?.id;
       }
+
+      // Se o usuário escolheu uma foto, envia agora (câmera já existe/tem id).
+      if (snapshotPreview && camId) {
+        setSavingPhoto(true);
+        await axios.post(`${API_URL}/${camId}/snapshot`, { image: snapshotPreview }, getAuthConfig());
+      }
+
+      toast.success(editingCamera ? 'Câmera atualizada!' : 'Câmera cadastrada!');
       fetchCameras();
       closeModal();
     } catch (error) {
       toast.error('Erro ao salvar câmera.');
+    } finally {
+      setSavingPhoto(false);
     }
   };
 
@@ -209,18 +262,36 @@ function Cameras() {
     return true; // Rede com IPs fixos: equipamentos sempre online
   };
 
-  const filtered = cameras.filter(c => 
-    (c.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-    (c.ip?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-    (c.location?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-    (c.serial_number?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-  );
+  // Mapa id -> nome dos NVRs (pra mostrar de qual gravador o canal pertence)
+  const nvrById = {};
+  cameras.forEach(c => { if ((c.type || '').toUpperCase() === 'NVR') nvrById[c.id] = c.name; });
+  const isNvr = (c) => (c.type || '').toUpperCase() === 'NVR';
+  const parentName = (c) => (c.parent_id != null ? nvrById[c.parent_id] : null) || null;
+
+  const filtered = cameras.filter(c => {
+    const term = searchTerm.toLowerCase();
+    return (c.name?.toLowerCase() || '').includes(term) ||
+      (c.ip?.toLowerCase() || '').includes(term) ||
+      (c.location?.toLowerCase() || '').includes(term) ||
+      (c.serial_number?.toLowerCase() || '').includes(term) ||
+      (parentName(c)?.toLowerCase() || '').includes(term);
+  });
+
+  // Agrupa: cada NVR seguido dos seus canais; câmeras avulsas no fim.
+  const groupKey = (c) => isNvr(c) ? (c.name || '') : (parentName(c) || '~~~');
+  const sorted = [...filtered].sort((a, b) => {
+    const ga = groupKey(a).toLowerCase(), gb = groupKey(b).toLowerCase();
+    if (ga !== gb) return ga.localeCompare(gb);
+    const ta = isNvr(a) ? 0 : 1, tb = isNvr(b) ? 0 : 1; // NVR antes dos canais
+    if (ta !== tb) return ta - tb;
+    return (a.name || '').localeCompare(b.name || '', undefined, { numeric: true });
+  });
 
   // Lógica de Paginação
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filtered.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const currentItems = sorted.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(sorted.length / itemsPerPage);
 
   const paginate = (pageNumber) => {
     setCurrentPage(pageNumber);
@@ -267,7 +338,14 @@ function Cameras() {
         </div>
       </div>
 
-      {isScannerOpen && (
+      {lightbox && createPortal((
+        <div className="cam-lightbox" onClick={() => setLightbox(null)}>
+          <button className="cam-lightbox-close" onClick={() => setLightbox(null)} title="Fechar (Esc)"><X size={26} /></button>
+          <img src={lightbox} alt="Foto da câmera" onClick={e => e.stopPropagation()} />
+        </div>
+      ), document.body)}
+
+      {isScannerOpen && createPortal((
         <div className="modal-overlay" style={{zIndex: 3000}}>
           <div className="modal-content" style={{maxWidth: '400px', textAlign: 'center'}}>
              <div className="modal-header">
@@ -282,7 +360,7 @@ function Cameras() {
               </p>
           </div>
         </div>
-      )}
+      ), document.body)}
 
       {cameras.length === 0 ? (
         <div className="empty-state">
@@ -291,106 +369,67 @@ function Cameras() {
           <p>Adicione as credenciais de acesso às suas câmeras/NVR.</p>
         </div>
       ) : (
-        <div className="machines-grid">
-          {currentItems.map(camera => (
-            <div key={camera.id} className="machine-card" onClick={() => openModal(camera)}>
-              <div className="machine-header">
-                <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
-                  <div 
-                    title={isOnline(camera.last_seen) ? 'Online' : 'Offline'}
-                    style={{
-                      width: '12px', 
-                      height: '12px', 
-                      borderRadius: '50%', 
-                      background: isOnline(camera.last_seen) ? '#10b981' : '#ef4444'
-                    }} 
-                  />
-                  <div>
-                    <span className="machine-title" style={{display: 'block'}}>{camera.name || 'Câmera'}</span>
-                    <span style={{fontSize: '0.75rem', color: 'var(--color-text-muted)'}}>
-                      {camera.created_at ? new Date(camera.created_at).toLocaleString() : ''}
-                    </span>
+        <div className="cam-grid">
+          {currentItems.map(camera => {
+            const snapDate = snapTime(camera.last_snapshot);
+            const badge = companyBadge(camera.company, camera.location);
+            return (
+              <div key={camera.id} className="cam-card">
+                <div
+                  className="cam-thumb"
+                  onClick={() => camera.last_snapshot ? setLightbox(`/uploads/${camera.last_snapshot}`) : openModal(camera)}
+                  title={camera.last_snapshot ? 'Ampliar foto' : 'Adicionar foto'}
+                >
+                  {camera.last_snapshot ? (
+                    <img src={`/uploads/${camera.last_snapshot}`} alt={camera.name || 'Câmera'} />
+                  ) : (
+                    <div className="cam-thumb-empty"><ImageOff size={26} /><span>Sem foto</span></div>
+                  )}
+                  <div className="cam-thumb-grad" />
+                  <span className={`cam-type-badge ${typeMeta(camera.type).cls}`}>{typeMeta(camera.type).label}</span>
+                  <span className="cam-loc-badge"><MapPin size={11} />{camera.location || 'Sem local'}</span>
+                  <div className="cam-thumb-bottom">
+                    <span className="cam-name">{camera.name || 'Câmera'}</span>
+                    {snapDate && <span className="cam-time">{snapDate.toLocaleString('pt-BR')}</span>}
                   </div>
                 </div>
-                <div style={{display:'flex', gap:'8px', alignItems:'center'}}>
-                  <span className="machine-location">
-                    <MapPin size={12} style={{display: 'inline', marginRight: 4}} />
-                    {camera.location || 'Sem local'}
-                  </span>
-                  <button className="copy-btn" title="Copiar Tudo" onClick={(e) => { e.stopPropagation(); copyFullData(camera); }}>
-                    <Clipboard size={16} />
-                  </button>
-                  <button className="delete-btn" title="Excluir" onClick={(e) => { e.stopPropagation(); deleteCamera(camera.id); }}>
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-              
-              <div className="machine-details-grid">
-                <div className="detail-item">
-                  <span className="detail-label">IP Address</span>
-                  <span className="detail-value">
-                    {camera.ip || '-'}
-                    {camera.ip && (
-                      <button className="copy-btn" onClick={(e) => { e.stopPropagation(); copyToClipboard(camera.ip, `ip-${camera.id}`); }}>
-                        {copiedField === `ip-${camera.id}` ? <Check size={14} color="#2ecc71" /> : <Copy size={14} />}
-                      </button>
-                    )}
-                  </span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">Porta</span>
-                  <span className="detail-value">{camera.port || '-'}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">Usuário</span>
-                  <span className="detail-value">
-                    {camera.username || '-'}
-                    {camera.username && (
-                      <button className="copy-btn" onClick={(e) => { e.stopPropagation(); copyToClipboard(camera.username, `usr-${camera.id}`); }}>
-                        {copiedField === `usr-${camera.id}` ? <Check size={14} color="#2ecc71" /> : <Copy size={14} />}
-                      </button>
-                    )}
-                  </span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">Senha</span>
-                  <span className="detail-value">
-                    ********
-                    {camera.password && (
-                      <button className="copy-btn" onClick={(e) => { e.stopPropagation(); copyToClipboard(camera.password, `pw-${camera.id}`); }}>
-                        {copiedField === `pw-${camera.id}` ? <Check size={14} color="#2ecc71" /> : <Copy size={14} />}
-                      </button>
-                    )}
-                  </span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">Nº Série</span>
-                  <span className="detail-value">
-                    {camera.serial_number || '-'}
-                    {camera.serial_number && (
-                      <button className="copy-btn" onClick={(e) => { e.stopPropagation(); copyToClipboard(camera.serial_number, `sn-${camera.id}`); }}>
-                        {copiedField === `sn-${camera.id}` ? <Check size={14} color="#2ecc71" /> : <Copy size={14} />}
-                      </button>
-                    )}
-                  </span>
-                </div>
-              </div>
 
-              {camera.last_snapshot && (
-                <div style={{marginTop: '16px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--color-border)'}}>
-                   <img 
-                    src={`/uploads/${camera.last_snapshot}`} 
-                    alt="Último Snapshot" 
-                    style={{width: '100%', height: '180px', objectFit: 'cover', display: 'block'}}
-                   />
-                   <div style={{padding: '4px 8px', fontSize: '0.65rem', background: 'rgba(15, 23, 42, 0.9)', textAlign: 'right', color: 'var(--color-accent)', fontWeight: 'bold'}}>
-                    CAPTURADA EM: {new Date(parseInt(camera.last_snapshot.split('_')[2].split('.')[0])).toLocaleString()}
-                   </div>
+                <div className="cam-info">
+                  <button className="cam-line" onClick={() => copyToClipboard(`${camera.ip || ''}${camera.port ? ':' + camera.port : ''}`, `ip-${camera.id}`)} title="Copiar IP">
+                    <span className="cam-k">IP</span>
+                    <span className="cam-v">{camera.ip || '-'}{camera.port ? `:${camera.port}` : ''}</span>
+                    {copiedField === `ip-${camera.id}` ? <Check size={12} /> : <Copy size={12} className="cam-ic" />}
+                  </button>
+                  <button className="cam-line" onClick={() => copyToClipboard(camera.username || '', `usr-${camera.id}`)} title="Copiar usuário">
+                    <span className="cam-k">USER</span>
+                    <span className="cam-v">{camera.username || '-'}</span>
+                    {copiedField === `usr-${camera.id}` ? <Check size={12} /> : <Copy size={12} className="cam-ic" />}
+                  </button>
+                  <button className="cam-line" onClick={() => copyToClipboard(camera.password || '', `pw-${camera.id}`)} title="Copiar senha">
+                    <span className="cam-k">SENHA</span>
+                    <span className="cam-v">••••••••</span>
+                    {copiedField === `pw-${camera.id}` ? <Check size={12} /> : <Copy size={12} className="cam-ic" />}
+                  </button>
                 </div>
-              )}
-            </div>
-          ))}
+
+                <div className="cam-foot">
+                  <div className="cam-foot-id">
+                    {badge && <img src={badge.src} alt={badge.label} title={badge.label} className="cam-foot-badge" />}
+                    {parentName(camera) ? (
+                      <span className="cam-parent" title={`Canal do ${parentName(camera)}`}><HardDrive size={11} />{parentName(camera)}</span>
+                    ) : (
+                      <span className="cam-sn" title="Número de série">{camera.serial_number || 'sem série'}</span>
+                    )}
+                  </div>
+                  <div className="cam-acts">
+                    <button className="cam-act" title="Copiar tudo" onClick={() => copyFullData(camera)}><Clipboard size={14} /></button>
+                    <button className="cam-act" title="Editar" onClick={() => openModal(camera)}><Edit size={14} /></button>
+                    <button className="cam-act danger" title="Excluir" onClick={() => deleteCamera(camera.id)}><Trash2 size={14} /></button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -421,48 +460,88 @@ function Cameras() {
         <Plus size={24} />
       </button>
 
-      {isModalOpen && (
+      {isModalOpen && createPortal((
         <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
+          <div className="modal-content modal-compact" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h2 className="modal-title">{editingCamera ? 'Editar Câmera' : 'Nova Câmera'}</h2>
               <button className="close-btn" onClick={closeModal}><X size={24} /></button>
             </div>
-            
+
             <form onSubmit={saveCamera}>
-              {editingCamera && editingCamera.last_snapshot && (
-                <div style={{marginBottom: '20px', borderRadius: '12px', overflow: 'hidden', border: '2px solid var(--color-accent)'}}>
-                  <img src={`/uploads/${editingCamera.last_snapshot}`} style={{width: '100%', display: 'block'}} alt="Preview" />
+              {/* Foto (upload manual) */}
+              <div className="cam-upload">
+                <div className="cam-upload-preview">
+                  {snapshotPreview ? (
+                    <img src={snapshotPreview} alt="Nova foto" />
+                  ) : editingCamera?.last_snapshot ? (
+                    <img src={`/uploads/${editingCamera.last_snapshot}`} alt="Foto atual" />
+                  ) : (
+                    <div className="cam-upload-empty"><ImageOff size={22} /><span>Sem foto</span></div>
+                  )}
+                </div>
+                <div className="cam-upload-side">
+                  <label className="btn-upload">
+                    <Upload size={15} />
+                    {snapshotPreview || editingCamera?.last_snapshot ? 'Trocar foto' : 'Enviar foto'}
+                    <input type="file" accept="image/*" onChange={handlePhotoSelect} hidden />
+                  </label>
+                  {snapshotPreview && (
+                    <button type="button" className="btn-upload-clear" onClick={() => setSnapshotPreview(null)}>Cancelar</button>
+                  )}
+                  <span className="cam-upload-hint">JPG/PNG · foto atualizada manualmente.</span>
+                </div>
+              </div>
+
+              {editingCamera && (
+                <div className="audit-strip">
+                  <span>Cadastrado por <b>{editingCamera.created_by || 'Sistema'}</b></span>
+                  {editingCamera.created_at && <span>· {new Date((editingCamera.created_at || '').replace(' ', 'T') + 'Z').toLocaleDateString()}</span>}
                 </div>
               )}
-                {editingCamera && (
-                  <div style={{marginBottom: '20px', padding: '12px', background: 'rgba(0,0,0,0.02)', border: '1px solid var(--color-border)', borderRadius: '4px'}}>
-                    <div style={{fontSize: '0.7rem', color: 'var(--color-text-muted)', marginBottom: '4px'}}>AUDITORIA DE CADASTRO</div>
-                    <div style={{fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--color-primary)'}}>
-                      POR: {editingCamera.created_by || 'Sistema'}
-                    </div>
-                    <div style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>
-                      EM: {new Date((editingCamera.created_at || '').replace(' ', 'T') + 'Z').toLocaleString()}
-                    </div>
-                  </div>
-                )}
-                {editingCamera && formData.serial_number && (
-                  <div className="qr-container">
-                    <img 
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(formData.serial_number)}`} 
-                      alt="QR Code do Equipamento"
-                    />
-                    <p className="qr-label">QR Code de Identificação</p>
-                  </div>
-                )}
+
               <div className="form-group">
                 <label className="form-label">Nome / Identificação</label>
                 <input required type="text" className="form-input" name="name" value={formData.name} onChange={handleInputChange} placeholder="Ex: Câmera Recepção ou NVR Central" />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Número de Série</label>
-                <input type="text" className="form-input" name="serial_number" value={formData.serial_number} onChange={handleInputChange} placeholder="Ex: SN98765432" />
+              <div className="machine-details-grid-form">
+                <div className="form-group" style={{marginBottom: 0}}>
+                  <label className="form-label">Tipo</label>
+                  <select className="form-input" name="type" value={formData.type || 'CAMERA'} onChange={handleInputChange}>
+                    {TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
+                <div className="form-group" style={{marginBottom: 0}}>
+                  <label className="form-label">Empresa</label>
+                  <select className="form-input" name="company" value={formData.company || ''} onChange={handleInputChange}>
+                    <option value="">— Selecione —</option>
+                    {COMPANY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {(formData.type || 'CAMERA').toUpperCase() !== 'NVR' && (
+                <div className="form-group">
+                  <label className="form-label">Pertence ao NVR / Gravador</label>
+                  <select className="form-input" name="parent_id" value={formData.parent_id || ''} onChange={handleInputChange}>
+                    <option value="">— Nenhum (câmera avulsa) —</option>
+                    {cameras
+                      .filter(c => (c.type || '').toUpperCase() === 'NVR' && c.id !== editingCamera?.id)
+                      .map(n => <option key={n.id} value={n.id}>{n.name}</option>)}
+                  </select>
+                </div>
+              )}
+
+              <div className="machine-details-grid-form">
+                <div className="form-group" style={{marginBottom: 0}}>
+                  <label className="form-label">Número de Série</label>
+                  <input type="text" className="form-input" name="serial_number" value={formData.serial_number} onChange={handleInputChange} placeholder="Ex: SN98765432" />
+                </div>
+                <div className="form-group" style={{marginBottom: 0}}>
+                  <label className="form-label">Localização</label>
+                  <input type="text" className="form-input" name="location" value={formData.location} onChange={handleInputChange} placeholder="Ex: Teto Corredor, CPD" />
+                </div>
               </div>
 
               <div className="machine-details-grid-form">
@@ -476,16 +555,6 @@ function Cameras() {
                 </div>
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Link RTSP (Opcional para fotos)</label>
-                <input type="text" className="form-input" name="rtsp_link" value={formData.rtsp_link} onChange={handleInputChange} placeholder="rtsp://user:pass@ip:port/stream" />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Localização</label>
-                <input type="text" className="form-input" name="location" value={formData.location} onChange={handleInputChange} placeholder="Ex: Teto Corredor, CPD" />
-              </div>
-
               <div className="machine-details-grid-form">
                 <div className="form-group" style={{marginBottom: 0}}>
                   <label className="form-label">Usuário (Login)</label>
@@ -497,10 +566,10 @@ function Cameras() {
                 </div>
               </div>
 
-              <button type="submit" className="btn btn-primary btn-block">
-                {editingCamera ? 'Salvar Alterações' : 'Adicionar Câmera'}
+              <button type="submit" className="btn btn-primary btn-block" disabled={savingPhoto}>
+                {savingPhoto ? 'Enviando foto...' : (editingCamera ? 'Salvar Alterações' : 'Adicionar Câmera')}
               </button>
-              
+
               {editingCamera && (
                 <button type="button" className="btn btn-danger btn-block" onClick={() => deleteCamera(editingCamera.id)}>
                   Excluir Câmera
@@ -509,7 +578,7 @@ function Cameras() {
             </form>
           </div>
         </div>
-      )}
+      ), document.body)}
       {confirmDialog.open && (
         <div className="confirm-modal-overlay" onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}>
           <div className="confirm-modal-content" onClick={e => e.stopPropagation()}>

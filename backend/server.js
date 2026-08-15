@@ -965,6 +965,16 @@ app.get('/api/vps-stats/config', authenticate, requireAdmin, (req, res) => {
   });
 });
 
+// Usuários logados por app (Klarke + gestao/ecommerce/armazem), pra tela de Monitor da VPS
+app.get('/api/vps-stats/logged-in', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const data = await vpsMonitor.getLoggedInByApp();
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Enviar relatório agora (usa as credenciais do .env — nada de token no frontend)
 app.post('/api/vps-stats/telegram', authenticate, requireAdmin, async (req, res) => {
   try {

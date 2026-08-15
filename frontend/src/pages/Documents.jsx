@@ -1,276 +1,262 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
-import { FileText, Plus, Search, Upload, ExternalLink, Trash2, Edit, X } from 'lucide-react';
+import {
+  FileText, Plus, Search, Edit, Trash2, X, Download, UploadCloud,
+  File, FileImage, FileArchive, BookOpen, ScrollText, Receipt, ClipboardList, Boxes
+} from 'lucide-react';
 import toast from 'react-hot-toast';
-import ConfirmModal from '../components/ConfirmModal';
 import { getAuthConfig } from '../utils/auth';
+import { COMPANY_OPTIONS, companyBadge } from '../utils/companies';
 
-const CATEGORIES = ['Contrato', 'Nota Fiscal', 'Manual', 'Procedimento', 'Outros'];
+const CATEGORIES = [
+  { value: 'Manuais', color: '#3b82f6', icon: BookOpen },
+  { value: 'Contratos', color: '#10b981', icon: ScrollText },
+  { value: 'Notas Fiscais', color: '#f59e0b', icon: Receipt },
+  { value: 'Procedimentos', color: '#8b5cf6', icon: ClipboardList },
+  { value: 'Outros', color: '#64748b', icon: Boxes },
+];
+const catInfo = (v) => CATEGORIES.find(c => c.value === v) || CATEGORIES[4];
 
-const formatSize = (bytes) => {
-  if (!bytes) return '';
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+const fileIcon = (mime = '') => {
+  if (/image\//.test(mime)) return FileImage;
+  if (/zip|rar|7z|compress/.test(mime)) return FileArchive;
+  if (/pdf|word|text|sheet|excel|document/.test(mime)) return FileText;
+  return File;
 };
+const fmtSize = (b) => {
+  if (!b) return '';
+  if (b < 1024) return `${b} B`;
+  if (b < 1048576) return `${(b / 1024).toFixed(0)} KB`;
+  return `${(b / 1048576).toFixed(1)} MB`;
+};
+const MAX_MB = 35;
 
-const fileToDataUrl = (file) => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.onload = () => resolve(reader.result);
-  reader.onerror = reject;
-  reader.readAsDataURL(file);
-});
+const emptyForm = { title: '', category: 'Manuais', company: '', description: '' };
 
 function Documents() {
-  const [docs, setDocs] = useState([]);
+  const [items, setItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [catFilter, setCatFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [toDelete, setToDelete] = useState(null);
-  const [formData, setFormData] = useState({ title: '', category: 'Outros', company: '', description: '' });
+  const [formData, setFormData] = useState(emptyForm);
+  const [fileObj, setFileObj] = useState(null); // { fileData, fileName }
+  const [saving, setSaving] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, id: null });
 
-  const fetchDocs = async () => {
-    try {
-      const response = await axios.get('/api/documents', getAuthConfig());
-      setDocs(response.data);
-    } catch (e) {
-      toast.error('Erro ao carregar documentos');
-    }
+  const fetchItems = async () => {
+    try { const res = await axios.get('/api/documents', getAuthConfig()); setItems(res.data); }
+    catch { toast.error('Erro ao carregar documentos'); }
   };
+  useEffect(() => { fetchItems(); }, []);
+  useEffect(() => {
+    const open = isModalOpen || confirmDialog.open;
+    document.body.style.overflow = open ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [isModalOpen, confirmDialog.open]);
 
-  useEffect(() => { fetchDocs(); }, []);
+  const set = (k, v) => setFormData(f => ({ ...f, [k]: v }));
+  const openModal = (it = null) => {
+    setFileObj(null);
+    if (it) { setEditing(it); setFormData({ ...emptyForm, ...it }); }
+    else { setEditing(null); setFormData(emptyForm); }
+    setIsModalOpen(true);
+  };
+  const closeModal = () => { setIsModalOpen(false); setEditing(null); setFileObj(null); };
+
+  const onFile = (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    if (f.size > MAX_MB * 1048576) { toast.error(`Arquivo muito grande (máx. ${MAX_MB}MB)`); e.target.value = ''; return; }
+    const reader = new FileReader();
+    reader.onload = () => setFileObj({ fileData: reader.result, fileName: f.name });
+    reader.onerror = () => toast.error('Falha ao ler o arquivo');
+    reader.readAsDataURL(f);
+    if (!formData.title) set('title', f.name.replace(/\.[^.]+$/, ''));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSaving(true);
+    setSaving(true);
     try {
       if (editing) {
         await axios.put(`/api/documents/${editing.id}`, formData, getAuthConfig());
-        toast.success('Atualizado');
+        toast.success('Documento atualizado');
       } else {
-        let payload = { ...formData };
-        if (selectedFile) {
-          payload.fileData = await fileToDataUrl(selectedFile);
-          payload.fileName = selectedFile.name;
-        }
+        const payload = { ...formData, ...(fileObj || {}) };
         await axios.post('/api/documents', payload, getAuthConfig());
-        toast.success('Documento adicionado');
+        toast.success('Documento salvo!');
       }
-      closeModal();
-      fetchDocs();
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Erro ao salvar');
-    } finally {
-      setIsSaving(false);
-    }
+      closeModal(); fetchItems();
+    } catch { toast.error('Erro ao salvar'); }
+    setSaving(false);
   };
-
-  const askDelete = (id) => { setToDelete(id); setShowConfirm(true); };
   const confirmDelete = async () => {
-    if (!toDelete) return;
-    try {
-      await axios.delete(`/api/documents/${toDelete}`, getAuthConfig());
-      toast.success('Removido');
-      fetchDocs();
-    } catch (e) {
-      toast.error('Erro ao excluir');
-    }
+    try { await axios.delete(`/api/documents/${confirmDialog.id}`, getAuthConfig()); toast.success('Removido'); fetchItems(); }
+    catch { toast.error('Erro ao excluir'); }
+    setConfirmDialog({ open: false, id: null });
+  };
+  const download = (it) => {
+    if (!it.file_path) { toast.error('Sem arquivo anexado'); return; }
+    const a = document.createElement('a');
+    a.href = `/uploads/${it.file_path}`;
+    a.download = it.file_name || 'documento';
+    a.target = '_blank';
+    document.body.appendChild(a); a.click(); a.remove();
   };
 
-  const openModal = (doc = null) => {
-    if (doc) {
-      setEditing(doc);
-      setFormData({ title: doc.title, category: doc.category || 'Outros', company: doc.company || '', description: doc.description || '' });
-    } else {
-      setEditing(null);
-      setFormData({ title: '', category: 'Outros', company: '', description: '' });
-      setSelectedFile(null);
-    }
-    setIsModalOpen(true);
-  };
-  const closeModal = () => { setIsModalOpen(false); setEditing(null); setSelectedFile(null); };
-
-  const filtered = docs.filter(d =>
-    (d.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (d.company || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (d.description || '').toLowerCase().includes(searchTerm.toLowerCase())
+  const q = searchTerm.toLowerCase();
+  const filtered = items.filter(it =>
+    (!catFilter || it.category === catFilter) &&
+    ((it.title || '').toLowerCase().includes(q) ||
+     (it.description || '').toLowerCase().includes(q) ||
+     (it.file_name || '').toLowerCase().includes(q))
   );
+  const countByCat = (v) => items.filter(it => it.category === v).length;
 
   return (
-    <>
-      <header style={{marginBottom: '32px', paddingBottom: '16px', borderBottom: '1px solid rgba(0,0,0,0.05)'}}>
-        <h1 style={{fontSize: '2rem', color: 'var(--color-primary)', marginBottom: '8px'}}>Documentos</h1>
-        <p style={{color: 'var(--color-text-muted)', margin: 0}}>Contratos, notas fiscais, manuais e procedimentos centralizados.</p>
-      </header>
+    <div className="users-container" style={{ maxWidth: '1200px', margin: '0 auto' }}>
+      <div className="page-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div className="inv-hd-ico"><FileText size={20} /></div>
+          <div>
+            <h1>Documentos</h1>
+            <p>Acervo de arquivos — manuais, contratos, notas e procedimentos.</p>
+          </div>
+        </div>
+        <button className="add-btn" onClick={() => openModal()}>
+          <Plus size={16} /> <span className="hide-mobile">Novo Documento</span>
+        </button>
+      </div>
 
-      <div className="search-wrapper">
+      <div className="kk-chips">
+        <button className={`kk-chip ${catFilter === '' ? 'active' : ''}`} onClick={() => setCatFilter('')}>
+          <FileText size={14} /> Todos <span className="kk-chip-c">{items.length}</span>
+        </button>
+        {CATEGORIES.map(c => {
+          const Ico = c.icon;
+          return (
+            <button key={c.value} className={`kk-chip ${catFilter === c.value ? 'active' : ''}`} onClick={() => setCatFilter(c.value)} style={catFilter === c.value ? { borderColor: c.color, color: c.color } : undefined}>
+              <Ico size={14} /> {c.value} <span className="kk-chip-c">{countByCat(c.value)}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="search-wrapper" style={{ marginBottom: '20px', maxWidth: '460px' }}>
         <div className="search-container">
-          <Search className="search-icon" size={20} />
-          <input
-            type="text"
-            className="search-input"
-            placeholder="Buscar por título, empresa ou descrição..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          <Search className="search-icon" size={18} />
+          <input type="text" className="search-input" placeholder="Buscar título, arquivo..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
         </div>
       </div>
 
       {filtered.length === 0 ? (
         <div className="empty-state">
-          <FileText className="empty-icon" size={64} />
-          <h2>Nenhum documento ainda</h2>
-          <p>Clique no botão + para adicionar o primeiro documento.</p>
+          <FileText size={64} className="empty-icon" />
+          <h2>Nenhum documento</h2>
+          <p>Clique em “Novo Documento” para anexar o primeiro arquivo.</p>
         </div>
       ) : (
-        <div className="machines-grid">
-          {filtered.map(doc => (
-            <div key={doc.id} className="machine-card" onClick={() => openModal(doc)}>
-              <div className="machine-header">
-                <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
-                  <FileText size={18} color="var(--color-accent)" />
-                  <div>
-                    <span className="machine-title" style={{display: 'block'}}>{doc.title}</span>
-                    <span style={{fontSize: '0.75rem', color: 'var(--color-text-muted)'}}>
-                      {doc.category} {doc.company ? `• ${doc.company}` : ''} • {new Date(doc.created_at).toLocaleDateString('pt-BR')}
-                    </span>
+        <div className="kk-grid">
+          {filtered.map(it => {
+            const ci = catInfo(it.category);
+            const Ico = ci.icon;
+            const FIco = fileIcon(it.mime);
+            const badge = companyBadge(it.company, '');
+            return (
+              <div key={it.id} className="kk-card" style={{ borderTopColor: ci.color }}>
+                <div className="kk-top">
+                  <span className="kk-cat" style={{ color: ci.color }}><Ico size={13} /> {it.category}</span>
+                  <div className="kk-acts">
+                    {it.file_path && <button className="mq-icon-btn" title="Baixar" onClick={() => download(it)}><Download size={14} /></button>}
+                    <button className="mq-icon-btn" title="Editar" onClick={() => openModal(it)}><Edit size={14} /></button>
+                    <button className="mq-icon-btn danger" title="Excluir" onClick={() => setConfirmDialog({ open: true, id: it.id })}><Trash2 size={14} /></button>
                   </div>
                 </div>
-                <div className="card-actions-wrapper">
-                  {doc.file_path && (
-                    <div className="actions-group utility">
-                      <a href={`/uploads/${doc.file_path}`} target="_blank" rel="noreferrer" className="action-chip" title="Abrir arquivo" onClick={e => e.stopPropagation()}>
-                        <ExternalLink size={14} /> <span>ABRIR</span>
-                      </a>
-                    </div>
-                  )}
-                  <div className="actions-separator"></div>
-                  <div className="actions-group management">
-                    <button className="action-chip edit" title="Editar" onClick={(e) => { e.stopPropagation(); openModal(doc); }}>
-                      <Edit size={14} />
-                    </button>
-                    <button className="action-chip delete" title="Excluir" onClick={(e) => { e.stopPropagation(); askDelete(doc.id); }}>
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
+                <div className="kk-title-row">
+                  <span className="kk-title" title={it.title}>{it.title}</span>
+                  {badge && <img className="kk-badge" src={badge.src} alt="" title={badge.label} />}
                 </div>
+                {it.file_path ? (
+                  <button className="kk-field" onClick={() => download(it)} title="Baixar arquivo">
+                    <span className="kk-field-k"><FIco size={12} style={{ verticalAlign: '-2px' }} /> Arquivo</span>
+                    <span className="kk-field-v">{it.file_name}{it.size ? ` · ${fmtSize(it.size)}` : ''}</span>
+                    <Download size={14} className="kk-field-ic" />
+                  </button>
+                ) : (
+                  <div className="kk-notes" style={{ marginTop: 4 }}>Sem arquivo anexado</div>
+                )}
+                {it.description && <div className="kk-notes">{it.description}</div>}
               </div>
-
-              {(doc.description || doc.file_name) && (
-                <div className="machine-details-grid">
-                  {doc.description && (
-                    <div className="detail-item" style={{gridColumn: '1 / -1'}}>
-                      <span className="detail-label">Descrição</span>
-                      <span className="detail-value">{doc.description}</span>
-                    </div>
-                  )}
-                  {doc.file_name && (
-                    <div className="detail-item" style={{gridColumn: '1 / -1'}}>
-                      <span className="detail-label">Arquivo</span>
-                      <span className="detail-value">{doc.file_name} {doc.size ? `(${formatSize(doc.size)})` : ''}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      <button className="fab" onClick={() => openModal()} title="Novo Documento">
-        <Plus size={24} />
-      </button>
-
-      {isModalOpen && (
+      {isModalOpen && createPortal((
         <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
+          <div className="modal-content" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 className="modal-title">{editing ? 'Editar Documento' : 'Novo Documento'}</h2>
+              <h2 className="modal-title">{editing ? 'Editar documento' : 'Novo documento'}</h2>
               <button className="close-btn" onClick={closeModal}><X size={24} /></button>
             </div>
             <form onSubmit={handleSubmit}>
+              {!editing && (
+                <div className="form-group">
+                  <label className="form-label">Arquivo</label>
+                  <label className="doc-drop" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px', border: '1.5px dashed var(--color-border, #334155)', borderRadius: 10, cursor: 'pointer' }}>
+                    <UploadCloud size={22} style={{ opacity: 0.7 }} />
+                    <span style={{ fontSize: 13 }}>{fileObj ? fileObj.fileName : `Escolher arquivo (máx. ${MAX_MB}MB)`}</span>
+                    <input type="file" onChange={onFile} style={{ display: 'none' }} />
+                  </label>
+                </div>
+              )}
               <div className="form-group">
                 <label className="form-label">Título</label>
-                <input required type="text" className="form-input"
-                  value={formData.title}
-                  onChange={e => setFormData({...formData, title: e.target.value})}
-                  placeholder="Ex: Contrato de Locação Loja 01"
-                />
+                <input required className="form-input" value={formData.title} onChange={e => set('title', e.target.value)} placeholder="Ex: Manual do NVR Intelbras" />
               </div>
               <div className="machine-details-grid-form">
-                <div className="form-group" style={{marginBottom: 0}}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label">Categoria</label>
-                  <select className="form-input" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
-                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  <select className="form-input" value={formData.category} onChange={e => set('category', e.target.value)}>
+                    {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.value}</option>)}
                   </select>
                 </div>
-                <div className="form-group" style={{marginBottom: 0}}>
-                  <label className="form-label">Empresa (cliente)</label>
-                  <input type="text" className="form-input"
-                    value={formData.company}
-                    onChange={e => setFormData({...formData, company: e.target.value})}
-                  />
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Empresa (opcional)</label>
+                  <select className="form-input" value={formData.company || ''} onChange={e => set('company', e.target.value)}>
+                    <option value="">—</option>
+                    {COMPANY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
                 </div>
               </div>
               <div className="form-group">
                 <label className="form-label">Descrição</label>
-                <textarea className="form-input" rows="2"
-                  value={formData.description}
-                  onChange={e => setFormData({...formData, description: e.target.value})}
-                ></textarea>
+                <textarea className="form-input" rows="2" value={formData.description} onChange={e => set('description', e.target.value)} placeholder="Ex: procedimento de reset de fábrica"></textarea>
               </div>
-              {!editing && (
-                <div className="form-group">
-                  <label className="form-label">Anexar Arquivo</label>
-                  <div style={{
-                    border: '2px dashed var(--color-border)',
-                    padding: '20px',
-                    borderRadius: 'var(--border-radius)',
-                    textAlign: 'center',
-                    background: selectedFile ? 'rgba(16,185,129,0.06)' : 'var(--color-secondary)',
-                    cursor: 'pointer',
-                    position: 'relative'
-                  }}>
-                    <input type="file" onChange={e => setSelectedFile(e.target.files[0])} style={{position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer'}} />
-                    <Upload size={24} color={selectedFile ? '#10b981' : 'var(--color-text-muted)'} style={{marginBottom: '8px'}} />
-                    <p style={{margin: 0, fontSize: '0.85rem', color: selectedFile ? '#10b981' : 'var(--color-text-muted)'}}>
-                      {selectedFile ? selectedFile.name : 'Clique para subir (opcional)'}
-                    </p>
-                  </div>
-                </div>
-              )}
-              <div style={{display: 'grid', gridTemplateColumns: editing ? '1fr 1fr' : '1fr', gap: '10px', marginTop: '20px'}}>
-                <button type="submit" className="btn btn-primary" style={{marginTop: 0}} disabled={isSaving}>
-                  {isSaving ? 'SALVANDO...' : (editing ? 'SALVAR' : 'ADICIONAR')}
-                </button>
-                {editing && (
-                  <button type="button" className="btn" style={{backgroundColor: '#64748b', color: 'white', marginTop: 0}} onClick={closeModal}>
-                    FECHAR
-                  </button>
-                )}
-              </div>
-              {editing && (
-                <button type="button" className="btn btn-danger" style={{marginTop: '10px'}} onClick={() => { closeModal(); askDelete(editing.id); }}>
-                  <Trash2 size={18} style={{marginRight: '8px'}} /> EXCLUIR DOCUMENTO
-                </button>
-              )}
+              {editing && <p className="kk-notes" style={{ marginTop: 0 }}>O arquivo não é alterado na edição — apenas os dados. Pra trocar o arquivo, crie um novo documento.</p>}
+              <button type="submit" className="btn btn-primary" style={{ marginTop: '8px' }} disabled={saving}>
+                {saving ? 'SALVANDO…' : (editing ? 'SALVAR' : 'SALVAR DOCUMENTO')}
+              </button>
             </form>
           </div>
         </div>
-      )}
-      {showConfirm && (
-        <ConfirmModal
-          isOpen={showConfirm}
-          onClose={() => setShowConfirm(false)}
-          onConfirm={confirmDelete}
-          title="Excluir Documento"
-          message="Esta ação removerá o documento (e o arquivo anexado, se houver) permanentemente."
-        />
-      )}
-    </>
+      ), document.body)}
+
+      {confirmDialog.open && createPortal((
+        <div className="confirm-modal-overlay" onClick={() => setConfirmDialog({ open: false, id: null })}>
+          <div className="confirm-modal-content" onClick={e => e.stopPropagation()}>
+            <h3 className="confirm-modal-title">Excluir documento</h3>
+            <p className="confirm-modal-text">Esta ação remove o registro e o arquivo. Continuar?</p>
+            <div className="confirm-modal-actions">
+              <button className="btn-confirm-cancel" onClick={() => setConfirmDialog({ open: false, id: null })}>CANCELAR</button>
+              <button className="btn-confirm-danger" onClick={confirmDelete}>CONFIRMAR EXCLUSÃO</button>
+            </div>
+          </div>
+        </div>
+      ), document.body)}
+    </div>
   );
 }
 

@@ -4,7 +4,7 @@ import {
   LogOut, Monitor, Camera, Router as RouterIcon, Moon, Sun,
   ListTodo, ArrowLeft, Home, History, FileText,
   ChevronDown, Phone, Package, Key, MapPin, Mail, MessageSquare,
-  UserSquare2, KeyRound, Link2
+  BookOpen, Cloud, AppWindow, Link2, Server
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -59,16 +59,17 @@ function Navbar() {
         { icon: <ListTodo size={16} />, label: 'Tarefas', path: '/control/action-plan' },
         { icon: <MessageSquare size={16} />, label: 'Chamados', path: '/control/tickets' },
         { icon: <Mail size={16} />, label: 'E-mail', path: '/control/mail' },
-        { icon: <FileText size={16} />, label: 'Documentos', path: '/control/documents' },
         { icon: <History size={16} />, label: 'Audit Logs', path: '/control/audit-logs' },
+        { icon: <Server size={16} />, label: 'Monitor da VPS', path: '/control/vps-monitor' },
       ]
     },
     {
-      label: 'Governança',
-      icon: <UserSquare2 size={18} />,
+      label: 'Base',
+      icon: <BookOpen size={18} />,
       items: [
-        { icon: <UserSquare2 size={16} />, label: 'Entra ID', path: '/control/entra' },
-        { icon: <KeyRound size={16} />, label: 'Licenças & Apps', path: '/control/licenses' },
+        { icon: <FileText size={16} />, label: 'Documentos', path: '/control/documents' },
+        { icon: <Cloud size={16} />, label: 'Entra ID', path: '/control/entra-id' },
+        { icon: <AppWindow size={16} />, label: 'Licenças & Apps', path: '/control/licenses' },
         { icon: <Link2 size={16} />, label: 'Links', path: '/control/links' },
       ]
     }

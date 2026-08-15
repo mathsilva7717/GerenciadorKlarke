@@ -1,50 +1,79 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
-import { Search, Plus, X, Copy, Monitor, MapPin, Check, Download, Clipboard, Trash2, QrCode, Activity, Edit, Printer, RotateCw, Database, Globe, Wrench } from 'lucide-react';
+import { Search, Plus, X, Copy, Monitor, MapPin, Check, Download, Trash2, QrCode, Edit, Printer, RotateCw, Wrench, KeyRound } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { getAuthConfig } from '../utils/auth';
+import { COMPANY_OPTIONS, companyBadge } from '../utils/companies';
+import QRCode from 'qrcode';
+import jsPDF from 'jspdf';
 
 const API_URL = '/api/machines';
+
+// Normaliza o "created_by": alguns registros antigos salvaram o objeto do usuário
+// inteiro (JSON) em vez do username. Aqui devolvemos só o nome legível.
+const cleanCreatedBy = (raw) => {
+  if (!raw) return 'Sistema';
+  const s = String(raw).trim();
+  if (s.startsWith('{')) {
+    try { return JSON.parse(s).username || s; } catch { return s; }
+  }
+  return s;
+};
+
+// Reinsere os pontos em IPs salvos sem máscara (ex: "192168158" -> "192.168.15.8").
+// Best-effort: em casos ambíguos escolhe a divisão válida com octetos iniciais maiores.
+// Se já tiver ponto, ou não for só dígito, devolve como está.
+const formatIp = (raw) => {
+  if (!raw) return raw;
+  const s = String(raw).trim();
+  if (s.includes('.')) return s;
+  const d = s.replace(/\D/g, '');
+  if (d.length !== s.length || d.length < 4 || d.length > 12) return s;
+  const solve = (i, parts) => {
+    if (parts.length === 4) return i === d.length ? parts : null;
+    for (let len = 3; len >= 1; len--) {
+      if (i + len > d.length) continue;
+      const seg = d.slice(i, i + len);
+      if (len > 1 && seg[0] === '0') continue;
+      if (parseInt(seg, 10) > 255) continue;
+      const remaining = d.length - (i + len);
+      const octetsLeft = 3 - parts.length;
+      if (remaining < octetsLeft || remaining > octetsLeft * 3) continue;
+      const r = solve(i + len, [...parts, seg]);
+      if (r) return r;
+    }
+    return null;
+  };
+  const parts = solve(0, []);
+  return parts ? parts.join('.') : s;
+};
 
 function Dashboard() {
   const [machines, setMachines] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15;
+  const itemsPerPage = 50;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [editingMachine, setEditingMachine] = useState(null);
   const [copiedField, setCopiedField] = useState(null);
+  const [revealed, setRevealed] = useState({}); // { [machineId]: true } -> senha visível
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [logsCount, setLogsCount] = useState(0);
-  const [systemStatus, setSystemStatus] = useState({ disk: { percent: '0%', avail: '0' }, latency: 0 });
   const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', message: '', onConfirm: null });
   const navigate = useNavigate();
 
   // Form State
   const [formData, setFormData] = useState({
-    name: '',
-    mac: '',
-    ip: '',
-    location: '',
-    rustdesk_id: '',
-    anydesk_id: '',
-    password: '',
-    serial_number: ''
+    name: '', mac: '', ip: '', location: '', company: '',
+    rustdesk_id: '', anydesk_id: '', password: '', serial_number: ''
   });
 
   useEffect(() => {
     const token = localStorage.getItem('klarke_token');
-    if (!token) {
-      navigate('/'); 
-      return;
-    }
+    if (!token) { navigate('/'); return; }
     fetchMachines();
-
-    // Polling para monitoramento ao vivo (30 segundos)
-    const interval = setInterval(fetchMachines, 30000);
-    return () => clearInterval(interval);
   }, [navigate]);
 
   useEffect(() => {
@@ -54,14 +83,11 @@ function Dashboard() {
       const qrCodeSuccessCallback = (decodedText) => {
         setIsScannerOpen(false);
         html5QrCode.stop();
-        
-        // Busca automática e abertura do modal
-        const match = machines.find(m => 
-          m.serial_number === decodedText || 
+        const match = machines.find(m =>
+          m.serial_number === decodedText ||
           m.id.toString() === decodedText ||
           m.name === decodedText
         );
-
         if (match) {
           openModal(match);
           toast.success(`Equipamento Identificado: ${match.name}`);
@@ -74,9 +100,7 @@ function Dashboard() {
       html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback);
     }
     return () => {
-      if (html5QrCode && html5QrCode.isScanning) {
-        html5QrCode.stop();
-      }
+      if (html5QrCode && html5QrCode.isScanning) html5QrCode.stop();
     };
   }, [isScannerOpen, machines]);
 
@@ -85,15 +109,6 @@ function Dashboard() {
     try {
       const response = await axios.get(API_URL, getAuthConfig());
       setMachines(response.data);
-      
-      // Busca contagem total de logs
-      const logsRes = await axios.get('/api/audit-logs', getAuthConfig()).catch(() => ({ data: [] }));
-      setLogsCount(logsRes.data?.length || 0);
-      
-      // Busca status do sistema
-      const sysRes = await axios.get('/api/system-status', getAuthConfig()).catch(() => ({ data: { disk: { percent: '0%', avail: '0' }, latency: 0 } }));
-      setSystemStatus(sysRes.data);
-
       if (manual) toast.success('Lista atualizada!');
     } catch (error) {
       console.error('Erro ao buscar máquinas:', error);
@@ -107,9 +122,12 @@ function Dashboard() {
     }
   };
 
+  // Trava o scroll do fundo enquanto qualquer modal está aberto (evita 2 barras de rolagem)
   useEffect(() => {
-    fetchMachines();
-  }, []);
+    const anyOpen = isModalOpen || isScannerOpen || confirmDialog.open;
+    document.body.style.overflow = anyOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [isModalOpen, isScannerOpen, confirmDialog.open]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -120,19 +138,15 @@ function Dashboard() {
       const parts = formattedValue.match(/.{1,2}/g);
       if (parts) formattedValue = parts.slice(0, 6).join(':');
     }
-
     if (name === 'ip') {
-      formattedValue = value.replace(/[^0-9.]/g, ''); // Apenas números e pontos
-      formattedValue = formattedValue.replace(/\.\./g, '.'); // Evita pontos duplos
+      formattedValue = value.replace(/[^0-9.]/g, '');
+      formattedValue = formattedValue.replace(/\.\./g, '.');
       const parts = formattedValue.split('.');
       if (parts.length > 4) formattedValue = parts.slice(0, 4).join('.');
     }
-
     if (name === 'anydesk_id' || name === 'rustdesk_id') {
       formattedValue = value.replace(/[^0-9]/g, '');
     }
-
-    // Tudo em maiúsculo para máquinas (exceto a senha remota)
     const finalValue = name === 'password' ? formattedValue : formattedValue.toUpperCase();
     setFormData({ ...formData, [name]: finalValue });
   };
@@ -140,10 +154,10 @@ function Dashboard() {
   const openModal = (machine = null) => {
     if (machine) {
       setEditingMachine(machine);
-      setFormData(machine);
+      setFormData({ ...machine, ip: formatIp(machine.ip) });
     } else {
       setEditingMachine(null);
-      setFormData({ name: '', mac: '', ip: '', location: '', rustdesk_id: '', anydesk_id: '', password: '', serial_number: '' });
+      setFormData({ name: '', mac: '', ip: '', location: '', company: '', rustdesk_id: '', anydesk_id: '', password: '', serial_number: '' });
     }
     setIsModalOpen(true);
   };
@@ -158,12 +172,7 @@ function Dashboard() {
     try {
       const userData = localStorage.getItem('klarke_user');
       let user = 'Desconhecido';
-      try {
-        const parsed = JSON.parse(userData);
-        user = parsed.username || userData;
-      } catch (e) {
-        user = userData || 'Desconhecido';
-      }
+      try { user = JSON.parse(userData).username || userData; } catch (e) { user = userData || 'Desconhecido'; }
 
       if (editingMachine) {
         await axios.put(`${API_URL}/${editingMachine.id}`, formData, getAuthConfig());
@@ -199,124 +208,82 @@ function Dashboard() {
     });
   };
 
-  const copyToClipboard = (text, fieldId) => {
+  // Copia um valor e sinaliza visualmente por 1.5s
+  const copyValue = (text, fieldId) => {
+    if (!text) { toast.error('Sem valor cadastrado'); return; }
     navigator.clipboard.writeText(text);
     setCopiedField(fieldId);
-    toast.success('Copiado para a área de transferência');
-    setTimeout(() => setCopiedField(null), 2000);
+    toast.success('Copiado!');
+    setTimeout(() => setCopiedField((f) => (f === fieldId ? null : f)), 1500);
   };
 
-  const copyFullData = (machine) => {
-    const text = `Nome: ${machine.name}\nSérie: ${machine.serial_number || '-'}\nIP: ${machine.ip}\nMAC: ${machine.mac}\nLocal: ${machine.location}\nAnyDesk: ${machine.anydesk_id}\nRustDesk: ${machine.rustdesk_id}\nSenha: ${machine.password}`;
-    navigator.clipboard.writeText(text);
-    toast.success('Dados completos copiados!');
-  };
+  const toggleReveal = (id) => setRevealed((r) => ({ ...r, [id]: !r[id] }));
 
-  // Etiqueta para impressora termica: papel 82x25mm, layout em DUAS COLUNAS.
-  // Coluna esquerda = nome da maquina; coluna direita = RustDesk e AnyDesk.
-  const handlePrintLabel = (machine) => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      toast.error('Permita pop-ups para imprimir a etiqueta.');
-      return;
+  // Etiqueta térmica: papel de 82x25mm com DUAS colunas (dois rótulos de ~40mm lado a lado).
+  // Mesma lógica do projeto Armazém: gera via jsPDF (mm exatos) e abre o PDF em nova aba.
+  // A mesma máquina é impressa nas duas colunas (QR + nome + RustDesk/AnyDesk).
+  const handlePrintLabel = async (machine) => {
+    // Abre a aba já (gesto do clique) pra não ser bloqueada como pop-up.
+    const win = window.open('', '_blank');
+    const name = (machine.name || 'SEM NOME').toUpperCase();
+    const rust = String(machine.rustdesk_id || '---');
+    const any = String(machine.anydesk_id || '---');
+    const qrCode = String(machine.serial_number || '').trim() || String(machine.id);
+
+    let qrDataUrl = '';
+    try { qrDataUrl = await QRCode.toDataURL(qrCode, { margin: 0, width: 240, errorCorrectionLevel: 'M' }); }
+    catch (e) { /* sem QR se falhar */ }
+
+    try {
+      const doc = new jsPDF('l', 'mm', [82, 25]);
+
+      // Desenha um rótulo (uma coluna) a partir do offset X `ox`.
+      const drawLabel = (ox) => {
+        // Nome no topo, centralizado na largura da coluna (até 2 linhas)
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        const nameLines = doc.splitTextToSize(name, 37).slice(0, 2);
+        doc.text(nameLines, ox + 19.5, 4, { align: 'center' });
+        const qy = 4 + (nameLines.length - 1) * 3.2 + 2.5;
+
+        // QR à esquerda + código embaixo
+        if (qrDataUrl) doc.addImage(qrDataUrl, 'PNG', ox + 1.5, qy, 13, 13);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(4.2);
+        doc.text(qrCode, ox + 8, qy + 15, { align: 'center', maxWidth: 15 });
+
+        // Bloco direito: RustDesk / AnyDesk
+        const tx = ox + 17;
+        let ty = qy + 1.5;
+        doc.setFontSize(4.6); doc.text('RUSTDESK', tx, ty);
+        ty += 3.2; doc.setFontSize(8); doc.text(rust, tx, ty, { maxWidth: 23 });
+        ty += 4.8; doc.setFontSize(4.6); doc.text('ANYDESK', tx, ty);
+        ty += 3.2; doc.setFontSize(8); doc.text(any, tx, ty, { maxWidth: 23 });
+      };
+
+      drawLabel(1);   // coluna esquerda
+      drawLabel(42);  // coluna direita (mesma máquina)
+
+      // Abre o PDF como blob (evita o bloqueio de CSP dos data: URLs).
+      const url = URL.createObjectURL(doc.output('blob'));
+      if (win) {
+        win.location.href = url;
+      } else {
+        // Pop-up bloqueado: baixa o arquivo como alternativa.
+        doc.save(`etiqueta-${qrCode}.pdf`);
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      toast.success('Etiqueta gerada!');
+    } catch (err) {
+      console.error('Erro ao gerar etiqueta:', err);
+      if (win) win.close();
+      toast.error('Erro ao gerar a etiqueta.');
     }
-    const esc = (s) => String(s ?? '').replace(/[<>&"]/g, (c) => (
-      { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]
-    ));
-    const name = esc(machine.name || 'SEM NOME');
-    const rust = esc(machine.rustdesk_id || '---');
-    const any = esc(machine.anydesk_id || '---');
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Etiqueta - ${name}</title>
-          <style>
-            /* Tamanho fisico do papel termico */
-            @page { size: 82mm 25mm; margin: 0; }
-            * { box-sizing: border-box; }
-            html, body { margin: 0; padding: 0; background: #fff; }
-            body {
-              font-family: Arial, Helvetica, sans-serif;
-              color: #000;
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
-            }
-            .label {
-              width: 82mm;
-              height: 25mm;
-              display: flex;
-              align-items: stretch;
-              padding: 1.5mm 2mm;
-              gap: 2mm;
-            }
-            .col-left {
-              flex: 1 1 44%;
-              display: flex;
-              flex-direction: column;
-              justify-content: center;
-              border-right: 0.4mm solid #000;
-              padding-right: 2mm;
-              min-width: 0;
-            }
-            .col-right {
-              flex: 1 1 56%;
-              display: flex;
-              flex-direction: column;
-              justify-content: center;
-              gap: 1.2mm;
-              min-width: 0;
-            }
-            .brand { font-size: 6pt; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 0.8mm; }
-            .m-name {
-              font-size: 13pt;
-              font-weight: 800;
-              text-transform: uppercase;
-              line-height: 1.02;
-              word-break: break-word;
-              overflow: hidden;
-            }
-            .field { display: flex; flex-direction: column; line-height: 1; min-width: 0; }
-            .field .k { font-size: 6pt; font-weight: 700; letter-spacing: 0.5px; }
-            .field .v {
-              font-family: 'Consolas', 'Courier New', monospace;
-              font-size: 11pt;
-              font-weight: 700;
-              line-height: 1.05;
-              word-break: break-all;
-            }
-            @media print {
-              html, body { width: 82mm; height: 25mm; }
-            }
-          </style>
-        </head>
-        <body onload="setTimeout(function(){ window.print(); window.close(); }, 250);">
-          <div class="label">
-            <div class="col-left">
-              <div class="brand">KLARKE</div>
-              <div class="m-name">${name}</div>
-            </div>
-            <div class="col-right">
-              <div class="field">
-                <span class="k">RUSTDESK</span>
-                <span class="v">${rust}</span>
-              </div>
-              <div class="field">
-                <span class="k">ANYDESK</span>
-                <span class="v">${any}</span>
-              </div>
-            </div>
-          </div>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
   };
 
   const exportToCSV = () => {
     const headers = ['ID', 'Nome', 'IP', 'MAC', 'Local', 'AnyDesk', 'RustDesk', 'Senha', 'Série', 'Criado em'];
     const csvRows = [headers.join(',')];
-    
     machines.forEach(m => {
       const row = [
         m.id,
@@ -332,9 +299,7 @@ function Dashboard() {
       ];
       csvRows.push(row.join(','));
     });
-    
-    const csvContent = csvRows.join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
@@ -347,10 +312,7 @@ function Dashboard() {
 
   const downloadRepair = async () => {
     try {
-      const response = await axios.get('/api/monitoring/repair-download', {
-        ...getAuthConfig(),
-        responseType: 'blob'
-      });
+      const response = await axios.get('/api/monitoring/repair-download', { ...getAuthConfig(), responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -364,21 +326,15 @@ function Dashboard() {
     }
   };
 
-  // Considera online se last_seen foi há menos de 5 minutos
-  const isOnline = (lastSeen) => {
-    if (!lastSeen) return false;
-    return (Date.now() - new Date(lastSeen).getTime()) < 5 * 60 * 1000;
-  };
-
-  const onlineCount = machines.filter(m => isOnline(m.last_seen)).length;
-
-  const filteredMachines = machines.filter(m => 
-    m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (m.ip && m.ip.includes(searchTerm)) ||
+  const filteredMachines = machines.filter(m =>
+    (m.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (m.ip && (m.ip.includes(searchTerm) || formatIp(m.ip).includes(searchTerm))) ||
+    (m.location && m.location.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (m.anydesk_id && m.anydesk_id.includes(searchTerm)) ||
+    (m.rustdesk_id && m.rustdesk_id.includes(searchTerm)) ||
     (m.serial_number && m.serial_number.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Lógica de Paginação
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentMachines = filteredMachines.slice(indexOfFirstItem, indexOfLastItem);
@@ -389,379 +345,241 @@ function Dashboard() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Resetar para página 1 ao buscar
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
+  useEffect(() => { setCurrentPage(1); }, [searchTerm]);
+
+  // Chip de acesso rápido: 1 clique copia. Ícone + rótulo curto. Fica verde ao copiar.
+  const Chip = ({ id, label, value, icon, secret = false, machineId }) => {
+    const isCopied = copiedField === id;
+    return (
+      <button
+        type="button"
+        className={`tile-chip ${secret ? 'secret' : ''} ${!value ? 'off' : ''} ${isCopied ? 'copied' : ''}`}
+        onClick={() => copyValue(value, id)}
+        disabled={!value}
+        title={value ? (secret ? 'Copiar senha remota' : `Copiar ${label}: ${value}`) : `${label} não cadastrado`}
+      >
+        <span className="tile-chip-ico">{isCopied ? <Check size={16} /> : icon}</span>
+        <span className="tile-chip-lbl">{isCopied ? 'copiado' : label}</span>
+      </button>
+    );
+  };
 
   return (
     <>
-      <div className="quick-stats-row-sober" style={{marginBottom: '32px'}}>
-        {/* SAÚDE GLOBAL */}
-        <div className="stat-box-industrial" style={{borderLeft: '4px solid #10b981', background: 'var(--color-surface)', backdropFilter: 'blur(8px)'}}>
-          <span className="stat-label">Saúde Global</span>
-          <div className="stat-value-row">
-            <Activity size={18} color="#10b981" />
-            <span className="stat-value">{machines.length > 0 ? Math.round((onlineCount / machines.length) * 100) : 0}%</span>
-          </div>
-          <span className="stat-desc">Sincronizado em tempo real</span>
+      <header className="mq-topbar">
+        <div>
+          <h1>Máquinas & Acessos</h1>
+          <p>{machines.length} equipamento{machines.length === 1 ? '' : 's'} cadastrado{machines.length === 1 ? '' : 's'} — clique para copiar e conectar.</p>
         </div>
-
-        {/* ÚLTIMO BACKUP */}
-        <div className="stat-box-industrial" style={{borderLeft: '4px solid var(--color-accent)', background: 'var(--color-surface)', backdropFilter: 'blur(8px)'}}>
-          <span className="stat-label">Último Backup</span>
-          <div className="stat-value-row">
-            <Database size={18} color="var(--color-accent)" />
-            <span className="stat-value">STATUS: OK</span>
-          </div>
-          <div style={{marginTop: '8px'}}>
-             <span className="action-chip" style={{display: 'inline-flex', background: 'var(--color-accent)', color: 'white', border: 'none'}} onClick={() => navigate('/api/backup')}>
-               BAIXAR CÓPIA AGORA
-             </span>
-          </div>
-        </div>
-
-        {/* ATIVIDADE LOGS */}
-        <div className="stat-box-industrial" style={{borderLeft: '4px solid #f59e0b', background: 'var(--color-surface)', backdropFilter: 'blur(8px)'}}>
-          <span className="stat-label">Atividade Logs</span>
-          <div className="stat-value-row">
-            <RotateCw size={18} color="#f59e0b" />
-            <span className="stat-value">{logsCount}</span>
-          </div>
-          <span className="stat-desc">Total de eventos registrados</span>
-        </div>
-
-        {/* ESTADO DA REDE */}
-        <div className="stat-box-industrial" style={{borderLeft: '4px solid #10b981', background: 'var(--color-surface)', backdropFilter: 'blur(8px)'}}>
-          <span className="stat-label">Estado da Rede</span>
-          <div className="stat-value-row">
-            <Globe size={18} color="#10b981" />
-            <span className="stat-value">{systemStatus?.latency > 0 ? 'ESTÁVEL' : 'OFFLINE'}</span>
-          </div>
-          <span className="stat-desc">Latência média: {systemStatus?.latency || 0}ms</span>
-        </div>
-
-        {/* ARMAZENAMENTO */}
-        <div className="stat-box-industrial" style={{borderLeft: '4px solid #ef4444', background: 'var(--color-surface)', backdropFilter: 'blur(8px)'}}>
-          <span className="stat-label">Armazenamento do Servidor</span>
-          <div className="stat-value-row">
-            <Database size={18} color="#ef4444" />
-            <span className="stat-value">{systemStatus?.disk?.percent || '0%'}</span>
-          </div>
-          <span className="stat-desc">{systemStatus?.disk?.avail || '0'} disponíveis no HD</span>
-        </div>
-      </div>
-
-      <header style={{marginBottom: '32px', paddingBottom: '16px', borderBottom: '1px solid rgba(0,0,0,0.05)'}}>
-        <h1 style={{fontSize: '2rem', color: 'var(--color-primary)', marginBottom: '8px'}}>Gerenciamento de Máquinas</h1>
-        <p style={{color: 'var(--color-text-muted)', margin: 0}}>Controle de inventário e acessos remotos.</p>
       </header>
+
       <div className="search-wrapper">
         <div className="search-container">
           <Search className="search-icon" size={20} />
-          <input 
-            type="text" 
-            className="search-input" 
-            placeholder="Buscar por nome, IP ou série..." 
+          <input
+            type="text"
+            className="search-input"
+            placeholder="Buscar nome, local, IP, AnyDesk, RustDesk ou série..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            autoFocus
           />
         </div>
         <div className="action-buttons-group">
-          <button 
-            className={`btn-refresh-sober ${isRefreshing ? 'spinning' : ''}`}
-            onClick={() => fetchMachines(true)}
-            title="Atualizar Lista"
-            disabled={isRefreshing}
-          >
+          <button className={`btn-refresh-sober ${isRefreshing ? 'spinning' : ''}`} onClick={() => fetchMachines(true)} title="Atualizar Lista" disabled={isRefreshing}>
             <RotateCw size={20} />
           </button>
-          <button 
-            className="btn-action-square" 
-            style={{background: 'var(--color-accent)'}}
-            onClick={() => setIsScannerOpen(true)}
-            title="Escanear QR Code"
-          >
+          <button className="btn-action-square" style={{ background: 'var(--color-accent)' }} onClick={() => setIsScannerOpen(true)} title="Escanear QR Code">
             <QrCode size={20} color="white" />
           </button>
-          <button 
-            className="btn-action-square" 
-            style={{background: '#334155'}} 
-            onClick={downloadRepair} 
-            title="Baixar Klarke Repair"
-          >
+          <button className="btn-action-square" style={{ background: '#334155' }} onClick={downloadRepair} title="Baixar Klarke Repair">
             <Wrench size={20} />
           </button>
-          <button 
-            className="btn-action-square" 
-            onClick={exportToCSV} 
-            title="Exportar CSV"
-          >
+          <button className="btn-action-square" onClick={exportToCSV} title="Exportar CSV">
             <Download size={20} />
           </button>
         </div>
       </div>
 
-      {isScannerOpen && (
-        <div className="modal-overlay" style={{zIndex: 3000}}>
-          <div className="modal-content" style={{maxWidth: '400px', textAlign: 'center'}}>
-             <div className="modal-header">
-                <h2 className="modal-title">Escanear QR Code</h2>
-                <button className="close-btn" onClick={() => setIsScannerOpen(false)}>
-                  <X size={24} />
-                </button>
-              </div>
-              <div id="reader" style={{width: '100%', minHeight: '300px', background: '#000', borderRadius: '8px', overflow: 'hidden'}}></div>
-              <p style={{marginTop: '16px', fontSize: '0.9rem', color: 'var(--color-text-muted)'}}>
-                Aponte a câmera para o QR Code da etiqueta.
-              </p>
+      {isScannerOpen && createPortal((
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '400px', textAlign: 'center' }}>
+            <div className="modal-header">
+              <h2 className="modal-title">Escanear QR Code</h2>
+              <button className="close-btn" onClick={() => setIsScannerOpen(false)}><X size={24} /></button>
+            </div>
+            <div id="reader" style={{ width: '100%', minHeight: '300px', background: '#000', borderRadius: '8px', overflow: 'hidden' }}></div>
+            <p style={{ marginTop: '16px', fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>Aponte a câmera para o QR Code da etiqueta.</p>
           </div>
+        </div>
+      ), document.body)}
+
+      {machines.length === 0 ? (
+        <div className="empty-state">
+          <Monitor className="empty-icon" size={64} />
+          <h2>Nenhuma máquina encontrada</h2>
+          <p>Adicione sua primeira máquina para começar o gerenciamento.</p>
+        </div>
+      ) : filteredMachines.length === 0 ? (
+        <div className="empty-state">
+          <Search className="empty-icon" size={64} />
+          <h2>Nada encontrado para “{searchTerm}”</h2>
+          <p>Tente outro nome, IP ou ID de acesso remoto.</p>
+        </div>
+      ) : (
+        <div className="tile-grid">
+          {currentMachines.map(machine => (
+            <div key={machine.id} className="tile">
+              <div className="tile-head">
+                <div className="tile-id">
+                  <span className="tile-dot"><Monitor size={13} /></span>
+                  <span className="tile-name" title={machine.name}>{machine.name || 'Sem nome'}</span>
+                </div>
+                <div className="tile-acts">
+                  <button className="tile-act" title="Editar" onClick={() => openModal(machine)}><Edit size={13} /></button>
+                  <button className="tile-act" title="Etiqueta" onClick={() => handlePrintLabel(machine)}><Printer size={13} /></button>
+                  <button className="tile-act danger" title="Excluir" onClick={() => deleteMachine(machine.id)}><Trash2 size={13} /></button>
+                </div>
+              </div>
+
+              {(() => {
+                const badge = companyBadge(machine.company, machine.location);
+                return (
+                  <span className="tile-loc">
+                    {badge && <img src={badge.src} alt={badge.label} title={badge.label} className="tile-company-badge" />}
+                    <MapPin size={11} /> {machine.location || 'Sem local'}
+                  </span>
+                );
+              })()}
+              <div className="tile-meta">
+                {machine.ip && (
+                  <button className="tile-line" onClick={() => copyValue(formatIp(machine.ip), `ip-${machine.id}`)} title={`Copiar IP: ${formatIp(machine.ip)}`}>
+                    <span className="tile-line-k">IP</span>
+                    <span className="tile-line-v">{formatIp(machine.ip)}</span>
+                    {copiedField === `ip-${machine.id}` ? <Check size={11} /> : <Copy size={11} className="tile-line-ic" />}
+                  </button>
+                )}
+                {machine.mac && (
+                  <button className="tile-line" onClick={() => copyValue(machine.mac, `mac-${machine.id}`)} title={`Copiar MAC: ${machine.mac}`}>
+                    <span className="tile-line-k">MAC</span>
+                    <span className="tile-line-v">{machine.mac}</span>
+                    {copiedField === `mac-${machine.id}` ? <Check size={11} /> : <Copy size={11} className="tile-line-ic" />}
+                  </button>
+                )}
+              </div>
+
+              <div className="tile-chips">
+                <Chip id={`ad-${machine.id}`} label="AnyDesk" value={machine.anydesk_id} icon={<img src="/anydesk.svg" alt="" className="tile-chip-img" />} />
+                <Chip id={`rd-${machine.id}`} label="RustDesk" value={machine.rustdesk_id} icon={<img src="/rustdesk.png" alt="" className="tile-chip-img" />} />
+                <Chip id={`pw-${machine.id}`} label="Senha" value={machine.password} secret icon={<KeyRound size={16} />} />
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
-        {machines.length === 0 ? (
-          <div className="empty-state">
-            <Monitor className="empty-icon" size={64} />
-            <h2>Nenhuma máquina encontrada</h2>
-            <p>Adicione sua primeira máquina para começar o gerenciamento.</p>
-          </div>
-        ) : (
-          <div className="machines-grid">
-            {currentMachines.map(machine => (
-              <div key={machine.id} className="machine-card" onClick={() => openModal(machine)}>
-                <div className="machine-header">
-                <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
-                  <div 
-                    title={isOnline(machine.last_seen) ? 'Online' : 'Offline'}
-                    style={{
-                      width: '12px', 
-                      height: '12px', 
-                      borderRadius: '50%', 
-                      background: isOnline(machine.last_seen) ? '#10b981' : '#ef4444'
-                    }} 
-                  />
-                  <div>
-                    <span className="machine-title" style={{display: 'block'}}>{machine.name || 'Máquina sem nome'}</span>
-                    <span style={{fontSize: '0.75rem', color: 'var(--color-text-muted)'}}>
-                      {machine.created_at ? new Date(machine.created_at).toLocaleString() : ''}
-                    </span>
-                  </div>
-                </div>
-                <div className="card-actions-wrapper">
-                  <span className="machine-location">
-                    <MapPin size={12} style={{display: 'inline', marginRight: 4}} />
-                    {machine.location || 'Sem local'}
-                  </span>
-                  
-                  <div className="actions-group utility">
-                    <button className="action-chip" title="Copiar Tudo" onClick={(e) => { e.stopPropagation(); copyFullData(machine); }}>
-                      <Clipboard size={14} /> <span>COPIAR</span>
-                    </button>
-                    <button className="action-chip" title="Imprimir Etiqueta" onClick={(e) => { e.stopPropagation(); handlePrintLabel(machine); }}>
-                      <Printer size={14} /> <span>ETIQUETA</span>
-                    </button>
-                  </div>
+      {totalPages > 1 && (
+        <div className="pagination-industrial">
+          <button disabled={currentPage === 1} onClick={() => paginate(currentPage - 1)} className="page-btn">Anterior</button>
+          <div className="page-info">Página <span>{currentPage}</span> de {totalPages}</div>
+          <button disabled={currentPage === totalPages} onClick={() => paginate(currentPage + 1)} className="page-btn">Próxima</button>
+        </div>
+      )}
 
-                  <div className="actions-separator"></div>
+      <button className="fab" onClick={() => openModal()} title="Nova máquina"><Plus size={24} /></button>
 
-                  <div className="actions-group management">
-                    <button className="action-chip edit" title="Editar" onClick={(e) => { e.stopPropagation(); openModal(machine); }}>
-                      <Edit size={14} />
-                    </button>
-                    <button className="action-chip delete" title="Excluir" onClick={(e) => { e.stopPropagation(); deleteMachine(machine.id); }}>
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-                
-                <div className="machine-details-grid">
-                  <div className="detail-item">
-                    <span className="detail-label">IP Address</span>
-                    <span className="detail-value">
-                      {machine.ip || '-'}
-                      {machine.ip && (
-                        <button className="copy-btn" onClick={(e) => { e.stopPropagation(); copyToClipboard(machine.ip, `ip-${machine.id}`); }}>
-                          {copiedField === `ip-${machine.id}` ? <Check size={14} color="#2ecc71" /> : <Copy size={14} />}
-                        </button>
-                      )}
-                    </span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="detail-label">AnyDesk</span>
-                    <span className="detail-value">
-                      {machine.anydesk_id || '-'}
-                      {machine.anydesk_id && (
-                        <button className="copy-btn" onClick={(e) => { e.stopPropagation(); copyToClipboard(machine.anydesk_id, `ad-${machine.id}`); }}>
-                          {copiedField === `ad-${machine.id}` ? <Check size={14} color="#2ecc71" /> : <Copy size={14} />}
-                        </button>
-                      )}
-                    </span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="detail-label">RustDesk</span>
-                    <span className="detail-value">
-                      {machine.rustdesk_id || '-'}
-                      {machine.rustdesk_id && (
-                        <button className="copy-btn" onClick={(e) => { e.stopPropagation(); copyToClipboard(machine.rustdesk_id, `rd-${machine.id}`); }}>
-                          {copiedField === `rd-${machine.id}` ? <Check size={14} color="#2ecc71" /> : <Copy size={14} />}
-                        </button>
-                      )}
-                    </span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="detail-label">Nº Série</span>
-                    <span className="detail-value">
-                      {machine.serial_number || '-'}
-                      {machine.serial_number && (
-                        <button className="copy-btn" onClick={(e) => { e.stopPropagation(); copyToClipboard(machine.serial_number, `sn-${machine.id}`); }}>
-                          {copiedField === `sn-${machine.id}` ? <Check size={14} color="#2ecc71" /> : <Copy size={14} />}
-                        </button>
-                      )}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Controles de Paginação */}
-        {totalPages > 1 && (
-          <div className="pagination-industrial">
-            <button 
-              disabled={currentPage === 1}
-              onClick={() => paginate(currentPage - 1)}
-              className="page-btn"
-            >
-              Anterior
-            </button>
-            <div className="page-info">
-              Página <span>{currentPage}</span> de {totalPages}
+      {isModalOpen && createPortal((
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal-content modal-compact" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="modal-title">{editingMachine ? 'Editar Máquina' : 'Nova Máquina'}</h2>
+              <button className="close-btn" onClick={closeModal}><X size={24} /></button>
             </div>
-            <button 
-              disabled={currentPage === totalPages}
-              onClick={() => paginate(currentPage + 1)}
-              className="page-btn"
-            >
-              Próxima
-            </button>
-          </div>
-        )}
 
-        <button className="fab" onClick={() => openModal()}>
-          <Plus size={24} />
-        </button>
-
-        {isModalOpen && (
-          <div className="modal-overlay" onClick={closeModal}>
-            <div className="modal-content" onClick={e => e.stopPropagation()}>
-              <div className="modal-header">
-                <h2 className="modal-title">{editingMachine ? 'Editar Máquina' : 'Nova Máquina'}</h2>
-                <button className="close-btn" onClick={closeModal}>
-                  <X size={24} />
-                </button>
+            <form onSubmit={saveMachine}>
+              {editingMachine && (
+                <div className="audit-strip">
+                  <span>Cadastrado por <b>{cleanCreatedBy(editingMachine.created_by)}</b></span>
+                  {editingMachine.created_at && <span>· {new Date((editingMachine.created_at || '').replace(' ', 'T') + 'Z').toLocaleDateString()}</span>}
+                </div>
+              )}
+              <div className="form-group">
+                <label className="form-label">Nome da Máquina</label>
+                <input required type="text" className="form-input" name="name" value={formData.name} onChange={handleInputChange} placeholder="Ex: PC RECEPÇÃO" style={{ textTransform: 'uppercase' }} />
               </div>
-              
-              <form onSubmit={saveMachine}>
-                {editingMachine && (
-                  <div style={{marginBottom: '20px', padding: '12px', background: 'rgba(0,0,0,0.02)', border: '1px solid var(--color-border)', borderRadius: '4px'}}>
-                    <div style={{fontSize: '0.7rem', color: 'var(--color-text-muted)', marginBottom: '4px'}}>AUDITORIA DE CADASTRO</div>
-                    <div style={{fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--color-primary)'}}>
-                      POR: {editingMachine.created_by || 'Sistema'}
-                    </div>
-                    <div style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>
-                      EM: {new Date((editingMachine.created_at || '').replace(' ', 'T') + 'Z').toLocaleString()}
-                    </div>
-                  </div>
-                )}
-                {editingMachine && formData.serial_number && (
-                  <div className="qr-container">
-                    <img 
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(formData.serial_number)}`} 
-                      alt="QR Code do Equipamento"
-                    />
-                    <p className="qr-label">QR Code de Identificação</p>
-                  </div>
-                )}
-                <div className="form-group">
-                  <label className="form-label">Nome da Máquina</label>
-                  <input required type="text" className="form-input" name="name" value={formData.name} onChange={handleInputChange} placeholder="Ex: PC RECEPÇÃO" style={{textTransform: 'uppercase'}} />
+              <div className="machine-details-grid-form">
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Empresa</label>
+                  <select className="form-input" name="company" value={formData.company || ''} onChange={handleInputChange}>
+                    <option value="">— Selecione —</option>
+                    {COMPANY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
                 </div>
-
-                <div className="form-group">
-                  <label className="form-label">Número de Série / Patrimônio</label>
-                  <input type="text" className="form-input" name="serial_number" value={formData.serial_number} onChange={handleInputChange} placeholder="Ex: K001" style={{textTransform: 'uppercase'}} />
-                </div>
-                
-                <div className="machine-details-grid-form">
-                  <div className="form-group" style={{marginBottom: 0}}>
-                    <label className="form-label">IP</label>
-                    <input type="text" className="form-input" name="ip" value={formData.ip} onChange={handleInputChange} placeholder="192.168.0.X" style={{textTransform: 'uppercase'}} />
-                  </div>
-                  <div className="form-group" style={{marginBottom: 0}}>
-                    <label className="form-label">MAC Address</label>
-                    <input type="text" className="form-input" name="mac" value={formData.mac} onChange={handleInputChange} placeholder="00:00:00:00:00:00" style={{textTransform: 'uppercase'}} />
-                  </div>
-                </div>
-
-                <div className="form-group">
+                <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label">Localização / Setor</label>
-                  <input type="text" className="form-input" name="location" value={formData.location} onChange={handleInputChange} placeholder="Ex: MATRIZ - RH" style={{textTransform: 'uppercase'}} />
+                  <input type="text" className="form-input" name="location" value={formData.location} onChange={handleInputChange} placeholder="Ex: MATRIZ - RH" style={{ textTransform: 'uppercase' }} />
                 </div>
-
-                <div className="machine-details-grid-form">
-                  <div className="form-group" style={{marginBottom: 0}}>
-                    <label className="form-label">AnyDesk ID</label>
-                    <input type="text" className="form-input" name="anydesk_id" value={formData.anydesk_id} onChange={handleInputChange} placeholder="123 456 789" style={{textTransform: 'uppercase'}} />
-                  </div>
-                  <div className="form-group" style={{marginBottom: 0}}>
-                    <label className="form-label">RustDesk ID</label>
-                    <input type="text" className="form-input" name="rustdesk_id" value={formData.rustdesk_id} onChange={handleInputChange} placeholder="123 456 789" style={{textTransform: 'uppercase'}} />
-                  </div>
+              </div>
+              <div className="machine-details-grid-form">
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Nº de Série / Patrimônio</label>
+                  <input type="text" className="form-input" name="serial_number" value={formData.serial_number} onChange={handleInputChange} placeholder="Ex: K001" style={{ textTransform: 'uppercase' }} />
                 </div>
-
-                <div className="form-group">
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">IP</label>
+                  <input type="text" className="form-input" name="ip" value={formData.ip} onChange={handleInputChange} placeholder="192.168.0.X" style={{ textTransform: 'uppercase' }} />
+                </div>
+              </div>
+              <div className="machine-details-grid-form">
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">MAC Address</label>
+                  <input type="text" className="form-input" name="mac" value={formData.mac} onChange={handleInputChange} placeholder="00:00:00:00:00:00" style={{ textTransform: 'uppercase' }} />
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label">Senha de Acesso Remoto</label>
-                  <input type="text" className="form-input" name="password" value={formData.password} onChange={handleInputChange} placeholder="SENHA" style={{textTransform: 'uppercase'}} />
+                  <input type="text" className="form-input" name="password" value={formData.password} onChange={handleInputChange} placeholder="Senha" />
                 </div>
+              </div>
+              <div className="machine-details-grid-form">
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">AnyDesk ID</label>
+                  <input type="text" className="form-input" name="anydesk_id" value={formData.anydesk_id} onChange={handleInputChange} placeholder="123 456 789" style={{ textTransform: 'uppercase' }} />
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">RustDesk ID</label>
+                  <input type="text" className="form-input" name="rustdesk_id" value={formData.rustdesk_id} onChange={handleInputChange} placeholder="123 456 789" style={{ textTransform: 'uppercase' }} />
+                </div>
+              </div>
 
-                <div style={{display: 'grid', gridTemplateColumns: editingMachine ? '1fr 1fr' : '1fr', gap: '10px', marginTop: '20px'}}>
-                  <button type="submit" className="btn btn-primary" style={{marginTop: 0}}>
-                    {editingMachine ? 'SALVAR' : 'ADICIONAR'}
-                  </button>
-                  {editingMachine && (
-                    <button type="button" className="btn" style={{backgroundColor: '#64748b', color: 'white', marginTop: 0}} onClick={() => handlePrintLabel(editingMachine)}>
-                      <Printer size={18} style={{marginRight: '8px'}} /> ETIQUETA
-                    </button>
-                  )}
-                </div>
-                
+              <div style={{ display: 'grid', gridTemplateColumns: editingMachine ? '1fr 1fr' : '1fr', gap: '10px', marginTop: '16px' }}>
+                <button type="submit" className="btn btn-primary" style={{ marginTop: 0 }}>{editingMachine ? 'SALVAR' : 'ADICIONAR'}</button>
                 {editingMachine && (
-                  <button type="button" className="btn btn-danger" style={{marginTop: '10px'}} onClick={() => deleteMachine(editingMachine.id)}>
-                    <Trash2 size={18} style={{marginRight: '8px'}} /> EXCLUIR EQUIPAMENTO
+                  <button type="button" className="btn" style={{ backgroundColor: '#64748b', color: 'white', marginTop: 0 }} onClick={() => handlePrintLabel(editingMachine)}>
+                    <Printer size={18} style={{ marginRight: '8px' }} /> ETIQUETA
                   </button>
                 )}
-              </form>
-            </div>
-          </div>
-        )}
-        {confirmDialog.open && (
-          <div className="confirm-modal-overlay" onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}>
-            <div className="confirm-modal-content" onClick={e => e.stopPropagation()}>
-              <h3 className="confirm-modal-title">{confirmDialog.title}</h3>
-              <p className="confirm-modal-text">{confirmDialog.message}</p>
-              <div className="confirm-modal-actions">
-                <button className="btn-confirm-cancel" onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}>
-                  CANCELAR
-                </button>
-                <button className="btn-confirm-danger" onClick={confirmDialog.onConfirm}>
-                  CONFIRMAR EXCLUSÃO
-                </button>
               </div>
+              {editingMachine && (
+                <button type="button" className="btn btn-danger" style={{ marginTop: '10px' }} onClick={() => deleteMachine(editingMachine.id)}>
+                  <Trash2 size={18} style={{ marginRight: '8px' }} /> EXCLUIR EQUIPAMENTO
+                </button>
+              )}
+            </form>
+          </div>
+        </div>
+      ), document.body)}
+      {confirmDialog.open && createPortal((
+        <div className="confirm-modal-overlay" onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}>
+          <div className="confirm-modal-content" onClick={e => e.stopPropagation()}>
+            <h3 className="confirm-modal-title">{confirmDialog.title}</h3>
+            <p className="confirm-modal-text">{confirmDialog.message}</p>
+            <div className="confirm-modal-actions">
+              <button className="btn-confirm-cancel" onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}>CANCELAR</button>
+              <button className="btn-confirm-danger" onClick={confirmDialog.onConfirm}>CONFIRMAR EXCLUSÃO</button>
             </div>
           </div>
-        )}
+        </div>
+      ), document.body)}
     </>
   );
 }
