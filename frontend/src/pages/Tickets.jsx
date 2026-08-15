@@ -33,6 +33,9 @@ function Tickets() {
   const [commentImageName, setCommentImageName] = useState('');
   const [isSendingComment, setIsSendingComment] = useState(false);
 
+  // Estado para Modal de Imagem
+  const [modalImage, setModalImage] = useState(null);
+
   const fetchTickets = async (manual = false) => {
     if (manual) setIsRefreshing(true);
     try {
@@ -565,17 +568,17 @@ function Tickets() {
                     }}>
                       {photos.map((photo, index) => (
                         <div key={index} style={{ border: '1px solid var(--color-border)', padding: '6px', background: 'var(--color-surface)', textAlign: 'center', minWidth: '120px', flex: '1 1 120px', maxWidth: '200px' }}>
-                          <a href={resolveUploadUrl(photo)} target="_blank" rel="noopener noreferrer">
+                          <div onClick={() => setModalImage(resolveUploadUrl(photo))} style={{ cursor: 'zoom-in' }}>
                             <img
                               src={resolveUploadUrl(photo)}
                               alt={`Evidência ${index + 1}`}
-                              style={{ width: '100%', height: '120px', objectFit: 'cover', cursor: 'zoom-in', borderRadius: '4px' }}
+                              style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '4px' }}
                             />
-                          </a>
+                          </div>
                           <div style={{ marginTop: '6px', fontSize: '0.75rem' }}>
-                            <a href={resolveUploadUrl(photo)} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'var(--color-accent)', fontWeight: '600' }}>
+                            <button onClick={() => setModalImage(resolveUploadUrl(photo))} style={{ background: 'none', border: 'none', color: 'var(--color-accent)', fontWeight: '600', cursor: 'pointer' }}>
                               Ver foto completa
-                            </a>
+                            </button>
                           </div>
                         </div>
                       ))}
@@ -617,9 +620,9 @@ function Tickets() {
                             <p style={{ fontSize: '0.9rem', margin: 0, whiteSpace: 'pre-wrap', color: 'var(--color-text)' }}>{c.text}</p>
                             {c.image && (
                               <div style={{ marginTop: '8px', border: '1px solid var(--color-border)', borderRadius: '0px', overflow: 'hidden', maxWidth: '120px' }}>
-                                <a href={resolveUploadUrl(c.image)} target="_blank" rel="noopener noreferrer">
+                                <div onClick={() => setModalImage(resolveUploadUrl(c.image))} style={{ cursor: 'zoom-in' }}>
                                   <img src={resolveUploadUrl(c.image)} alt="Anexo do comentário" style={{ width: '100%', height: '80px', objectFit: 'cover' }} />
-                                </a>
+                                </div>
                               </div>
                             )}
                           </div>
@@ -763,6 +766,26 @@ function Tickets() {
                 CONFIRMAR
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Imagem */}
+      {modalImage && (
+        <div className="confirm-modal-overlay" onClick={() => setModalImage(null)} style={{ zIndex: 9999, padding: '20px' }}>
+          <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <button 
+              onClick={() => setModalImage(null)}
+              style={{ position: 'absolute', top: '-40px', right: '0', background: 'none', border: 'none', color: '#fff', fontSize: '1.5rem', cursor: 'pointer', fontWeight: 'bold' }}
+            >
+              FECHAR ✕
+            </button>
+            <img 
+              src={modalImage} 
+              alt="Visualização Ampliada" 
+              style={{ maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain', border: '2px solid var(--color-border)', borderRadius: '4px', background: '#000' }} 
+              onClick={e => e.stopPropagation()} 
+            />
           </div>
         </div>
       )}
