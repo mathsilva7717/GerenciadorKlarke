@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Monitor, Camera, Router as RouterIcon, ListTodo, ChevronRight, Activity, ShieldCheck, Database, RotateCw, FileText, Phone, Package, Key, MessageSquare, Wrench, Trash2, Plus, UserSquare2, KeyRound, Link2 } from 'lucide-react';
+import { Monitor, Camera, Router as RouterIcon, ListTodo, ChevronRight, Activity, ShieldCheck, Database, RotateCw, Phone, Package, Key, MessageSquare, Wrench, Trash2, Plus, Clock, Cpu, Server, MapPin, Mail, FileText, Cloud, AppWindow, Link2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getAuthConfig } from '../utils/auth';
 
@@ -221,239 +221,86 @@ function Home() {
             </button>
           </div>
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', marginBottom: '32px' }}>
-          {/* Card 1: Saúde Global (medida pelo ping dos locais públicos) */}
-          <div className="stat-box-industrial" style={{ flex: '1 1 260px', minHeight: '180px', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '20px', padding: '24px', position: 'relative' }}>
-            {/* Botão discreto para gerenciar os IPs públicos monitorados */}
-            <button
-              onClick={() => setIsSitesModalOpen(true)}
-              style={{ position: 'absolute', top: '12px', right: '12px', background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              title="Gerenciar IPs públicos (ping)"
-            >
-              <Plus size={16} />
-            </button>
-
-            <div style={{ position: 'relative', width: '90px', height: '90px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <svg width="90" height="90" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
-                <circle cx="50" cy="50" r="40" stroke="rgba(255,255,255,0.05)" strokeWidth="8" fill="transparent" />
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="40"
-                  stroke={healthPct === 100 ? '#10b981' : (healthPct === 0 ? '#ef4444' : '#f59e0b')}
-                  strokeWidth="8"
-                  fill="transparent"
-                  strokeDasharray={2 * Math.PI * 40}
-                  strokeDashoffset={2 * Math.PI * 40 * (1 - sitesOnline / (sitesTotal || 1))}
-                  strokeLinecap="round"
-                  style={{ transition: 'stroke-dashoffset 0.5s ease-out' }}
-                />
-              </svg>
-              <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--color-text)' }}>
-                  {healthPct}%
-                </span>
-              </div>
+        <div className="home-kpis">
+          {/* Saúde Global (ping de locais públicos) */}
+          <div className="kpi">
+            <div className="kpi-top">
+              <span className="kpi-label">Saúde Global</span>
+              <button className="kpi-btn" onClick={() => setIsSitesModalOpen(true)} title="Gerenciar IPs públicos (ping)"><Plus size={14} /></button>
             </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <span className="stat-label" style={{ letterSpacing: '1px', whiteSpace: 'nowrap' }}>SAÚDE GLOBAL</span>
-              <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                <strong>{sitesOnline}</strong> de <strong>{sitesTotal}</strong> locais online.
-              </span>
-              <span style={{ fontSize: '0.7rem', color: healthPct === 100 ? '#10b981' : '#f59e0b', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600', marginTop: '6px' }}>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: healthPct === 100 ? '#10b981' : '#f59e0b', display: 'inline-block' }}></span>
-                {sitesTotal === 0 ? 'Nenhum local monitorado' : (healthPct === 100 ? 'Locais operando normalmente' : 'Instabilidade em algum local')}
-              </span>
+            <span className="kpi-val" style={{ color: healthPct === 100 ? '#10b981' : (healthPct === 0 ? '#ef4444' : '#f59e0b') }}>{healthPct}%</span>
+            <div className="kpi-bar">
+              <div className="kpi-bar-fill" style={{ width: `${healthPct}%`, background: healthPct === 100 ? '#10b981' : (healthPct === 0 ? '#ef4444' : '#f59e0b') }}></div>
             </div>
+            <span className="kpi-sub">{sitesTotal === 0 ? 'Nenhum local monitorado' : `${sitesOnline} de ${sitesTotal} locais online`}</span>
           </div>
 
-          {/* Card 2: Armazenamento do Servidor */}
-          <div className="stat-box-industrial" style={{ flex: '1 1 260px', minHeight: '180px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '12px', padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', width: '100%' }}>
-              <span className="stat-label" style={{ whiteSpace: 'nowrap' }}>DISCO DO SERVIDOR</span>
-              <span style={{ fontSize: '1.15rem', fontWeight: '800', color: parseInt(systemStatus?.disk?.percent) > 90 ? '#ef4444' : 'var(--color-text)', whiteSpace: 'nowrap' }}>
-                {systemStatus?.disk?.percent || '0%'}
-              </span>
+          {/* Disco do servidor */}
+          <div className="kpi">
+            <div className="kpi-top"><span className="kpi-label">Disco do servidor</span></div>
+            <span className="kpi-val" style={{ color: parseInt(systemStatus?.disk?.percent) > 90 ? '#ef4444' : 'var(--color-text)' }}>{systemStatus?.disk?.percent || '0%'}</span>
+            <div className="kpi-bar">
+              <div className="kpi-bar-fill" style={{ width: systemStatus?.disk?.percent || '0%', background: parseInt(systemStatus?.disk?.percent) > 90 ? '#ef4444' : '#3b82f6' }}></div>
             </div>
-            
-            {/* Progress Bar Container */}
-            <div style={{ width: '100%', height: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '5px', overflow: 'hidden', border: '1px solid var(--color-border)' }}>
-              <div style={{ 
-                width: systemStatus?.disk?.percent || '0%', 
-                height: '100%', 
-                background: parseInt(systemStatus?.disk?.percent) > 90 ? 'linear-gradient(90deg, #ef4444, #f43f5e)' : 'linear-gradient(90deg, #38bdf8, #3b82f6)',
-                transition: 'width 0.5s ease-out'
-              }}></div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', background: 'rgba(0,0,0,0.04)', border: '1px solid var(--color-border)', padding: '7px 10px' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)', fontWeight: '700', whiteSpace: 'nowrap' }}>
-                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: parseInt(systemStatus?.disk?.percent) > 90 ? '#ef4444' : '#3b82f6', flexShrink: 0 }}></span>
-                  Em uso
-                </span>
-                <span style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--color-text)' }}>{systemStatus?.disk?.percent || '0%'}</span>
-              </div>
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', background: 'rgba(0,0,0,0.04)', border: '1px solid var(--color-border)', padding: '7px 10px' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)', fontWeight: '700', whiteSpace: 'nowrap' }}>
-                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', flexShrink: 0 }}></span>
-                  Livre
-                </span>
-                <span style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--color-text)' }}>{formatDiskSize(systemStatus?.disk?.avail)}</span>
-              </div>
-            </div>
-            
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
-              <button
-                onClick={downloadBackup}
-                style={{ background: 'none', border: 'none', color: 'var(--color-accent)', fontSize: '0.75rem', cursor: 'pointer', padding: 0, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}
-              >
-                <Database size={12} />
-                BAIXAR BACKUP
-              </button>
-            </div>
+            <span className="kpi-sub">
+              {formatDiskSize(systemStatus?.disk?.avail)} livres
+              <button className="kpi-link" onClick={downloadBackup}><Database size={11} /> backup</button>
+            </span>
           </div>
 
-          {/* Card 2.5: Memória do Servidor (VPS) */}
-          <div className="stat-box-industrial" style={{ flex: '1 1 260px', minHeight: '180px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '12px', padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', width: '100%' }}>
-              <span className="stat-label" style={{ whiteSpace: 'nowrap' }}>MEMÓRIA DA VPS</span>
-              <span style={{ fontSize: '1.15rem', fontWeight: '800', color: parseInt(systemStatus?.memory?.percent) > 90 ? '#ef4444' : 'var(--color-text)', whiteSpace: 'nowrap' }}>
-                {systemStatus?.memory?.percent || '0%'}
-              </span>
+          {/* Memória da VPS */}
+          <div className="kpi">
+            <div className="kpi-top"><span className="kpi-label">Memória da VPS</span></div>
+            <span className="kpi-val" style={{ color: parseInt(systemStatus?.memory?.percent) > 90 ? '#ef4444' : 'var(--color-text)' }}>{systemStatus?.memory?.percent || '0%'}</span>
+            <div className="kpi-bar">
+              <div className="kpi-bar-fill" style={{ width: systemStatus?.memory?.percent || '0%', background: parseInt(systemStatus?.memory?.percent) > 90 ? '#ef4444' : '#a855f7' }}></div>
             </div>
-
-            <div style={{ width: '100%', height: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '5px', overflow: 'hidden', border: '1px solid var(--color-border)' }}>
-              <div style={{
-                width: systemStatus?.memory?.percent || '0%',
-                height: '100%',
-                background: parseInt(systemStatus?.memory?.percent) > 90 ? 'linear-gradient(90deg, #ef4444, #f43f5e)' : 'linear-gradient(90deg, #a855f7, #d946ef)',
-                transition: 'width 0.5s ease-out'
-              }}></div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', background: 'rgba(0,0,0,0.04)', border: '1px solid var(--color-border)', padding: '7px 10px' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)', fontWeight: '700', whiteSpace: 'nowrap' }}>
-                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: parseInt(systemStatus?.memory?.percent) > 90 ? '#ef4444' : '#a855f7', flexShrink: 0 }}></span>
-                  Usada
-                </span>
-                <span style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--color-text)' }}>{formatBytes(systemStatus?.memory?.used)}</span>
-              </div>
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', background: 'rgba(0,0,0,0.04)', border: '1px solid var(--color-border)', padding: '7px 10px' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)', fontWeight: '700', whiteSpace: 'nowrap' }}>
-                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', flexShrink: 0 }}></span>
-                  Livre
-                </span>
-                <span style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--color-text)' }}>{formatBytes(systemStatus?.memory?.free)}</span>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
-               <Activity size={12} color="var(--color-text-muted)" />
-               <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 'bold' }}>UPTIME: {systemStatus?.uptime?.days || 0}d {systemStatus?.uptime?.hours % 24 || 0}h</span>
-            </div>
+            <span className="kpi-sub">{formatBytes(systemStatus?.memory?.used)} / {formatBytes(systemStatus?.memory?.free)} livre</span>
           </div>
 
-          {/* Card 3: Suporte Flow */}
-          <div className="stat-box-industrial" onClick={() => navigate('/control/tickets')} style={{ flex: '1 1 260px', minHeight: '180px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '12px', padding: '24px', cursor: 'pointer' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', width: '100%' }}>
-              <span className="stat-label" style={{ whiteSpace: 'nowrap' }}>SUPORTE FLOW</span>
-              <span style={{ fontSize: '1.15rem', fontWeight: '800', color: stats.ticketsPending > 0 ? '#ef4444' : '#10b981', whiteSpace: 'nowrap' }}>
-                {stats.ticketsPending + stats.ticketsActive} ABERTOS
-              </span>
+          {/* CPU da VPS */}
+          <div className="kpi">
+            <div className="kpi-top"><span className="kpi-label">CPU da VPS</span><Cpu size={14} color="var(--color-text-muted)" /></div>
+            <span className="kpi-val" style={{ color: parseInt(systemStatus?.cpu?.percent) > 90 ? '#ef4444' : 'var(--color-text)' }}>{systemStatus?.cpu?.percent || '0%'}</span>
+            <div className="kpi-bar">
+              <div className="kpi-bar-fill" style={{ width: systemStatus?.cpu?.percent || '0%', background: parseInt(systemStatus?.cpu?.percent) > 90 ? '#ef4444' : (parseInt(systemStatus?.cpu?.percent) > 70 ? '#f59e0b' : '#10b981') }}></div>
             </div>
-
-            {/* Stacked Progress Bar */}
-            {(() => {
-              const total = stats.ticketsPending + stats.ticketsActive + stats.ticketsResolved || 1;
-              const pctPending = (stats.ticketsPending / total) * 100;
-              const pctActive = (stats.ticketsActive / total) * 100;
-              const pctResolved = (stats.ticketsResolved / total) * 100;
-
-              return (
-                <div style={{ width: '100%', height: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '5px', overflow: 'hidden', display: 'flex', border: '1px solid var(--color-border)' }}>
-                  {stats.ticketsPending > 0 && <div style={{ width: `${pctPending}%`, height: '100%', backgroundColor: '#ef4444', transition: 'width 0.5s ease-out' }} title="Pendente"></div>}
-                  {stats.ticketsActive > 0 && <div style={{ width: `${pctActive}%`, height: '100%', backgroundColor: 'var(--color-accent)', transition: 'width 0.5s ease-out' }} title="Em Atendimento"></div>}
-                  {stats.ticketsResolved > 0 && <div style={{ width: `${pctResolved}%`, height: '100%', backgroundColor: '#10b981', transition: 'width 0.5s ease-out' }} title="Resolvido"></div>}
-                </div>
-              );
-            })()}
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', textAlign: 'center', marginTop: '4px' }}>
-              <div style={{ background: 'rgba(0,0,0,0.05)', padding: '6px', border: '1px solid var(--color-border)' }}>
-                <div style={{ fontSize: '0.65rem', color: '#ef4444', fontWeight: 'bold' }}>PENDENTES</div>
-                <div style={{ fontSize: '0.95rem', fontWeight: '800', color: '#ef4444' }}>{stats.ticketsPending}</div>
-              </div>
-              <div style={{ background: 'rgba(0,0,0,0.05)', padding: '6px', border: '1px solid var(--color-border)' }}>
-                <div style={{ fontSize: '0.65rem', color: 'var(--color-accent)', fontWeight: 'bold' }}>EM CURSO</div>
-                <div style={{ fontSize: '0.95rem', fontWeight: '800', color: 'var(--color-accent)' }}>{stats.ticketsActive}</div>
-              </div>
-              <div style={{ background: 'rgba(0,0,0,0.05)', padding: '6px', border: '1px solid var(--color-border)' }}>
-                <div style={{ fontSize: '0.65rem', color: '#10b981', fontWeight: 'bold' }}>RESOLVIDOS</div>
-                <div style={{ fontSize: '0.95rem', fontWeight: '800', color: '#10b981' }}>{stats.ticketsResolved}</div>
-              </div>
-            </div>
+            <span className="kpi-sub">{systemStatus?.cpu?.cores || 0} núcleos · load {systemStatus?.cpu?.load ?? 0}</span>
           </div>
 
-          {/* Card 4: Rede e Auditoria */}
-          <div className="stat-box-industrial" style={{ flex: '1 1 260px', minHeight: '180px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '12px', padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', width: '100%' }}>
-              <span className="stat-label" style={{ whiteSpace: 'nowrap' }}>REDE E AUDITORIA</span>
-              <span style={{ fontSize: '1rem', fontWeight: '800', color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-                <span style={{ display: 'flex', alignItems: 'flex-end', gap: '2px', height: '14px' }}>
-                  <span style={{ width: '3px', height: '4px', backgroundColor: '#10b981' }}></span>
-                  <span style={{ width: '3px', height: '7px', backgroundColor: '#10b981' }}></span>
-                  <span style={{ width: '3px', height: '10px', backgroundColor: '#10b981' }}></span>
-                  <span style={{ width: '3px', height: '14px', backgroundColor: '#10b981' }}></span>
-                </span>
-                {systemStatus?.latency || 0}ms
-              </span>
-            </div>
+          {/* Uptime */}
+          <div className="kpi kpi-live kpi-scan">
+            <div className="kpi-top"><span className="kpi-label">Uptime da VPS</span><Clock size={14} color="var(--color-text-muted)" /></div>
+            <span className="kpi-val">{systemStatus?.uptime?.days || 0}<small>d</small> {systemStatus?.uptime?.hours % 24 || 0}<small>h</small></span>
+            <span className="kpi-sub">Servidor ativo há {systemStatus?.uptime?.days || 0} dias</span>
+          </div>
 
-            <div style={{ display: 'flex', alignItems: 'stretch', gap: '20px', width: '100%', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(0,0,0,0.05)', padding: '12px 16px', border: '1px solid var(--color-border)' }}>
-                <Activity size={18} color="#10b981" />
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Histórico Geral</span>
-                  <span style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--color-text)' }}>
-                    {stats.logsTotal} eventos gravados
-                  </span>
-                </div>
-              </div>
+          {/* Suporte Flow */}
+          <div className="kpi clickable kpi-live kpi-dots" onClick={() => navigate('/control/tickets')}>
+            <div className="kpi-top"><span className="kpi-label">Suporte Flow</span><ChevronRight size={14} color="var(--color-text-muted)" /></div>
+            <span className="kpi-val" style={{ color: stats.ticketsPending > 0 ? '#ef4444' : '#10b981' }}>{stats.ticketsPending + stats.ticketsActive}</span>
+            <span className="kpi-sub">
+              <span style={{ color: '#ef4444', fontWeight: 700 }}>{stats.ticketsPending} pend.</span> ·
+              <span style={{ color: 'var(--color-accent)', fontWeight: 700 }}> {stats.ticketsActive} curso</span> ·
+              <span style={{ color: '#10b981', fontWeight: 700 }}> {stats.ticketsResolved} ok</span>
+            </span>
+          </div>
 
-              <div style={{ flex: '1 1 320px', display: 'flex', alignItems: 'center', borderLeft: '1px solid var(--color-border)', paddingLeft: '20px', minWidth: 0 }}>
-                <svg viewBox="0 0 320 64" preserveAspectRatio="none" style={{ width: '100%', height: '64px', overflow: 'visible' }} aria-hidden="true">
-                  <defs>
-                    <linearGradient id="netGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#10b981" stopOpacity="0.22" />
-                      <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-                  <path d="M0,44 L24,40 L48,46 L72,30 L96,36 L120,18 L144,30 L168,38 L192,22 L216,32 L240,26 L264,40 L288,20 L312,30 L320,28 V64 H0 Z" fill="url(#netGrad)" />
-                  <polyline points="0,44 24,40 48,46 72,30 96,36 120,18 144,30 168,38 192,22 216,32 240,26 264,40 288,20 312,30 320,28" fill="none" stroke="#10b981" strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
-                  <circle cx="320" cy="28" r="3.5" fill="#10b981">
-                    <animate attributeName="opacity" values="1;0.15;1" dur="1.6s" repeatCount="indefinite" />
-                    <animate attributeName="r" values="3.5;5;3.5" dur="1.6s" repeatCount="indefinite" />
-                  </circle>
-                </svg>
-              </div>
-            </div>
+          {/* Rede / Latência */}
+          <div className="kpi kpi-live kpi-radar">
+            <div className="kpi-top"><span className="kpi-label">Rede</span><Activity size={14} color="#10b981" /></div>
+            <span className="kpi-val" style={{ color: '#10b981' }}>{systemStatus?.latency || 0}<small>ms</small></span>
+            <span className="kpi-sub">{stats.logsTotal} eventos · {(systemStatus?.latency || 0) > 0 ? 'estável' : 'sem medição'}</span>
+          </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginTop: '4px', gap: '12px', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Status da Rede</span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.68rem', fontWeight: '700', color: '#10b981', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.28)', padding: '3px 10px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }}></span>
-                  Estável
-                </span>
-              </div>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.68rem', fontWeight: '700', color: '#10b981', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.28)', padding: '3px 10px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>
-                <span className="pulse-dot" style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }}></span>
-                Online
-              </span>
+          {/* Máquinas online */}
+          <div className="kpi clickable" onClick={() => navigate('/control/machines')}>
+            <div className="kpi-top"><span className="kpi-label">Máquinas</span><Monitor size={14} color="var(--color-text-muted)" /></div>
+            <span className="kpi-val" style={{ color: stats.machinesOnline > 0 ? '#10b981' : 'var(--color-text)' }}>{stats.machinesOnline}<small>/{stats.machines}</small></span>
+            <div className="kpi-bar">
+              <div className="kpi-bar-fill" style={{ width: `${stats.machines ? Math.round((stats.machinesOnline / stats.machines) * 100) : 0}%`, background: '#10b981' }}></div>
             </div>
+            <span className="kpi-sub">{stats.machinesOnline} online · {stats.machines} cadastradas</span>
           </div>
         </div>
 
@@ -468,8 +315,8 @@ function Home() {
             <h3>Máquinas e Acessos</h3>
             <p>Gerenciamento de PCs e acessos remotos.</p>
             <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
-              <div style={{width: '6px', height: '6px', borderRadius: '50%', background: '#10b981'}}></div>
-              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>{stats.machinesOnline} Online agora</span>
+              <Monitor size={12} color="#64748b" />
+              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>{stats.machines} equipamentos cadastrados</span>
             </div>
           </div>
           <div className="industrial-footer"><span>gerenciar</span><ChevronRight size={14} /></div>
@@ -484,8 +331,8 @@ function Home() {
             <h3>Sistema de Câmeras</h3>
             <p>Visualização de snapshots e IPs de CFTV.</p>
             <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
-              <div style={{width: '6px', height: '6px', borderRadius: '50%', background: '#10b981'}}></div>
-              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>{stats.camerasOnline} Com imagem ativa</span>
+              <Camera size={12} color="#64748b" />
+              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>{stats.cameras} câmeras cadastradas</span>
             </div>
           </div>
           <div className="industrial-footer"><span>ver câmeras</span><ChevronRight size={14} /></div>
@@ -500,8 +347,8 @@ function Home() {
             <h3>Rede e Links</h3>
             <p>Status de modems, switches e operadoras.</p>
             <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
-              <div style={{width: '6px', height: '6px', borderRadius: '50%', background: '#10b981'}}></div>
-              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>{stats.networkOnline} estáveis</span>
+              <RouterIcon size={12} color="#64748b" />
+              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>{stats.network} dispositivos cadastrados</span>
             </div>
           </div>
           <div className="industrial-footer"><span>infraestrutura de ti</span><ChevronRight size={14} /></div>
@@ -523,7 +370,6 @@ function Home() {
           <div className="industrial-footer"><span>tarefas</span><ChevronRight size={14} /></div>
         </div>
 
-
         <div className="card-industrial" onClick={() => navigate('/control/audit-logs')}>
           <div className="card-industrial-header">
             <div className="industrial-icon"><ShieldCheck size={22} /></div>
@@ -538,70 +384,6 @@ function Home() {
             </div>
           </div>
           <div className="industrial-footer"><span>auditoria</span><ChevronRight size={14} /></div>
-        </div>
-
-        <div className="card-industrial" onClick={() => navigate('/control/documents')}>
-          <div className="card-industrial-header">
-            <div className="industrial-icon"><FileText size={22} /></div>
-            <div className="industrial-badge">{stats.docs || 0}</div>
-          </div>
-          <div className="industrial-body">
-            <h3>Documentos</h3>
-            <p>Contratos, notas fiscais, manuais e procedimentos.</p>
-            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
-              <Database size={12} color="#64748b" />
-              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Central de documentação</span>
-            </div>
-          </div>
-          <div className="industrial-footer"><span>ver acervo</span><ChevronRight size={14} /></div>
-        </div>
-
-        <div className="card-industrial" onClick={() => navigate('/control/entra')}>
-          <div className="card-industrial-header">
-            <div className="industrial-icon"><UserSquare2 size={22} /></div>
-            <div className="industrial-badge">{stats.entra || 0}</div>
-          </div>
-          <div className="industrial-body">
-            <h3>Entra ID</h3>
-            <p>Usuários, grupos e dispositivos do Microsoft Entra ID.</p>
-            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
-              <Activity size={12} color="#64748b" />
-              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Identidade e acesso</span>
-            </div>
-          </div>
-          <div className="industrial-footer"><span>gerenciar</span><ChevronRight size={14} /></div>
-        </div>
-
-        <div className="card-industrial" onClick={() => navigate('/control/licenses')}>
-          <div className="card-industrial-header">
-            <div className="industrial-icon"><KeyRound size={22} /></div>
-            <div className="industrial-badge">{stats.licenses || 0}</div>
-          </div>
-          <div className="industrial-body">
-            <h3>Licenças & Apps</h3>
-            <p>Controle de licenças de software e validades.</p>
-            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
-              <Database size={12} color="#64748b" />
-              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Software gerenciado</span>
-            </div>
-          </div>
-          <div className="industrial-footer"><span>ver licenças</span><ChevronRight size={14} /></div>
-        </div>
-
-        <div className="card-industrial" onClick={() => navigate('/control/links')}>
-          <div className="card-industrial-header">
-            <div className="industrial-icon"><Link2 size={22} /></div>
-            <div className="industrial-badge">{stats.links || 0}</div>
-          </div>
-          <div className="industrial-body">
-            <h3>Links</h3>
-            <p>Atalhos para painéis, portais e ferramentas.</p>
-            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
-              <Activity size={12} color="#64748b" />
-              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Acesso rápido</span>
-            </div>
-          </div>
-          <div className="industrial-footer"><span>ver links</span><ChevronRight size={14} /></div>
         </div>
 
         <div className="card-industrial" onClick={() => navigate('/control/voip')}>
@@ -651,7 +433,117 @@ function Home() {
           </div>
           <div className="industrial-footer"><span>ACESSAR COFRE</span><ChevronRight size={14} /></div>
         </div>
+
+        <div className="card-industrial" onClick={() => navigate('/control/vps-monitor')}>
+          <div className="card-industrial-header">
+            <div className="industrial-icon"><Server size={22} /></div>
+          </div>
+          <div className="industrial-body">
+            <h3>Monitor da VPS</h3>
+            <p>CPU, RAM, apps do PM2 e alertas do servidor.</p>
+            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <Activity size={12} color="#64748b" />
+              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Servidor em tempo real</span>
+            </div>
+          </div>
+          <div className="industrial-footer"><span>monitorar</span><ChevronRight size={14} /></div>
+        </div>
+
+        <div className="card-industrial" onClick={() => navigate('/control/network-map')}>
+          <div className="card-industrial-header">
+            <div className="industrial-icon"><MapPin size={22} /></div>
+          </div>
+          <div className="industrial-body">
+            <h3>Mapa de Rede</h3>
+            <p>Topologia e status dos links e dispositivos.</p>
+            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <RouterIcon size={12} color="#64748b" />
+              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Visão da rede</span>
+            </div>
+          </div>
+          <div className="industrial-footer"><span>abrir mapa</span><ChevronRight size={14} /></div>
+        </div>
+
+        <div className="card-industrial" onClick={() => navigate('/control/mail')}>
+          <div className="card-industrial-header">
+            <div className="industrial-icon"><Mail size={22} /></div>
+          </div>
+          <div className="industrial-body">
+            <h3>E-mail</h3>
+            <p>Caixa e gestão de mensagens.</p>
+            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <Mail size={12} color="#64748b" />
+              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Comunicação</span>
+            </div>
+          </div>
+          <div className="industrial-footer"><span>abrir</span><ChevronRight size={14} /></div>
+        </div>
+
+        <div className="card-industrial" onClick={() => navigate('/control/documents')}>
+          <div className="card-industrial-header">
+            <div className="industrial-icon"><FileText size={22} /></div>
+            <div className="industrial-badge">{stats.docs || 0}</div>
+          </div>
+          <div className="industrial-body">
+            <h3>Documentos</h3>
+            <p>Base de arquivos e procedimentos.</p>
+            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <FileText size={12} color="#64748b" />
+              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Base de conhecimento</span>
+            </div>
+          </div>
+          <div className="industrial-footer"><span>acessar</span><ChevronRight size={14} /></div>
+        </div>
+
+        <div className="card-industrial" onClick={() => navigate('/control/entra-id')}>
+          <div className="card-industrial-header">
+            <div className="industrial-icon"><Cloud size={22} /></div>
+            <div className="industrial-badge">{stats.entra || 0}</div>
+          </div>
+          <div className="industrial-body">
+            <h3>Entra ID</h3>
+            <p>Identidades e usuários na nuvem.</p>
+            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <Cloud size={12} color="#64748b" />
+              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Azure / Microsoft 365</span>
+            </div>
+          </div>
+          <div className="industrial-footer"><span>gerenciar</span><ChevronRight size={14} /></div>
+        </div>
+
+        <div className="card-industrial" onClick={() => navigate('/control/licenses')}>
+          <div className="card-industrial-header">
+            <div className="industrial-icon"><AppWindow size={22} /></div>
+            <div className="industrial-badge">{stats.licenses || 0}</div>
+          </div>
+          <div className="industrial-body">
+            <h3>Licenças & Apps</h3>
+            <p>Controle de licenças e assinaturas.</p>
+            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <AppWindow size={12} color="#64748b" />
+              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Softwares e chaves</span>
+            </div>
+          </div>
+          <div className="industrial-footer"><span>ver licenças</span><ChevronRight size={14} /></div>
+        </div>
+
+        <div className="card-industrial" onClick={() => navigate('/control/links')}>
+          <div className="card-industrial-header">
+            <div className="industrial-icon"><Link2 size={22} /></div>
+            <div className="industrial-badge">{stats.links || 0}</div>
+          </div>
+          <div className="industrial-body">
+            <h3>Links Úteis</h3>
+            <p>Atalhos e portais internos.</p>
+            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <Link2 size={12} color="#64748b" />
+              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Acesso rápido</span>
+            </div>
+          </div>
+          <div className="industrial-footer"><span>abrir links</span><ChevronRight size={14} /></div>
+        </div>
       </div>
+
 
       {/* SEÇÃO DE CHAMADOS RECENTES */}
       <div style={{ marginTop: '32px', padding: '24px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '0px' }}>
