@@ -348,6 +348,12 @@ db.exec(`
     file_name TEXT, file_path TEXT, mime TEXT, size INTEGER,
     created_by TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+  CREATE TABLE IF NOT EXISTS images (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT, category TEXT, company TEXT, description TEXT,
+    file_name TEXT, file_path TEXT, mime TEXT, size INTEGER,
+    created_by TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
   CREATE TABLE IF NOT EXISTS entra_objects (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     display_name TEXT, object_type TEXT, upn TEXT, license TEXT, password TEXT,
@@ -1061,6 +1067,64 @@ app.delete('/api/documents/:id', authenticate, (req, res) => {
       if (err2) return res.status(500).json({ error: err2.message });
       logAction(req, 'EXCLUSÃO', `Removeu documento: ${row ? row.title : req.params.id}`);
       res.json({ message: 'Documento removido' });
+    });
+  });
+});
+
+// --- REPOSITÓRIO DE IMAGENS ---
+app.get('/api/images', authenticate, (req, res) => {
+  db.all('SELECT * FROM images ORDER BY created_at DESC', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+app.post('/api/images', authenticate, (req, res) => {
+  const { title, category, company, description, fileData, fileName } = req.body;
+  if (!title) return res.status(400).json({ error: 'Informe o título' });
+  if (!fileData) return res.status(400).json({ error: 'Selecione uma imagem' });
+  const m = /^data:([^;]+);base64,(.+)$/.exec(fileData);
+  if (!m) return res.status(400).json({ error: 'Arquivo inválido' });
+  const mime = m[1];
+  if (!/^image\//.test(mime)) return res.status(400).json({ error: 'Envie apenas arquivos de imagem' });
+  const buf = Buffer.from(m[2], 'base64');
+  const size = buf.length;
+  const file_name = fileName || 'imagem';
+  const safe = file_name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-120);
+  const file_path = `img-${Date.now()}-${safe}`;
+  try { fs.writeFileSync(path.join(__dirname, 'uploads', file_path), buf); }
+  catch (e) { return res.status(500).json({ error: 'Falha ao salvar a imagem' }); }
+  db.run(
+    `INSERT INTO images (title, category, company, description, file_name, file_path, mime, size, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [title, category || 'Outros', company || null, description || null, file_name, file_path, mime, size, (req.user && req.user.username) || null],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      logAction(req, 'IMAGENS', `Adicionou imagem: ${title}`);
+      res.status(201).json({ id: this.lastID, file_path });
+    }
+  );
+});
+app.put('/api/images/:id', authenticate, (req, res) => {
+  const { title, category, company, description } = req.body;
+  db.run(
+    'UPDATE images SET title = ?, category = ?, company = ?, description = ? WHERE id = ?',
+    [title, category || 'Outros', company || null, description || null, req.params.id],
+    function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      logAction(req, 'EDIÇÃO', `Alterou imagem: ${title}`);
+      res.json({ message: 'Imagem atualizada' });
+    }
+  );
+});
+app.delete('/api/images/:id', authenticate, (req, res) => {
+  db.get('SELECT title, file_path FROM images WHERE id = ?', [req.params.id], (err, row) => {
+    if (row && row.file_path) {
+      try { fs.unlinkSync(path.join(__dirname, 'uploads', row.file_path)); } catch (e) { /* ignora */ }
+    }
+    db.run('DELETE FROM images WHERE id = ?', [req.params.id], (err2) => {
+      if (err2) return res.status(500).json({ error: err2.message });
+      logAction(req, 'EXCLUSÃO', `Removeu imagem: ${row ? row.title : req.params.id}`);
+      res.json({ message: 'Imagem removida' });
     });
   });
 });

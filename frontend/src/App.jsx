@@ -23,6 +23,7 @@ import EntraId from './pages/EntraId';
 import Licenses from './pages/Licenses';
 import Links from './pages/Links';
 import VPSMonitor from './pages/VPSMonitor';
+import Images from './pages/Images';
 
 // Interceptor global para injetar headers em todas as requisições
 axios.interceptors.request.use(
@@ -117,6 +118,7 @@ function App() {
             <Route path="entra-id" element={<EntraId />} />
             <Route path="licenses" element={<Licenses />} />
             <Route path="links" element={<Links />} />
+            <Route path="images" element={<Images />} />
             <Route path="vps-monitor" element={<AdminRoute><VPSMonitor /></AdminRoute>} />
             <Route path="voip" element={<Voip />} />
             <Route path="inventory" element={<Inventory />} />

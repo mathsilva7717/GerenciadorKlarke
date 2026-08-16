@@ -4,7 +4,7 @@ import {
   LogOut, Monitor, Camera, Router as RouterIcon, Moon, Sun,
   ListTodo, ArrowLeft, Home, History, FileText,
   ChevronDown, Phone, Package, Key, MapPin, Mail, MessageSquare,
-  BookOpen, Cloud, AppWindow, Link2, Server
+  BookOpen, Cloud, AppWindow, Link2, Server, Image as ImageIcon
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -71,6 +71,7 @@ function Navbar() {
         { icon: <Cloud size={16} />, label: 'Entra ID', path: '/control/entra-id' },
         { icon: <AppWindow size={16} />, label: 'Licenças & Apps', path: '/control/licenses' },
         { icon: <Link2 size={16} />, label: 'Links', path: '/control/links' },
+        { icon: <ImageIcon size={16} />, label: 'Repositório de Imagens', path: '/control/images' },
       ]
     }
   ];

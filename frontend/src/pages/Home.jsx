@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Monitor, Camera, Router as RouterIcon, ListTodo, ChevronRight, Activity, ShieldCheck, Database, RotateCw, Phone, Package, Key, MessageSquare, Wrench, Trash2, Plus, Clock, Cpu, Server, MapPin, Mail, FileText, Cloud, AppWindow, Link2 } from 'lucide-react';
+import { Monitor, Camera, Router as RouterIcon, ListTodo, ChevronRight, Activity, ShieldCheck, Database, RotateCw, Phone, Package, Key, MessageSquare, Wrench, Trash2, Plus, Clock, Cpu, Server, MapPin, Mail, FileText, Cloud, AppWindow, Link2, Image as ImageIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getAuthConfig } from '../utils/auth';
 
@@ -73,7 +73,7 @@ function Home() {
   const fetchStats = async (manual = false) => {
     if (manual) setIsRefreshing(true);
     try {
-      const [m, c, n, t, logs, creds, inv, voip, docs, ticketsRes, sys, entra, licenses, links] = await Promise.all([
+      const [m, c, n, t, logs, creds, inv, voip, docs, ticketsRes, sys, entra, licenses, links, images] = await Promise.all([
         axios.get('/api/machines', getAuthConfig()).catch(() => ({ data: [] })),
         axios.get('/api/cameras', getAuthConfig()).catch(() => ({ data: [] })),
         axios.get('/api/network-devices', getAuthConfig()).catch(() => ({ data: [] })),
@@ -87,7 +87,8 @@ function Home() {
         axios.get('/api/system-status', getAuthConfig()).catch(() => ({ data: { disk: { percent: '0%', avail: '0' }, latency: 0, sites: [], sitesOnline: 0, sitesTotal: 0 } })),
         axios.get('/api/entra', getAuthConfig()).catch(() => ({ data: [] })),
         axios.get('/api/licenses', getAuthConfig()).catch(() => ({ data: [] })),
-        axios.get('/api/links', getAuthConfig()).catch(() => ({ data: [] }))
+        axios.get('/api/links', getAuthConfig()).catch(() => ({ data: [] })),
+        axios.get('/api/images', getAuthConfig()).catch(() => ({ data: [] }))
       ]);
       
       const allTickets = ticketsRes.data || [];
@@ -113,6 +114,7 @@ function Home() {
         entra: entra.data?.length || 0,
         licenses: licenses.data?.length || 0,
         links: links.data?.length || 0,
+        images: images.data?.length || 0,
         ticketsPending: pendingTickets.length,
         ticketsActive: activeTickets.length,
         ticketsResolved: resolvedTickets.length
@@ -434,51 +436,6 @@ function Home() {
           <div className="industrial-footer"><span>ACESSAR COFRE</span><ChevronRight size={14} /></div>
         </div>
 
-        <div className="card-industrial" onClick={() => navigate('/control/vps-monitor')}>
-          <div className="card-industrial-header">
-            <div className="industrial-icon"><Server size={22} /></div>
-          </div>
-          <div className="industrial-body">
-            <h3>Monitor da VPS</h3>
-            <p>CPU, RAM, apps do PM2 e alertas do servidor.</p>
-            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
-              <Activity size={12} color="#64748b" />
-              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Servidor em tempo real</span>
-            </div>
-          </div>
-          <div className="industrial-footer"><span>monitorar</span><ChevronRight size={14} /></div>
-        </div>
-
-        <div className="card-industrial" onClick={() => navigate('/control/network-map')}>
-          <div className="card-industrial-header">
-            <div className="industrial-icon"><MapPin size={22} /></div>
-          </div>
-          <div className="industrial-body">
-            <h3>Mapa de Rede</h3>
-            <p>Topologia e status dos links e dispositivos.</p>
-            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
-              <RouterIcon size={12} color="#64748b" />
-              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Visão da rede</span>
-            </div>
-          </div>
-          <div className="industrial-footer"><span>abrir mapa</span><ChevronRight size={14} /></div>
-        </div>
-
-        <div className="card-industrial" onClick={() => navigate('/control/mail')}>
-          <div className="card-industrial-header">
-            <div className="industrial-icon"><Mail size={22} /></div>
-          </div>
-          <div className="industrial-body">
-            <h3>E-mail</h3>
-            <p>Caixa e gestão de mensagens.</p>
-            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
-              <Mail size={12} color="#64748b" />
-              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Comunicação</span>
-            </div>
-          </div>
-          <div className="industrial-footer"><span>abrir</span><ChevronRight size={14} /></div>
-        </div>
-
         <div className="card-industrial" onClick={() => navigate('/control/documents')}>
           <div className="card-industrial-header">
             <div className="industrial-icon"><FileText size={22} /></div>
@@ -541,6 +498,22 @@ function Home() {
             </div>
           </div>
           <div className="industrial-footer"><span>abrir links</span><ChevronRight size={14} /></div>
+        </div>
+
+        <div className="card-industrial" onClick={() => navigate('/control/images')}>
+          <div className="card-industrial-header">
+            <div className="industrial-icon"><ImageIcon size={22} /></div>
+            <div className="industrial-badge">{stats.images || 0}</div>
+          </div>
+          <div className="industrial-body">
+            <h3>Repositório de Imagens</h3>
+            <p>Fotos de fachadas, racks e evidências de campo.</p>
+            <div style={{marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <ImageIcon size={12} color="#64748b" />
+              <span style={{fontSize: '0.7rem', color: 'var(--color-text-muted)'}}>Acervo visual</span>
+            </div>
+          </div>
+          <div className="industrial-footer"><span>ver imagens</span><ChevronRight size={14} /></div>
         </div>
       </div>
 
