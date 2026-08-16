@@ -28,7 +28,8 @@ const genPassword = (len = 16) => {
   for (let i = 0; i < len; i++) out += chars[arr[i] % chars.length];
   return out;
 };
-const strengthOf = (pw = '') => {
+const strengthOf = (pw) => {
+  pw = pw || '';
   let s = 0;
   if (pw.length >= 8) s++;
   if (pw.length >= 12) s++;
@@ -73,7 +74,7 @@ function EntraId() {
   const set = (k, v) => setFormData(f => ({ ...f, [k]: v }));
   const openModal = (it = null) => {
     setShowFormPass(false);
-    if (it) { setEditing(it); setFormData({ ...emptyForm, ...it, mfa: !!it.mfa }); }
+    if (it) { setEditing(it); setFormData({ ...emptyForm, ...it, password: it.password || '', mfa: !!it.mfa }); }
     else { setEditing(null); setFormData(emptyForm); }
     setIsModalOpen(true);
   };
