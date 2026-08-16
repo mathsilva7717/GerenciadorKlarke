@@ -13,6 +13,7 @@
   <link rel="manifest" href="/flow.webmanifest">
   <link rel="shortcut icon" href="logo.png" type="image/png">
   <link rel="icon" href="logo.png" type="image/png">
+  <link rel="apple-touch-icon" href="/fav.png">
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -71,7 +72,7 @@
       flex-direction: column;
       flex: 1;
       position: relative;
-      padding-bottom: 90px; /* Space for Bottom Bar */
+      padding-bottom: calc(24px + env(safe-area-inset-bottom));
     }
 
     /* Ambient Background Glow */
@@ -195,7 +196,7 @@
       padding: 14px 16px;
       border-radius: var(--radius);
       font-family: inherit;
-      font-size: 0.95rem;
+      font-size: 16px;
       outline: none;
       transition: var(--transition);
     }
