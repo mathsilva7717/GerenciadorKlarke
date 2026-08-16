@@ -393,5 +393,6 @@ module.exports = {
   startVpsAlerts,
   setActiveUsersProvider,
   telegramConfigured: isConfigured,
+  escTelegram: esc,
   alertConfig: { hours: ALERT_HOURS, utcOffset: UTC_OFFSET, diskLimit: DISK_LIMIT, memLimit: MEM_LIMIT, swapLimit: SWAP_LIMIT, loadLimit: LOAD_LIMIT, sslDays: SSL_ALERT_DAYS },
 };

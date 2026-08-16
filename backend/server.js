@@ -1452,6 +1452,44 @@ app.get('/api/monitoring/repair-download', (req, res) => {
 // --- ROTAS DE SUPORTE (TICKETS) ---
 
 // Criar chamado (Público para qualquer dispositivo da rede da empresa)
+const CATEGORIA_CHAMADO_INFO = {
+  'Hardware': { icone: '🖥️', label: 'Computador / Impressora' },
+  'Software': { icone: '🪟', label: 'Sistema / Programas' },
+  'Rede/Internet': { icone: '📶', label: 'Internet / Rede' },
+  'Telefonia/VoIP': { icone: '📞', label: 'Telefone / VoIP' },
+};
+
+// Notifica o grupo do Telegram (não bloqueia a resposta ao usuário se falhar)
+function notificarNovoChamadoTelegram({ id, requester, title, category, description }) {
+  try {
+    const esc = vpsMonitor.escTelegram;
+    const [nome, ...resto] = String(requester).split(' - ');
+    const setor = resto.join(' - ');
+    const catInfo = CATEGORIA_CHAMADO_INFO[category] || { icone: '🔧', label: category };
+    const agora = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+
+    const linhas = [
+      `🎫 *Novo Chamado — #${id}*`,
+      '',
+      `👤 *Solicitante:* ${esc(nome)}`,
+    ];
+    if (setor) linhas.push(`🏬 *Setor/Loja:* ${esc(setor)}`);
+    linhas.push(
+      `${catInfo.icone} *Categoria:* ${esc(catInfo.label)}`,
+      `📝 *Assunto:* ${esc(title)}`,
+      '',
+      `💬 ${esc(description)}`,
+      '',
+      `🕒 ${esc(agora)}`,
+      `🔗 https://dashboard.klarke.com.br/control/tickets`
+    );
+
+    vpsMonitor.sendTelegram(linhas.join('\n')).catch(e => console.error('Erro ao notificar chamado no Telegram:', e.message));
+  } catch (e) {
+    console.error('Erro ao montar notificação de chamado no Telegram:', e.message);
+  }
+}
+
 app.post('/api/tickets', (req, res) => {
   const { requester, title, category, priority, description, image } = req.body;
   if (!requester || !title || !category || !priority || !description) {
@@ -1498,7 +1536,9 @@ app.post('/api/tickets', (req, res) => {
           [requester, 'CHAMADO_ABERTO', `Abriu chamado #${this.lastID}: ${title}`]
         );
       } catch (e) {}
-      
+
+      notificarNovoChamadoTelegram({ id: this.lastID, requester, title, category, description });
+
       res.status(201).json({ id: this.lastID, message: 'Chamado aberto com sucesso!' });
     }
   );
