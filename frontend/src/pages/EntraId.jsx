@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import axios from 'axios';
 import {
   Cloud, Plus, Search, Edit, Trash2, X, Copy, Check, ShieldCheck, ShieldAlert,
-  User, Users, Laptop, AppWindow, AtSign, BadgeCheck
+  User, Users, Laptop, AppWindow, AtSign, BadgeCheck, Eye, EyeOff, RefreshCw
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getAuthConfig } from '../utils/auth';
@@ -20,7 +20,32 @@ const statusStyle = (s) => s === 'Bloqueado'
   ? { color: '#ef4444', bg: 'rgba(239,68,68,0.14)' }
   : { color: '#10b981', bg: 'rgba(16,185,129,0.14)' };
 
-const emptyForm = { display_name: '', object_type: 'Usuário', upn: '', license: '', mfa: false, status: 'Ativo', department: '', company: '', notes: '' };
+const genPassword = (len = 16) => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%&*?';
+  const arr = new Uint32Array(len);
+  window.crypto.getRandomValues(arr);
+  let out = '';
+  for (let i = 0; i < len; i++) out += chars[arr[i] % chars.length];
+  return out;
+};
+const strengthOf = (pw = '') => {
+  let s = 0;
+  if (pw.length >= 8) s++;
+  if (pw.length >= 12) s++;
+  if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) s++;
+  if (/\d/.test(pw)) s++;
+  if (/[^A-Za-z0-9]/.test(pw)) s++;
+  return Math.min(s, 4);
+};
+const STRENGTH = [
+  { label: 'Muito fraca', color: '#ef4444' },
+  { label: 'Fraca', color: '#ef4444' },
+  { label: 'Média', color: '#f59e0b' },
+  { label: 'Boa', color: '#3b82f6' },
+  { label: 'Forte', color: '#10b981' },
+];
+
+const emptyForm = { display_name: '', object_type: 'Usuário', upn: '', license: '', password: '', mfa: false, status: 'Ativo', department: '', company: '', notes: '' };
 
 function EntraId() {
   const [items, setItems] = useState([]);
@@ -31,6 +56,8 @@ function EntraId() {
   const [formData, setFormData] = useState(emptyForm);
   const [confirmDialog, setConfirmDialog] = useState({ open: false, id: null });
   const [copiedId, setCopiedId] = useState(null);
+  const [showPassMap, setShowPassMap] = useState({});
+  const [showFormPass, setShowFormPass] = useState(false);
 
   const fetchItems = async () => {
     try { const res = await axios.get('/api/entra', getAuthConfig()); setItems(res.data); }
@@ -45,6 +72,7 @@ function EntraId() {
 
   const set = (k, v) => setFormData(f => ({ ...f, [k]: v }));
   const openModal = (it = null) => {
+    setShowFormPass(false);
     if (it) { setEditing(it); setFormData({ ...emptyForm, ...it, mfa: !!it.mfa }); }
     else { setEditing(null); setFormData(emptyForm); }
     setIsModalOpen(true);
@@ -64,12 +92,13 @@ function EntraId() {
     catch { toast.error('Erro ao excluir'); }
     setConfirmDialog({ open: false, id: null });
   };
-  const copyUpn = (text, id) => {
-    if (!text) { toast.error('Sem UPN'); return; }
+  const copyValue = (text, id) => {
+    if (!text) { toast.error('Nada pra copiar'); return; }
     navigator.clipboard.writeText(text);
     setCopiedId(id); toast.success('Copiado');
     setTimeout(() => setCopiedId(c => (c === id ? null : c)), 1500);
   };
+  const toggleShow = (id) => setShowPassMap(m => ({ ...m, [id]: !m[id] }));
 
   const q = searchTerm.toLowerCase();
   const filtered = items.filter(it =>
@@ -79,6 +108,7 @@ function EntraId() {
      (it.department || '').toLowerCase().includes(q))
   );
   const countByType = (v) => items.filter(it => it.object_type === v).length;
+  const fs = strengthOf(formData.password);
 
   return (
     <div className="users-container" style={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -129,6 +159,7 @@ function EntraId() {
             const Ico = ti.icon;
             const badge = companyBadge(it.company, '');
             const st = statusStyle(it.status);
+            const shown = !!showPassMap[it.id];
             return (
               <div key={it.id} className="kk-card" style={{ borderTopColor: ti.color }}>
                 <div className="kk-top">
@@ -144,11 +175,20 @@ function EntraId() {
                 </div>
 
                 {it.upn && (
-                  <button className="kk-field" onClick={() => copyUpn(it.upn, it.id)} title="Copiar UPN">
+                  <button className="kk-field" onClick={() => copyValue(it.upn, `u-${it.id}`)} title="Copiar UPN">
                     <span className="kk-field-k"><AtSign size={12} style={{ verticalAlign: '-2px' }} /> UPN</span>
                     <span className="kk-field-v">{it.upn}</span>
-                    {copiedId === it.id ? <Check size={14} className="kk-ok" /> : <Copy size={14} className="kk-field-ic" />}
+                    {copiedId === `u-${it.id}` ? <Check size={14} className="kk-ok" /> : <Copy size={14} className="kk-field-ic" />}
                   </button>
+                )}
+
+                {it.password && (
+                  <div className="kk-field secret">
+                    <span className="kk-field-k">Senha</span>
+                    <span className="kk-field-v" style={{ letterSpacing: shown ? '0' : '2px' }}>{shown ? it.password : '••••••••'}</span>
+                    <button className="kk-mini" title={shown ? 'Ocultar' : 'Revelar'} onClick={() => toggleShow(it.id)}>{shown ? <EyeOff size={14} /> : <Eye size={14} />}</button>
+                    <button className="kk-mini" title="Copiar senha" onClick={() => copyValue(it.password, `p-${it.id}`)}>{copiedId === `p-${it.id}` ? <Check size={14} className="kk-ok" /> : <Copy size={14} />}</button>
+                  </div>
                 )}
 
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8, alignItems: 'center' }}>
@@ -192,6 +232,24 @@ function EntraId() {
                 <label className="form-label">UPN / E-mail</label>
                 <input className="form-input" value={formData.upn} onChange={e => set('upn', e.target.value)} placeholder="usuario@empresa.onmicrosoft.com" />
               </div>
+
+              <div className="form-group">
+                <label className="form-label">Senha (opcional)</label>
+                <div className="kk-pass-row">
+                  <input type={showFormPass ? 'text' : 'password'} className="form-input" style={{ fontFamily: 'monospace' }} value={formData.password} onChange={e => set('password', e.target.value)} placeholder="senha" autoComplete="new-password" />
+                  <button type="button" className="kk-pass-btn" title={showFormPass ? 'Ocultar' : 'Mostrar'} onClick={() => setShowFormPass(s => !s)}>{showFormPass ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+                  <button type="button" className="kk-pass-btn" title="Gerar senha forte" onClick={() => { set('password', genPassword(16)); setShowFormPass(true); }}><RefreshCw size={16} /></button>
+                </div>
+                {formData.password && (
+                  <div className="kk-strength">
+                    <div className="kk-strength-bar">
+                      {[0, 1, 2, 3].map(i => <span key={i} style={{ background: i < fs ? STRENGTH[fs].color : 'rgba(120,120,120,0.2)' }} />)}
+                    </div>
+                    <span className="kk-strength-lbl" style={{ color: STRENGTH[fs].color }}>{STRENGTH[fs].label}</span>
+                  </div>
+                )}
+              </div>
+
               <div className="machine-details-grid-form">
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label">Licença M365</label>

@@ -3625,16 +3625,22 @@ body.dark .vps-info-box { background: rgba(255,255,255,0.03); }
 }
 .kk-strength {
   display: flex;
-  gap: 3px;
+  align-items: center;
+  gap: 8px;
   margin-top: 6px;
 }
 .kk-strength-bar {
+  display: flex;
+  gap: 3px;
+  flex: 1;
+}
+.kk-strength-bar span {
   flex: 1;
   height: 4px;
-  background: var(--color-border);
   border-radius: 2px;
+  background: rgba(120, 120, 120, 0.2);
+  transition: var(--transition);
 }
-.kk-strength-bar.on { background: #10b981; }
 .kk-strength-lbl {
   font-size: 0.65rem;
   font-weight: 700;

@@ -294,6 +294,7 @@ try {
 }
 
 // Migrations rápidas para colunas novas
+try { db.exec("ALTER TABLE entra_objects ADD COLUMN password TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE tickets ADD COLUMN photo TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE tickets ADD COLUMN comments TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE tickets ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"); } catch(e) {}
@@ -349,7 +350,7 @@ db.exec(`
   );
   CREATE TABLE IF NOT EXISTS entra_objects (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    display_name TEXT, object_type TEXT, upn TEXT, license TEXT,
+    display_name TEXT, object_type TEXT, upn TEXT, license TEXT, password TEXT,
     mfa INTEGER DEFAULT 0, status TEXT, department TEXT,
     company TEXT, notes TEXT, created_by TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
@@ -1072,11 +1073,11 @@ app.get('/api/entra', authenticate, (req, res) => {
   });
 });
 app.post('/api/entra', authenticate, (req, res) => {
-  const { display_name, object_type, upn, license, mfa, status, department, company, notes } = req.body;
+  const { display_name, object_type, upn, license, password, mfa, status, department, company, notes } = req.body;
   db.run(
-    `INSERT INTO entra_objects (display_name, object_type, upn, license, mfa, status, department, company, notes, created_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [display_name, object_type || 'Usuário', upn || null, license || null, mfa ? 1 : 0, status || 'Ativo', department || null, company || null, notes || null, (req.user && req.user.username) || null],
+    `INSERT INTO entra_objects (display_name, object_type, upn, license, password, mfa, status, department, company, notes, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [display_name, object_type || 'Usuário', upn || null, license || null, password || null, mfa ? 1 : 0, status || 'Ativo', department || null, company || null, notes || null, (req.user && req.user.username) || null],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
       logAction(req, 'ENTRA_ID', `Cadastrou ${object_type || 'objeto'}: ${display_name}`);
@@ -1085,10 +1086,10 @@ app.post('/api/entra', authenticate, (req, res) => {
   );
 });
 app.put('/api/entra/:id', authenticate, (req, res) => {
-  const { display_name, object_type, upn, license, mfa, status, department, company, notes } = req.body;
+  const { display_name, object_type, upn, license, password, mfa, status, department, company, notes } = req.body;
   db.run(
-    `UPDATE entra_objects SET display_name = ?, object_type = ?, upn = ?, license = ?, mfa = ?, status = ?, department = ?, company = ?, notes = ? WHERE id = ?`,
-    [display_name, object_type || 'Usuário', upn || null, license || null, mfa ? 1 : 0, status || 'Ativo', department || null, company || null, notes || null, req.params.id],
+    `UPDATE entra_objects SET display_name = ?, object_type = ?, upn = ?, license = ?, password = ?, mfa = ?, status = ?, department = ?, company = ?, notes = ? WHERE id = ?`,
+    [display_name, object_type || 'Usuário', upn || null, license || null, password || null, mfa ? 1 : 0, status || 'Ativo', department || null, company || null, notes || null, req.params.id],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
       logAction(req, 'EDIÇÃO', `Alterou Entra ID: ${display_name}`);
