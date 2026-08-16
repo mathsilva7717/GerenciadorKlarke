@@ -94,7 +94,10 @@ function Home() {
       const pendingTickets = allTickets.filter(x => x.status === 'Pendente');
       const activeTickets = allTickets.filter(x => x.status === 'Em Atendimento');
       const resolvedTickets = allTickets.filter(x => x.status === 'Resolvido');
-      setRecentTickets(allTickets.slice(0, 5));
+      const emAberto = allTickets
+        .filter(x => x.status !== 'Resolvido')
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      setRecentTickets(emAberto.slice(0, 5));
 
       setSystemStatus(sys.data);
       setStats({
