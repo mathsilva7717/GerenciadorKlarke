@@ -931,10 +931,11 @@
       document.getElementById("success-modal").classList.remove("active");
     }
 
-    // Registra Service Worker para PWA
+    // Registra Service Worker próprio do Flow, com escopo restrito a /flow.html
+    // para não conflitar com o SW (scope "/") do painel Klarke Control.
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch(err => {
+        navigator.serviceWorker.register('/sw-flow.js', { scope: '/flow.html' }).catch(err => {
           console.log('SW registration failed: ', err);
         });
       });
